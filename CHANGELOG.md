@@ -1,3 +1,8 @@
+## v1.2.0 / 2017-09-04
+
+- Add event firing for scrolling by mousewheel or API calling
+- Methods added: scrollLeft, scrollTop
+
 ## v1.1.0 / 2016-06-30
 
 - Calculate container and content dimension more accurately (avoid rounding error by jQuery API)

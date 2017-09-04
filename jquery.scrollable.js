@@ -1,7 +1,7 @@
 /*jshint regexp:true,browser:true,jquery:true,debug:true,-W083 */
 
 /*!
- * jQuery Scrollable v1.1.0
+ * jQuery Scrollable v1.2.0
  *
  * The MIT License (MIT)
  *
@@ -294,6 +294,22 @@
                 scrollbarSize,
                 animFrameId;
 
+            function fireEvent(type, startX, startY, newX, newY, deltaX, deltaY) {
+                if (typeof options[type] === 'function') {
+                    options[type].call($wrapper[0], {
+                        type: type,
+                        startX: -startX,
+                        startY: -startY,
+                        offsetX: newX === undefined ? -x : -newX,
+                        offsetY: newY === undefined ? -y : -newY,
+                        deltaX: -deltaX || 0,
+                        deltaY: -deltaY || 0,
+                        percentX: ((newX === undefined ? x : newX) / minX) * 100 || 0,
+                        percentY: ((newY === undefined ? y : newY) / minY) * 100 || 0
+                    });
+                }
+            }
+
             function normalizePosition(x, y) {
                 return {
                     x: (x > 0 ? 0 : x < minX ? minX : mround(x)),
@@ -433,6 +449,7 @@
 
                     if (elapsed >= duration) {
                         setPosition(newX, newY);
+                        fireEvent('scrollEnd', startX, startY, newX, newY);
                         if (typeof callback === 'function') {
                             callback();
                         }
@@ -445,8 +462,10 @@
                         stepY = (newY - startY) * easeOut + startY;
 
                     setPosition(stepX, stepY);
+                    fireEvent('scrollMove', startX, startY, stepX, stepY, stepX - x, stepY - y);
                     animFrameId = nextFrame(animate);
                 }
+                fireEvent('scrollStart', startX, startY);
                 animate();
             }
 
@@ -540,22 +559,6 @@
                 }
                 e.stopPropagation();
 
-                function fireEvent(type, newX, newY, deltaX, deltaY) {
-                    if (typeof options[type] === 'function') {
-                        options[type].call($wrapper[0], {
-                            type: type,
-                            startX: -startX,
-                            startY: -startY,
-                            offsetX: newX === undefined ? -x : -newX,
-                            offsetY: newY === undefined ? -y : -newY,
-                            deltaX: -deltaX || 0,
-                            deltaY: -deltaY || 0,
-                            percentX: (x / minX) * 100 || 0,
-                            percentY: (y / minY) * 100 || 0
-                        });
-                    }
-                }
-
                 function bounceBack(callback) {
                     var newPos = normalizePosition(x, y);
                     scrollTo(newPos.x, newPos.y, options.bounceDuration, callback);
@@ -597,7 +600,7 @@
                         if (!hasTouch) {
                             $blockLayer.appendTo($wrapper);
                         }
-                        fireEvent('scrollStart');
+                        fireEvent('scrollStart', startX, startY);
                     }
 
                     // lock direction
@@ -638,9 +641,9 @@
                         }
                     }
 
-                    fireEvent('touchMove', newX, newY, touchDeltaX, touchDeltaY);
+                    fireEvent('touchMove', startX, startY, newX, newY, touchDeltaX, touchDeltaY);
                     if (newX !== x || newY !== y) {
-                        fireEvent('scrollMove', newX, newY, deltaX, deltaY);
+                        fireEvent('scrollMove', startX, startY, newX, newY, deltaX, deltaY);
                         setPosition(newX, newY);
                     }
                     setGlow(pressureX, pressureY);
@@ -666,7 +669,7 @@
                             }
                             $blockLayer.detach();
                         }
-                        fireEvent('scrollStop');
+                        fireEvent('scrollStop', startX, startY);
                         if ($hGlow) {
                             $hGlow.fadeOut();
                         }
@@ -684,7 +687,7 @@
                         }
                         scrollTo(x + momentumX.dist, y + momentumY.dist, m.max(momentumX.time, momentumY.time), function () {
                             bounceBack(function () {
-                                fireEvent('scrollEnd');
+                                fireEvent('scrollEnd', startX, startY);
                                 $wrapper.removeClass(options.scrollingClass);
                             });
                         });
@@ -731,19 +734,6 @@
 
                 var newPos = normalizePosition(x + (wheelDeltaX * options.hScroll), y + (wheelDeltaY * options.vScroll));
                 if (newPos.x !== x || newPos.y !== y) {
-                    if (typeof options.scrollMove === 'function') {
-                        options.scrollMove.call($wrapper[0], {
-                            type: 'scrollMove',
-                            startX: -x,
-                            startY: -x,
-                            offsetX: -newPos.x,
-                            offsetY: -newPos.y,
-                            deltaX: (x - newPos.x),
-                            deltaY: (y - newPos.y),
-                            percentX: (newPos.x / minX) * 100 || 0,
-                            percentY: (newPos.y / minY) * 100 || 0
-                        });
-                    }
                     scrollTo(newPos.x, newPos.y, 200);
                 }
                 if (minX < 0 || minY < 0) {
@@ -802,6 +792,12 @@
                 },
                 refresh: function () {
                     refresh(true);
+                },
+                scrollLeft: function () {
+                    return -x;
+                },
+                scrollTop: function () {
+                    return -y;
                 },
                 scrollBy: function (dx, dy, duration, callback) {
                     scrollToPreNormalized((dx || 0) - x, (dy || 0) - y, duration, callback);
