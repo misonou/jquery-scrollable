@@ -90,6 +90,7 @@
         // blocking layer to prevent click event after scrolling
         $blockLayer = $('<div style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:9999;background:white;opacity:0;filter:alpha(opacity=0);"></div>'),
         $activated = $(),
+        $current,
         DATA_ID = 'xScrollable';
 
     function parseOrigin(value) {
@@ -522,6 +523,7 @@
                     }
                     return;
                 }
+                $current = $current || $wrapper;
 
                 var point = getEventPosition(e),
                     startTime = +new Date(),
@@ -557,7 +559,6 @@
                 if (!hasTouch) {
                     e.preventDefault();
                 }
-                e.stopPropagation();
 
                 function bounceBack(callback) {
                     var newPos = normalizePosition(x, y);
@@ -565,6 +566,9 @@
                 }
 
                 function handleMove(e) {
+                    if ($current !== $wrapper) {
+                        return;
+                    }
                     var point = getEventPosition(e),
                         deltaX = point.x - lastPointX,
                         deltaY = point.y - lastPointY,
@@ -650,6 +654,9 @@
                 }
 
                 function handleStop(e) {
+                    if ($current === $wrapper) {
+                        $current = null;
+                    }
                     $(document).unbind(bindedHandler);
 
                     if (eventTarget.releaseCapture) {
