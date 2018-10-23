@@ -296,6 +296,8 @@
                 y = 0,
                 leadingX = 0,
                 leadingY = 0,
+                stopX,
+                stopY,
                 minX,
                 minY,
                 contentSize,
@@ -471,6 +473,8 @@
             function scrollTo(newX, newY, duration, callback) {
                 // stop any running animation
                 cancelFrame(animFrameId);
+                stopX = newX;
+                stopY = newY;
 
                 if (mround(newX) === x && mround(newY) === y) {
                     if (typeof callback === 'function') {
@@ -862,11 +866,16 @@
                 refresh: function () {
                     refresh(true);
                 },
+                stop: function () {
+                    cancelFrame(animFrameId);
+                    stopX = x;
+                    stopY = y;
+                },
                 scrollLeft: function () {
-                    return -x;
+                    return -stopX;
                 },
                 scrollTop: function () {
-                    return -y;
+                    return -stopY;
                 },
                 scrollBy: function (dx, dy, duration, callback) {
                     scrollToPreNormalized((dx || 0) - x, (dy || 0) - y, duration, callback);
