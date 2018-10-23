@@ -575,8 +575,10 @@
                     $wrapper.toggleClass(options.scrollableXClass, minX < 0);
                     $wrapper.toggleClass(options.scrollableYClass, minY < 0);
 
-                    var newPos = normalizePosition(x, y);
-                    setPosition(newPos.x, newPos.y);
+                    if ($current !== $wrapper) {
+                        var newPos = normalizePosition(x, y);
+                        setPosition(newPos.x, newPos.y);
+                    }
                 }
             }
 
