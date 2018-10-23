@@ -288,6 +288,8 @@
                 enabled = true,
                 x = 0,
                 y = 0,
+                leadingX = 0,
+                leadingY = 0,
                 minX,
                 minY,
                 contentSize,
@@ -486,6 +488,12 @@
                             y = 0;
                         }
                     }
+                    if ($content[0]) {
+                        var r0 = $wrapper[0].getBoundingClientRect();
+                        var r1 = $content[0].getBoundingClientRect();
+                        leadingX = r1.left - r0.left - x - parseFloat($wrapper.css('padding-left'));
+                        leadingY = r1.top - r0.top - y - parseFloat($wrapper.css('padding-top'));
+                    }
                     contentSize = $.extend({
                         width: 0,
                         height: 0
@@ -495,11 +503,11 @@
                         height: 0
                     }, options.getWrapperDimension($wrapper));
                     scrollbarSize = {
-                        x: wrapperSize.width / contentSize.width * 100 || 0,
-                        y: wrapperSize.height / contentSize.height * 100 || 0
+                        x: (wrapperSize.width - leadingX) / contentSize.width * 100 || 0,
+                        y: (wrapperSize.height - leadingY) / contentSize.height * 100 || 0
                     };
-                    minX = m.min(0, mround(wrapperSize.width - contentSize.width));
-                    minY = m.min(0, mround(wrapperSize.height - contentSize.height));
+                    minX = m.min(0, mround(wrapperSize.width - leadingX - contentSize.width));
+                    minY = m.min(0, mround(wrapperSize.height - leadingY - contentSize.height));
                     if ($hScrollbar) {
                         $hScrollbar.toggle(minX < 0);
                     }
@@ -545,11 +553,11 @@
                     if ($hScrollbar && minX < 0 && getHit($hScrollbar, 10, point)) {
                         scrollbarMode = true;
                         isDirY = false;
-                        factor = -100 / scrollbarSize.x;
+                        factor = -100 / scrollbarSize.x * (1 - leadingX / wrapperSize.width);
                     } else if ($vScrollbar && minY < 0 && getHit($vScrollbar, 10, point)) {
                         scrollbarMode = true;
                         isDirY = true;
-                        factor = -100 / scrollbarSize.y;
+                        factor = -100 / scrollbarSize.y * (1 - leadingY / wrapperSize.height);
                     }
                 }
                 if (options.handle === 'scrollbar' && !scrollbarMode) {
@@ -823,8 +831,8 @@
                         var oriW = parseOrigin(wrapperOrigin);
                         var posE = target.getBoundingClientRect();
                         var posW = $wrapper[0].getBoundingClientRect();
-                        var newX = posE.left * (1 - oriE.percentX) + posE.right * oriE.percentX + oriE.offsetX - posW.left - wrapperSize.width * oriW.percentX - oriW.offsetX - x;
-                        var newY = posE.top * (1 - oriE.percentY) + posE.bottom * oriE.percentY + oriE.offsetY - posW.top - wrapperSize.height * oriW.percentY - oriW.offsetY - y;
+                        var newX = posE.left * (1 - oriE.percentX) + posE.right * oriE.percentX + oriE.offsetX - posW.left - wrapperSize.width * oriW.percentX - oriW.offsetX - x - leadingX;
+                        var newY = posE.top * (1 - oriE.percentY) + posE.bottom * oriE.percentY + oriE.offsetY - posW.top - wrapperSize.height * oriW.percentY - oriW.offsetY - y - leadingY;
                         scrollToPreNormalized(newX, newY, duration || wrapperOrigin, callback || duration);
                     }
                 }
