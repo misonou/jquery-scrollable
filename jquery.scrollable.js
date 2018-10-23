@@ -91,7 +91,8 @@
         $blockLayer = $('<div style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:9999;background:white;opacity:0;filter:alpha(opacity=0);"></div>'),
         $activated = $(),
         $current,
-        DATA_ID = 'xScrollable';
+        DATA_ID = 'xScrollable',
+        DATA_ID_STICKY = 'xScrollableSticky';
 
     function parseOrigin(value) {
         if (/(left|center|right)?(?:((?:^|\s|[+-]?)\d+(?:\.\d+)?)(px|%))?(?:\s+(top|center|bottom)?(?:((?:^|\s|[+-]?)\d+(?:\.\d+)?)(px|%))?)?/g.test(value)) {
@@ -250,6 +251,10 @@
             glow: createGlow,
             glowClass: '',
             glowStyle: {},
+            sticky: '',
+            stickyHandle: '',
+            stickyToBottom: false,
+            stickyClass: 'sticky',
             touchMove: null,
             scrollStart: null,
             scrollMove: null,
@@ -281,6 +286,7 @@
         return this.each(function () {
             var $wrapper = $(this),
                 $content = $(),
+                $sticky = $(),
                 $hScrollbar = options.scrollbar && options.hScroll && $(options.scrollbar($wrapper, 'x', options)),
                 $vScrollbar = options.scrollbar && options.vScroll && $(options.scrollbar($wrapper, 'y', options)),
                 $hGlow = options.glow && options.hGlow && $(options.glow($wrapper, 'x', options)).hide(),
@@ -430,6 +436,36 @@
                 $wrapper.toggleClass(options.scrollableXClass + '-r', minX < 0 && x > minX);
                 $wrapper.toggleClass(options.scrollableYClass + '-u', minY < 0 && y < 0);
                 $wrapper.toggleClass(options.scrollableYClass + '-d', minY < 0 && y > minY);
+
+                var r0 = $wrapper[0].getBoundingClientRect();
+                $sticky.each(function (i, v) {
+                    var target = $(v).data(DATA_ID_STICKY);
+                    if (document.body.contains(target) && document.body.contains(v)) {
+                        var r1 = target.getBoundingClientRect();
+                        var r2 = v.getBoundingClientRect();
+
+                        $(v).css('font-size', $(target).css('font-size'));
+                        if (options.stickyToBottom && (r1.top > r0.bottom - r2.height)) {
+                            $(v).css({
+                                position: 'absolute',
+                                visibility: 'visible',
+                                top: 'auto',
+                                bottom: 0
+                            });
+                        } else if (r1.top < r0.top + leadingY && r1.bottom > r0.top + leadingY) {
+                            $(v).css({
+                                position: 'absolute',
+                                visibility: 'visible',
+                                top: leadingY - Math.max(0, r0.top + leadingY + r2.height - r1.bottom),
+                                bottom: 'auto'
+                            });
+                        } else {
+                            $(v).css({
+                                visibility: 'hidden'
+                            });
+                        }
+                    }
+                });
             }
 
             function scrollTo(newX, newY, duration, callback) {
@@ -472,6 +508,14 @@
                 animate();
             }
 
+            function createStickyClone(v) {
+                var $clone = $(v.cloneNode(false)).append($(options.stickyHandle, v).clone()).addClass(options.stickyClass).data(DATA_ID_STICKY, v);
+                $clone.click(function () {
+                    $wrapper.scrollable('scrollToElement', v, 'left top', 200);
+                });
+                return $clone[0];
+            }
+
             function refresh(updateContent) {
                 if ($wrapper.is(':visible')) {
                     if (updateContent) {
@@ -486,6 +530,16 @@
                             }
                             x = 0;
                             y = 0;
+                        }
+                        if (content) {
+                            var $curSticky = $($sticky);
+                            $sticky = $(options.sticky, content).map(function (i, v) {
+                                var data = $(v).data();
+                                var clone = data.stickyNote || (data.stickyNote = createStickyClone(v));
+                                return clone;
+                            });
+                            $curSticky.not($sticky).remove();
+                            $sticky.appendTo($wrapper);
                         }
                     }
                     if ($content[0]) {
@@ -833,6 +887,11 @@
                         var posW = $wrapper[0].getBoundingClientRect();
                         var newX = posE.left * (1 - oriE.percentX) + posE.right * oriE.percentX + oriE.offsetX - posW.left - wrapperSize.width * oriW.percentX - oriW.offsetX - x - leadingX;
                         var newY = posE.top * (1 - oriE.percentY) + posE.bottom * oriE.percentY + oriE.offsetY - posW.top - wrapperSize.height * oriW.percentY - oriW.offsetY - y - leadingY;
+                        $sticky.each(function (i, v) {
+                            if ($.contains($(v).data(DATA_ID_STICKY), target)) {
+                                newY += $(v).outerHeight();
+                            }
+                        });
                         scrollToPreNormalized(newX, newY, duration || wrapperOrigin, callback || duration);
                     }
                 }
