@@ -866,6 +866,14 @@
                 refresh: function () {
                     refresh(true);
                 },
+                scrollPadding: function () {
+                    return {
+                        top: leadingY,
+                        left: leadingX,
+                        right: $hScrollbar ? options.scrollbarSize + options.scrollbarInset * 2 : 0,
+                        bottom: $vScrollbar ? options.scrollbarSize + options.scrollbarInset * 2 : 0
+                    };
+                },
                 stop: function () {
                     cancelFrame(animFrameId);
                     stopX = x;
