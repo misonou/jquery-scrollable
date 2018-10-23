@@ -838,6 +838,9 @@
     $(window).bind(EV_RESIZE, function () {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(function () {
+            $activated = $activated.filter(function () {
+                 return !!$(this).data(DATA_ID);
+            });
             $activated.scrollable('refresh');
         }, isAndroid ? 200 : 0);
     });
