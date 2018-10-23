@@ -523,7 +523,6 @@
                     }
                     return;
                 }
-                $current = $current || $wrapper;
 
                 var point = getEventPosition(e),
                     startTime = +new Date(),
@@ -559,6 +558,7 @@
                 if (!hasTouch) {
                     e.preventDefault();
                 }
+                $current = $current || $wrapper;
 
                 function bounceBack(callback) {
                     var newPos = normalizePosition(x, y);
