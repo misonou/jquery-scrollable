@@ -814,6 +814,15 @@
                 }
                 e.stopPropagation();
             };
+            handlers.focusin = function (e) {
+                var scrollTop = $wrapper[0].scrollTop,
+                    scrollLeft = $wrapper[0].scrollLeft;
+                if (scrollTop || scrollLeft) {
+                    $wrapper[0].scrollTop = 0;
+                    $wrapper[0].scrollLeft = 0;
+                    scrollTo(x - scrollLeft, y - scrollTop, 0);
+                }
+            };
             $wrapper.bind(handlers);
 
             // setup initial style
