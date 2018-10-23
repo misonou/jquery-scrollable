@@ -670,14 +670,14 @@
                     }
 
                     // lock direction
-                    if (!options.vScroll || (options.lockDirection && distX >= distY + 6) || (scrollbarMode && !isDirY)) {
+                    if (!options.vScroll || (!scrollbarMode && options.lockDirection && distX >= distY + 6) || (scrollbarMode && !isDirY)) {
                         newY = y;
                         deltaY = 0;
                         if (options.vScroll) {
                             touchDeltaY = 0;
                         }
                     }
-                    if (!options.hScroll || (options.lockDirection && distY >= distX + 6) || (scrollbarMode && isDirY)) {
+                    if (!options.hScroll || (!scrollbarMode && options.lockDirection && distY >= distX + 6) || (scrollbarMode && isDirY)) {
                         newX = x;
                         deltaX = 0;
                         if (options.hScroll) {
