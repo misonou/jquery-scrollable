@@ -830,6 +830,20 @@
                 scrollTo(p.x, p.y, +duration || 0, callback);
             }
 
+            function preventPullToRefresh(container) {
+                var prevent = false;
+                container.addEventListener('touchstart', function (e) {
+                    prevent = e.touches.length === 1 && (window.pageYOffset || document.body.scrollTop || document.documentElement.scrollTop) === 0;
+                });
+                container.addEventListener('touchmove', function (e) {
+                    if (prevent) {
+                        prevent = false;
+                        e.preventDefault();
+                    }
+                });
+            }
+            preventPullToRefresh($wrapper[0]);
+
             // plugin interface
             $wrapper.data(DATA_ID, {
                 destroy: function () {
