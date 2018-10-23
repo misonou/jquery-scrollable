@@ -1,3 +1,17 @@
+## v1.3.0 / 2018-10-23
+
+- Add sticky header feature
+- Methods added: stop, scrollPadding
+- Allow propagation of touchstart and mousedown event
+- Prevent pull to refresh behavior in mobile
+- Prevent native scrolling on focusing input (content offset by scrollTop/scrollLeft of parent element)
+- Fix: incorrectly marked current if scrolling is not started
+- Fix: error due to destroyed scroll area
+- Fix: cater content offset by padding
+- Fix: mouse delta locked in one direction in scrollbar mode
+- Fix: accumulative error in calculating new X/Y
+- Fix: interruption by refresh method during scroll
+
 ## v1.2.0 / 2017-09-04
 
 - Add event firing for scrolling by mousewheel or API calling
