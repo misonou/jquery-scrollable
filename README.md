@@ -13,7 +13,7 @@ Below is an exhaustive list of options, with the default value shown.
     content: '>:visible:eq(0)',
 
     // an element or a selector to avoid scroll action when mouse or touch acting on these target
-    // this option is only checked when 'handle' is set to 'auto', 'content' or 'both' 
+    // this option is only checked when 'handle' is set to 'auto', 'content' or 'both'
     cancel: '',
 
     // specify the function to calculate the dimension of the container
@@ -21,12 +21,12 @@ Below is an exhaustive list of options, with the default value shown.
     getWrapperDimension: getDimension,
 
     // specify the function to calculate the dimension of the content
-    // the function should return an object of with 'width' and 'height' properties 
+    // the function should return an object of with 'width' and 'height' properties
     getContentDimension: getOuterDimension,
 
     // specify which component to be responsible for listening mouse or touch event to start scroll action
     // possible values are 'auto', 'scrollbar', 'content', 'both'
-    // an 'auto' value will let the plugin to choose between 'scrollbar' or 'content' 
+    // an 'auto' value will let the plugin to choose between 'scrollbar' or 'content'
     // based on the existence of touch events
     handle: 'auto',
 
@@ -59,7 +59,7 @@ Below is an exhaustive list of options, with the default value shown.
     momentum: true,
 
     // whether the lock the scrolling direction to horizontal or vertical
-    // when scrolling in both direction is possible 
+    // when scrolling in both direction is possible
     lockDirection: true,
 
     // CSS class applied to the container when scrolling is in action
@@ -102,6 +102,19 @@ Below is an exhaustive list of options, with the default value shown.
     // CSS styles applied to the glowing effect element
     glowStyle: {},
 
+    // CSS selector specifying sections of content of which sticky header will be shown for
+    sticky: '',
+
+    // CSS selector specifying which element to be cloned
+    // and be placed at the top or bottom of scrolling area
+    stickyHandle: '',
+
+    // specify sticky header mode
+    stickyToBottom: false,
+
+    // CSS class applied to the cloned sticky handle
+    stickyClass: 'sticky',
+
     // specify an event listener for the touchMove event
     touchMove: null,
 
@@ -126,7 +139,7 @@ All methods are called by jQuery plugin convention.
 ### scrollTo
 
 ```javascript
-scrollTo(x, y, duration, callback)
+$elm.scrollable('scrollTo', x, y, duration, callback)
 ```
 
 Scroll the content element to the specified offset in each direction in pixels.
@@ -137,7 +150,7 @@ the optional callback will be fired after the animation is complete.
 ### scrollToPage
 
 ```javascript
-scrollToPage(x, y, duration, callback)
+$elm.scrollable('scrollToPage', x, y, duration, callback)
 ```
 
 Scroll the content element to the specified page (zero-based index) in each direction.
@@ -148,12 +161,12 @@ the optional callback will be fired after the animation is complete.
 ### scrollToElement
 
 ```javascript
-scrollToElement(target, targetOrigin, wrapperOrigin, duration, callback)
+$elm.scrollable('scrollToElement', target, targetOrigin, wrapperOrigin, duration, callback)
 ```
 
 Scroll the content element to the anchor point calculated from the mentioned element.
 
-If the `targetOrigin` parameter is not specified, the anchor point will be chosen as the 
+If the `targetOrigin` parameter is not specified, the anchor point will be chosen as the
 top left corner of the mentioned element.
 
 If the `wrapperOrigin` parameter is not specified, the content element will be scrolled such that
@@ -174,7 +187,7 @@ the optional callback will be fired after the animation is complete.
 ### scrollBy
 
 ```javascript
-scrollBy(dx, dy, duration, callback)
+$elm.scrollable('scrollBy', dx, dy, duration, callback)
 ```
 
 Scroll the content element by the specified amount in each direction in pixels.
@@ -182,10 +195,21 @@ Scroll the content element by the specified amount in each direction in pixels.
 If duration in milliseconds is supplied, the scrolling will be animated in such duration of time and
 the optional callback will be fired after the animation is complete.
 
+### stop
+
+```javascript
+$elm.scrollable('stop')
+```
+
+Stop animated scrolling immediately. Content will be at the position when `stop` is called.
+
+Animated scrolling occured when the `scrollTo`, `scrollToElement`, `scrollToPage` or `scrollBy` with a non-zero duration;
+or if the `momentum` option is set to `true` and the scrolling area is in momentum mode after mouse or touch is released.
+
 ### refresh
 
 ```javascript
-refresh()
+$elm.scrollable('refresh')
 ```
 
 Force the plugin to re-select the content area to be scrolled and to re-calculate the dimensions
@@ -194,7 +218,7 @@ of both container and content element.
 ### enable
 
 ```javascript
-enable()
+$elm.scrollable('enable')
 ```
 
 Re-enable the plugin on selected element which has been disabled before.
@@ -202,19 +226,27 @@ Re-enable the plugin on selected element which has been disabled before.
 ### disable
 
 ```javascript
-disable()
+$elm.scrollable('disable')
 ```
 
-Temporarily disable the plugin on selected element. Scollbars will be hidden and no scolling will be triggered by
+Temporarily disable the plugin on selected element. Scrollbars will be hidden and no scolling will be triggered by
 mouse or touch events. However, content element can still be scrolled using plugin's methods.
+
+### scrollPadding
+
+```javascript
+$elm.scrollable('scrollPadding')
+```
+
+Returns the padding around scrolling area of which content may be obstructed by sticky headers and scrollbars.
 
 ### destroy
 
 ```javascript
-destroy()
+$elm.scrollable('destroy')
 ```
 
-Permenantly disable the plugin on selected element. Any created element and attached event listeners will be removed. The 
+Permenantly disable the plugin on selected element. Any created element and attached event listeners will be removed. The
 content element will also be reset, i.e. having no scroll offset.
 
 ## Events
