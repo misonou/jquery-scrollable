@@ -788,6 +788,7 @@
 
                 $wrapper.addClass(options.scrollingClass);
             };
+            var timeout;
             handlers[EV_WHEEL] = function (e) {
                 var ev = e.originalEvent,
                     wheelDeltaX,
@@ -807,10 +808,13 @@
                     return;
                 }
 
-                var newPos = normalizePosition(x + (wheelDeltaX * options.hScroll), y + (wheelDeltaY * options.vScroll));
-                if (newPos.x !== x || newPos.y !== y) {
-                    scrollTo(newPos.x, newPos.y, 200);
-                }
+                timeout = timeout || setTimeout(function () {
+                    timeout = null;
+                    var newPos = normalizePosition(x + (wheelDeltaX * options.hScroll), y + (wheelDeltaY * options.vScroll));
+                    if (newPos.x !== x || newPos.y !== y) {
+                        scrollTo(newPos.x, newPos.y, 200);
+                    }
+                });
                 if (minX < 0 || minY < 0) {
                     e.preventDefault();
                 }
