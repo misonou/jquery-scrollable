@@ -838,6 +838,9 @@
             if ($vScrollbar && options.handle === 'content') {
                 $vScrollbar.css('pointer-events', 'none');
             }
+            if ($wrapper.css('overflow') !== 'hidden' && $wrapper.css('overflow') !== 'visible') {
+                $wrapper.css('overflow', 'hidden');
+            }
 
             function scrollToPreNormalized(x, y, duration, callback) {
                 refresh();
