@@ -591,6 +591,7 @@
                     }
                     return;
                 }
+                refresh();
 
                 var point = getEventPosition(e),
                     startTime = +new Date(),
@@ -815,6 +816,7 @@
                         scrollTo(newPos.x, newPos.y, 200);
                     }
                 });
+                refresh();
                 if (minX < 0 || minY < 0) {
                     e.preventDefault();
                 }
