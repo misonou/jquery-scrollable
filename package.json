@@ -1,0 +1,13 @@
+{
+  "name": "jq-scrollable",
+  "version": "1.3.0",
+  "devDependencies": {},
+  "author": "misonou",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/misonou/jquery-scrollable.git"
+  },
+  "homepage": "https://github.com/misonou/jquery-scrollable",
+  "scripts": {}
+}
