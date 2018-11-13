@@ -647,6 +647,7 @@
                         newY = startY + (point.y - firstPointY) * factor,
                         distX = m.abs(point.x - firstPointX),
                         distY = m.abs(point.y - firstPointY),
+                        thisDirY = distX / distY < 1,
                         hBounce = options.hBounce && !scrollbarMode,
                         vBounce = options.vBounce && !scrollbarMode;
 
@@ -657,18 +658,33 @@
                     lastPointX = point.x;
                     lastPointY = point.y;
 
-                    // exit if the gesture does not suggest a scroll
                     if (!scrollbarMode && isDirY === undefined) {
-                        var thisDirY = distX / distY < 1;
+                        // exit if the gesture does not suggest a scroll
                         if ((!hasTouch && distX < 6 && distY < 6) || (!options.vScroll && thisDirY) || (!options.hScroll && !thisDirY)) {
                             return;
                         }
+                        // check if user is scrolling inner content
+                        for (var cur = e.target; cur !== $wrapper[0]; cur = cur.parentNode) {
+                            var style = getComputedStyle(cur);
+                            if (thisDirY && cur.scrollHeight > cur.offsetHeight && (style.overflowY === 'auto' || style.overflowY === 'scroll')) {
+                                if ((deltaY > 0 && cur.scrollTop > 0) || (deltaY < 0 && cur.scrollTop + cur.offsetHeight < cur.scrollHeight)) {
+                                    handleStop(e);
+                                    return;
+                                }
+                            }
+                            if (!thisDirY && cur.scrollWidth > cur.offsetWidth && (style.overflowX === 'auto' || style.overflowX === 'scroll')) {
+                                if ((deltaX > 0 && cur.scrollLeft > 0) || (deltaX < 0 && cur.scrollLeft + cur.offsetWidth < cur.scrollWidth)) {
+                                    handleStop(e);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                    if (isDirY === undefined) {
+                        isDirY = thisDirY;
                     }
 
                     if (!contentScrolled) {
-                        if (isDirY === undefined) {
-                            isDirY = distX / distY < 1;
-                        }
                         contentScrolled = true;
                         if (!hasTouch) {
                             $blockLayer.appendTo($wrapper);
@@ -957,7 +973,7 @@
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(function () {
             $activated = $activated.filter(function () {
-                 return !!$(this).data(DATA_ID);
+                return !!$(this).data(DATA_ID);
             });
             $activated.scrollable('refresh');
         }, isAndroid ? 200 : 0);
