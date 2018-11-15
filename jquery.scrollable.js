@@ -79,7 +79,7 @@
         EV_MOVE = hasTouch ? 'touchmove' : 'mousemove',
         EV_END = hasTouch ? 'touchend' : 'mouseup',
         EV_CANCEL = hasTouch ? 'touchcancel' : 'mouseup',
-        EV_WHEEL = vendor === 'Moz' ? 'DOMMouseScroll' : 'mousewheel',
+        EV_WHEEL = 'onwheel' in window ? 'wheel' : vendor === 'Moz' ? 'DOMMouseScroll' : 'mousewheel',
 
         nextFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function (callback) {
             return setTimeout(callback, 0);
@@ -811,6 +811,9 @@
                     wheelDeltaX,
                     wheelDeltaY;
 
+                if (e.isDefaultPrevented()) {
+                    return;
+                }
                 if (ev.wheelDeltaX !== undefined) {
                     wheelDeltaX = ev.wheelDeltaX / 1.2;
                     wheelDeltaY = ev.wheelDeltaY / 1.2;
