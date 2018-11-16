@@ -813,29 +813,36 @@
             var timeout;
             handlers[EV_WHEEL] = function (e) {
                 var ev = e.originalEvent,
-                    wheelDeltaX,
-                    wheelDeltaY;
+                    wheelDeltaX = 0,
+                    wheelDeltaY = 0;
 
                 if (e.isDefaultPrevented()) {
                     return;
                 }
-                if (ev.wheelDeltaX !== undefined) {
-                    wheelDeltaX = ev.wheelDeltaX / 1.2;
-                    wheelDeltaY = ev.wheelDeltaY / 1.2;
-                    if ((!options.vScroll || !minY) && !wheelDeltaX) {
-                        wheelDeltaX = wheelDeltaY;
-                    }
+                if (ev.deltaX !== undefined) {
+                    wheelDeltaX = -ev.deltaX;
+                    wheelDeltaY = -ev.deltaY;
+                } else if (ev.wheelDeltaX !== undefined) {
+                    wheelDeltaX = ev.wheelDeltaX;
+                    wheelDeltaY = ev.wheelDeltaY;
                 } else if (ev.wheelDelta !== undefined) {
-                    wheelDeltaX = wheelDeltaY = ev.wheelDelta / 1.2;
+                    wheelDeltaY = ev.wheelDelta;
                 } else if (ev.detail !== undefined) {
-                    wheelDeltaX = wheelDeltaY = -ev.detail * 30;
-                } else {
+                    wheelDeltaY = -ev.detail;
+                }
+                if (!wheelDeltaX && !wheelDeltaY) {
                     return;
                 }
                 if (canScrollInnerElement(e.target, $wrapper[0], wheelDeltaX, wheelDeltaY)) {
                     return;
                 }
-
+                if (vendor === 'Moz') {
+                    wheelDeltaX *= 50;
+                    wheelDeltaY *= 50;
+                }
+                if ((!options.vScroll || !minY) && !wheelDeltaX) {
+                    wheelDeltaX = wheelDeltaY;
+                }
                 timeout = timeout || setTimeout(function () {
                     timeout = null;
                     var newPos = normalizePosition(x + (wheelDeltaX * options.hScroll), y + (wheelDeltaY * options.vScroll));
