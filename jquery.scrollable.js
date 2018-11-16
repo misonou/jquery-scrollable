@@ -203,6 +203,22 @@
         };
     }
 
+    function canScrollInnerElement(cur, parent, deltaX, deltaY) {
+        for (; cur !== parent; cur = cur.parentNode) {
+            var style = getComputedStyle(cur);
+            if (deltaY && cur.scrollHeight > cur.offsetHeight && (style.overflowY === 'auto' || style.overflowY === 'scroll')) {
+                if ((deltaY > 0 && cur.scrollTop > 0) || (deltaY < 0 && cur.scrollTop + cur.offsetHeight < cur.scrollHeight)) {
+                    return true;
+                }
+            }
+            if (deltaX && cur.scrollWidth > cur.offsetWidth && (style.overflowX === 'auto' || style.overflowX === 'scroll')) {
+                if ((deltaX > 0 && cur.scrollLeft > 0) || (deltaX < 0 && cur.scrollLeft + cur.offsetWidth < cur.scrollWidth)) {
+                    return true;
+                }
+            }
+        }
+    }
+
     $.fn.scrollable = function (optionOverrides) {
         if (typeof optionOverrides === 'string') {
             var args = arguments;
@@ -664,20 +680,9 @@
                             return;
                         }
                         // check if user is scrolling inner content
-                        for (var cur = e.target; cur !== $wrapper[0]; cur = cur.parentNode) {
-                            var style = getComputedStyle(cur);
-                            if (thisDirY && cur.scrollHeight > cur.offsetHeight && (style.overflowY === 'auto' || style.overflowY === 'scroll')) {
-                                if ((deltaY > 0 && cur.scrollTop > 0) || (deltaY < 0 && cur.scrollTop + cur.offsetHeight < cur.scrollHeight)) {
-                                    handleStop(e);
-                                    return;
-                                }
-                            }
-                            if (!thisDirY && cur.scrollWidth > cur.offsetWidth && (style.overflowX === 'auto' || style.overflowX === 'scroll')) {
-                                if ((deltaX > 0 && cur.scrollLeft > 0) || (deltaX < 0 && cur.scrollLeft + cur.offsetWidth < cur.scrollWidth)) {
-                                    handleStop(e);
-                                    return;
-                                }
-                            }
+                        if (canScrollInnerElement(e.target, $wrapper[0], deltaX, deltaY)) {
+                            handleStop(e);
+                            return;
                         }
                     }
                     if (isDirY === undefined) {
@@ -825,6 +830,9 @@
                 } else if (ev.detail !== undefined) {
                     wheelDeltaX = wheelDeltaY = -ev.detail * 30;
                 } else {
+                    return;
+                }
+                if (canScrollInnerElement(e.target, $wrapper[0], wheelDeltaX, wheelDeltaY)) {
                     return;
                 }
 
