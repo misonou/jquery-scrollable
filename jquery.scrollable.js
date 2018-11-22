@@ -450,10 +450,10 @@
                     }
                 }
 
-                $wrapper.toggleClass(options.scrollableXClass + '-l', minX < 0 && x < 0);
-                $wrapper.toggleClass(options.scrollableXClass + '-r', minX < 0 && x > minX);
-                $wrapper.toggleClass(options.scrollableYClass + '-u', minY < 0 && y < 0);
-                $wrapper.toggleClass(options.scrollableYClass + '-d', minY < 0 && y > minY);
+                $wrapper.toggleClass(options.scrollableXClass + '-l', x < 0);
+                $wrapper.toggleClass(options.scrollableXClass + '-r', x > minX);
+                $wrapper.toggleClass(options.scrollableYClass + '-u', y < 0);
+                $wrapper.toggleClass(options.scrollableYClass + '-d', y > minY);
 
                 var r0 = $wrapper[0].getBoundingClientRect();
                 $sticky.each(function (i, v) {
