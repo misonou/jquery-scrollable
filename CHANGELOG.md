@@ -1,3 +1,13 @@
+## v1.3.1 / 2018-11-23
+
+- Honor `event.defaultPrevented`
+- Automatically set overflow to `hidden` if the container is `auto` or `scroll`
+- Automatically re-calculate content dimension before scroll starts
+- Apply scrollable indicating CSS class during overscroll disregarding whether container is actually scrollable
+- Fix: overfiring during wheel event
+- Fix: scroll started when user is scrolling inner content
+- Fix: error when there is no content element selected
+
 ## v1.3.0 / 2018-10-23
 
 - Add sticky header feature
