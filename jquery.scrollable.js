@@ -580,8 +580,8 @@
                         x: (wrapperSize.width - leadingX) / contentSize.width * 100 || 0,
                         y: (wrapperSize.height - leadingY) / contentSize.height * 100 || 0
                     };
-                    minX = m.min(0, mround(wrapperSize.width - leadingX - contentSize.width));
-                    minY = m.min(0, mround(wrapperSize.height - leadingY - contentSize.height));
+                    minX = options.hScroll ? m.min(0, mround(wrapperSize.width - leadingX - contentSize.width)) : 0;
+                    minY = options.vScroll ? m.min(0, mround(wrapperSize.height - leadingY - contentSize.height)) : 0;
                     if ($hScrollbar) {
                         $hScrollbar.toggle(minX < 0);
                     }
