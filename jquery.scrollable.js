@@ -456,6 +456,7 @@
                 $wrapper.toggleClass(options.scrollableYClass + '-d', y > minY);
 
                 var r0 = $wrapper[0].getBoundingClientRect();
+                var leadingYPad = leadingY + parseFloat($wrapper.css('padding-top'));
                 $sticky.each(function (i, v) {
                     var target = $(v).data(DATA_ID_STICKY);
                     if (document.body.contains(target) && document.body.contains(v)) {
@@ -470,11 +471,11 @@
                                 top: 'auto',
                                 bottom: 0
                             });
-                        } else if (r1.top < r0.top + leadingY && r1.bottom > r0.top + leadingY) {
+                        } else if (r1.top < r0.top + leadingYPad && r1.bottom > r0.top + leadingYPad) {
                             $(v).css({
                                 position: 'absolute',
                                 visibility: 'visible',
-                                top: leadingY - Math.max(0, r0.top + leadingY + r2.height - r1.bottom),
+                                top: leadingYPad - Math.max(0, r0.top + leadingYPad + r2.height - r1.bottom),
                                 bottom: 'auto'
                             });
                         } else {
