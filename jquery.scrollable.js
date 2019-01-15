@@ -584,10 +584,10 @@
                     minX = options.hScroll ? m.min(0, mround(wrapperSize.width - leadingX - contentSize.width)) : 0;
                     minY = options.vScroll ? m.min(0, mround(wrapperSize.height - leadingY - contentSize.height)) : 0;
                     if ($hScrollbar) {
-                        $hScrollbar.toggle(minX < 0);
+                        $hScrollbar.toggle(enabled && minX < 0);
                     }
                     if ($vScrollbar) {
-                        $vScrollbar.toggle(minY < 0);
+                        $vScrollbar.toggle(enabled && minY < 0);
                     }
                     $wrapper.toggleClass(options.scrollableXClass, minX < 0);
                     $wrapper.toggleClass(options.scrollableYClass, minY < 0);
