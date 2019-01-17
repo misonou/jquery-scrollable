@@ -638,7 +638,9 @@
                 if (!hasTouch) {
                     e.preventDefault();
                 }
-                $current = $current || $wrapper;
+                if (scrollbarMode) {
+                    $current = $current || $wrapper;
+                }
 
                 function bounceBack(callback) {
                     var newPos = normalizePosition(x, y);
@@ -646,7 +648,7 @@
                 }
 
                 function handleMove(e) {
-                    if ($current !== $wrapper) {
+                    if ($current && $current !== $wrapper) {
                         return;
                     }
                     var point = getEventPosition(e),
@@ -679,10 +681,16 @@
                             handleStop(e);
                             return;
                         }
+                        // check if user is scrolling outer content when content of this container is underflow
+                        if (((thisDirY && !minY) || (!thisDirY && !minX)) && (canScrollInnerElement($wrapper[0], document.body, deltaX, deltaY) || $wrapper.parents().filter(function (i, v) { return $(v).data(DATA_ID); })[0])) {
+                            handleStop(e);
+                            return;
+                        }
                     }
                     if (isDirY === undefined) {
                         isDirY = thisDirY;
                     }
+                    $current = $current || $wrapper;
 
                     if (!contentScrolled) {
                         contentScrolled = true;
@@ -838,18 +846,19 @@
                 if ((!options.vScroll || !minY) && !wheelDeltaX) {
                     wheelDeltaX = wheelDeltaY;
                 }
-                timeout = timeout || setTimeout(function () {
-                    timeout = null;
-                    var newPos = normalizePosition(x + (wheelDeltaX * options.hScroll), y + (wheelDeltaY * options.vScroll));
-                    if (newPos.x !== x || newPos.y !== y) {
-                        scrollTo(newPos.x, newPos.y, 200);
-                    }
-                });
                 refresh();
-                if (minX < 0 || minY < 0) {
-                    e.preventDefault();
+
+                var newPos = normalizePosition(x + (wheelDeltaX * options.hScroll), y + (wheelDeltaY * options.vScroll));
+                if (newPos.x !== x || newPos.y !== y) {
+                    timeout = timeout || setTimeout(function () {
+                        timeout = null;
+                        scrollTo(newPos.x, newPos.y, 200);
+                    });
+                    if (minX < 0 || minY < 0) {
+                        e.preventDefault();
+                    }
+                    e.stopPropagation();
                 }
-                e.stopPropagation();
             };
             handlers.focusin = function (e) {
                 var scrollTop = $wrapper[0].scrollTop,
