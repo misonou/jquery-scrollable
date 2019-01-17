@@ -161,15 +161,9 @@
     function getOuterDimension($elm) {
         if ($elm[0]) {
             var rect = $elm[0].getBoundingClientRect();
-            var rectContent = {};
-            if (document.createRange) {
-                var range = document.createRange();
-                range.selectNodeContents($elm[0]);
-                rectContent = range.getBoundingClientRect();
-            }
             return {
-                width: m.max((rectContent.right - m.max(rect.left, rectContent.left)) || 0, rect.right - rect.left),
-                height: m.max((rectContent.bottom - m.max(rect.top, rectContent.top)) || 0, rect.bottom - rect.top)
+                width: rect.width,
+                height: rect.height
             };
         }
     }
