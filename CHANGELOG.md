@@ -1,3 +1,11 @@
+## v1.3.2 / 2019-01-17
+
+- Fix: horizontal/vertical direction scrolled by API when `hScroll`/`vScroll` is set to `false`
+- Fix: sticky header position when container has padding
+- Fix: scrollbars re-appear when refreshing a disabled container
+- Fix: content dimension calculation
+- Fix: allow outer container can be scrolled when content in current container is underflow
+
 ## v1.3.1 / 2018-11-23
 
 - Honor `event.defaultPrevented`
