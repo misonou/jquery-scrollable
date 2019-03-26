@@ -1,3 +1,8 @@
+## v1.3.3 / 2019-03-26
+
+- Fix: suppress intervention error in Chrome
+- Fix: avoid script scrolling being cancelled by `touchend` event
+
 ## v1.3.2 / 2019-01-17
 
 - Fix: horizontal/vertical direction scrolled by API when `hScroll`/`vScroll` is set to `false`
