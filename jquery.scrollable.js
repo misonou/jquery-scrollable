@@ -853,7 +853,7 @@
                         timeout = null;
                         scrollTo(newPos.x, newPos.y, 200);
                     });
-                    if (minX < 0 || minY < 0) {
+                    if ((minX < 0 || minY < 0) && e.cancelable) {
                         e.preventDefault();
                     }
                     e.stopPropagation();
@@ -879,6 +879,9 @@
             }
             if ($wrapper.css('overflow') !== 'hidden' && $wrapper.css('overflow') !== 'visible') {
                 $wrapper.css('overflow', 'hidden');
+            }
+            if (hasTouch) {
+                $wrapper.css('touch-action', (options.hScroll ? 'pan-x ' : '') + (options.vScroll ? 'pan-y ' : ''));
             }
 
             function scrollToPreNormalized(x, y, duration, callback) {
