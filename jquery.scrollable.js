@@ -792,7 +792,6 @@
                             });
                         });
                     } else {
-                        bounceBack();
                         $wrapper.removeClass(options.scrollingClass);
                     }
                 }
