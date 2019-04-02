@@ -881,7 +881,7 @@
                 $wrapper.css('overflow', 'hidden');
             }
             if (hasTouch) {
-                $wrapper.css('touch-action', (options.hScroll ? 'pan-x ' : '') + (options.vScroll ? 'pan-y ' : ''));
+                $wrapper.css('touch-action', 'none');
             }
 
             function scrollToPreNormalized(x, y, duration, callback) {
