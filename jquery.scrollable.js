@@ -980,7 +980,7 @@
                         var newY = posE.top * (1 - oriE.percentY) + posE.bottom * oriE.percentY + oriE.offsetY - posW.top - wrapperSize.height * oriW.percentY - oriW.offsetY - y - leadingY;
                         $sticky.each(function (i, v) {
                             if ($.contains($(v).data(DATA_ID_STICKY), target)) {
-                                newY += $(v).outerHeight();
+                                newY -= v.getBoundingClientRect().height;
                             }
                         });
                         scrollToPreNormalized(newX, newY, duration || wrapperOrigin, callback || duration);
