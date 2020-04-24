@@ -600,6 +600,10 @@
                     }
                     $wrapper.toggleClass(options.scrollableXClass, minX < 0);
                     $wrapper.toggleClass(options.scrollableYClass, minY < 0);
+                    $wrapper.toggleClass(options.scrollableXClass + '-l', x < 0);
+                    $wrapper.toggleClass(options.scrollableXClass + '-r', x > minX);
+                    $wrapper.toggleClass(options.scrollableYClass + '-u', y < 0);
+                    $wrapper.toggleClass(options.scrollableYClass + '-d', y > minY);
 
                     if (($current && $current !== $wrapper) || x < minX || y < minY) {
                         cancelScroll && cancelScroll();
