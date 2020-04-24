@@ -570,8 +570,8 @@
                     if ($content[0]) {
                         var r0 = $wrapper[0].getBoundingClientRect();
                         var r1 = $content[0].getBoundingClientRect();
-                        leadingX = r1.left - r0.left - x - parseFloat($wrapper.css('padding-left'));
-                        leadingY = r1.top - r0.top - y - parseFloat($wrapper.css('padding-top'));
+                        leadingX = r1.left - r0.left - x;
+                        leadingY = r1.top - r0.top - y;
                     }
                     contentSize = $.extend({
                         width: 0,
@@ -585,8 +585,8 @@
                         x: (wrapperSize.width - leadingX) / contentSize.width * 100 || 0,
                         y: (wrapperSize.height - leadingY) / contentSize.height * 100 || 0
                     };
-                    minX = options.hScroll ? m.min(0, mround(wrapperSize.width - leadingX - contentSize.width)) : 0;
-                    minY = options.vScroll ? m.min(0, mround(wrapperSize.height - leadingY - contentSize.height)) : 0;
+                    minX = options.hScroll ? m.min(0, mround(wrapperSize.width - contentSize.width - leadingX + parseFloat($wrapper.css('padding-left')))) : 0;
+                    minY = options.vScroll ? m.min(0, mround(wrapperSize.height - contentSize.height - leadingY + parseFloat($wrapper.css('padding-top')))) : 0;
                     if ($hScrollbar) {
                         $hScrollbar.toggle(enabled && minX < 0);
                     }
