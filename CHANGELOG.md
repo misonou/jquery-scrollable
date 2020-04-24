@@ -1,3 +1,14 @@
+## v1.3.4 / 2020-04-25
+
+- Fix: handling of `wheel` events
+- Fix: CSS classes are not propertly updated after refresh
+- Fix: scroller remain in incorrect position after content element is changed
+- Fix: restore scroll offsets after content element is changed
+- Fix: set `touch-action` to `none` for better compability
+- Fix: scrollToElement calculation when there is sticky headers
+- Fix: scrolling animation does not stopped when `stop()` is called
+- Fix: maximum scroll offset calculation
+
 ## v1.3.3 / 2019-03-26
 
 - Fix: suppress intervention error in Chrome
