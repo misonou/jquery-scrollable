@@ -837,7 +837,7 @@
 
                 $wrapper.addClass(options.scrollingClass);
             };
-            var timeout;
+            var wheelState;
             handlers[EV_WHEEL] = function (e) {
                 var ev = e.originalEvent,
                     wheelDeltaX = 0,
@@ -870,14 +870,47 @@
                 if ((!options.vScroll || !minY) && !wheelDeltaX) {
                     wheelDeltaX = wheelDeltaY;
                 }
+                wheelDeltaX *= options.hScroll;
+                wheelDeltaY *= options.vScroll;
                 refresh();
 
-                var newPos = normalizePosition(x + (wheelDeltaX * options.hScroll), y + (wheelDeltaY * options.vScroll));
-                if (newPos.x !== x || newPos.y !== y) {
-                    timeout = timeout || setTimeout(function () {
-                        timeout = null;
-                        scrollTo(newPos.x, newPos.y, 200);
-                    });
+                var timestamp = e.timeStamp;
+                var startX = x;
+                var startY = y;
+                if (!wheelState || timestamp - wheelState.timestamp > 100) {
+                    wheelState = {
+                        startX: startX,
+                        startY: startY
+                    }
+                    cancelScroll = function () {
+                        clearTimeout(wheelState.timeout);
+                        wheelState.cancelled = true;
+                        cancelScroll = null;
+                        cancelAnim && cancelAnim();
+                        fireEvent('scrollStop', startX, startY);
+                        fireEvent('scrollEnd', startX, startY);
+                    }
+                } else {
+                  startX = wheelState.startX;
+                  startY = wheelState.startY;
+                }
+                wheelState.timestamp = timestamp;
+                if (wheelState.cancelled) {
+                    return;
+                }
+                var newPos = normalizePosition(x + wheelDeltaX, y + wheelDeltaY);
+                var newX = newPos.x;
+                var newY = newPos.y;
+                if (newX !== x || newY !== y) {
+                    clearTimeout(wheelState.timeout);
+                    wheelState.timeout = setTimeout(function () {
+                        fireEvent('scrollStop', startX, startY);
+                        fireEvent('scrollEnd', startX, startY);
+                        wheelState = null;
+                        cancelScroll = null;
+                    }, 200);
+                    fireEvent('scrollMove', startX, startY, newX, newY, wheelDeltaX, wheelDeltaY);
+                    setPosition(newX, newY);
                     if ((minX < 0 || minY < 0) && e.cancelable) {
                         e.preventDefault();
                     }
