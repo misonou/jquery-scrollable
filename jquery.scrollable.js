@@ -547,6 +547,11 @@
                         var content = $(options.content, $wrapper)[0];
                         if (content) {
                             if (content !== $content[0]) {
+                                cancelScroll && cancelScroll();
+                                if ($content[0]) {
+                                    $content[0].scrollableOffsetX = x;
+                                    $content[0].scrollableOffsetY = y;
+                                }
                                 array.splice.call($content, 0, 1, content);
                                 if ($content.css('position') === 'static') {
                                     $content.css('position', 'relative');
@@ -554,8 +559,8 @@
                                 if ($content.css('z-index') === 'auto') {
                                     $content.css('z-index', 0);
                                 }
-                                x = 0;
-                                y = 0;
+                                x = content.scrollableOffsetX || 0;
+                                y = content.scrollableOffsetY || 0;
                             }
                             var $curSticky = $($sticky);
                             $sticky = $(options.sticky, content).map(function (i, v) {
