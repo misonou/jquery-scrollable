@@ -313,7 +313,8 @@
                 contentSize,
                 wrapperSize,
                 scrollbarSize,
-                animFrameId;
+                cancelScroll,
+                cancelAnim;
 
             function fireEvent(type, startX, startY, newX, newY, deltaX, deltaY) {
                 if (typeof options[type] === 'function') {
@@ -483,7 +484,7 @@
 
             function scrollTo(newX, newY, duration, callback) {
                 // stop any running animation
-                cancelFrame(animFrameId);
+                cancelAnim && cancelAnim();
                 stopX = newX;
                 stopY = newY;
 
@@ -502,6 +503,7 @@
                     var elapsed = new Date() - startTime;
 
                     if (elapsed >= duration) {
+                        cancelAnim = null;
                         setPosition(newX, newY);
                         fireEvent('scrollEnd', startX, startY, newX, newY);
                         if (typeof callback === 'function') {
@@ -517,7 +519,15 @@
 
                     setPosition(stepX, stepY);
                     fireEvent('scrollMove', startX, startY, stepX, stepY, stepX - x, stepY - y);
-                    animFrameId = nextFrame(animate);
+                    var id = nextFrame(animate);
+                    cancelAnim = function () {
+                        cancelFrame(id);
+                        cancelAnim = null;
+                        fireEvent('scrollEnd', startX, startY, x, y);
+                        if (typeof callback === 'function') {
+                            callback();
+                        }
+                    }
                 }
                 fireEvent('scrollStart', startX, startY);
                 animate();
@@ -797,12 +807,17 @@
                 }
 
                 // stop any running animation
-                cancelFrame(animFrameId);
+                cancelAnim && cancelAnim()
 
                 bindedHandler[EV_MOVE] = handleMove;
                 bindedHandler[EV_END] = handleStop;
                 bindedHandler[EV_CANCEL] = handleStop;
                 $(document).bind(bindedHandler);
+                cancelScroll = function () {
+                    cancelScroll = null;
+                    cancelAnim && cancelAnim();
+                    handleStop();
+                }
 
                 // trick to let IE fire mousemove event when pointer moves outside the window
                 // and to prevent IE from selecting or dragging elements (e.preventDefault() does not work!)
@@ -949,7 +964,7 @@
                     };
                 },
                 stop: function () {
-                    cancelFrame(animFrameId);
+                    cancelScroll && cancelScroll();
                     stopX = x;
                     stopY = y;
                 },
