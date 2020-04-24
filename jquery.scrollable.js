@@ -601,7 +601,8 @@
                     $wrapper.toggleClass(options.scrollableXClass, minX < 0);
                     $wrapper.toggleClass(options.scrollableYClass, minY < 0);
 
-                    if ($current !== $wrapper) {
+                    if (($current && $current !== $wrapper) || x < minX || y < minY) {
+                        cancelScroll && cancelScroll();
                         var newPos = normalizePosition(x, y);
                         setPosition(newPos.x, newPos.y);
                     }
