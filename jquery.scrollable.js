@@ -826,7 +826,7 @@
                 cancelScroll = function () {
                     cancelScroll = null;
                     cancelAnim && cancelAnim();
-                    handleStop();
+                    handleStop({});
                 }
 
                 // trick to let IE fire mousemove event when pointer moves outside the window
