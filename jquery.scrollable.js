@@ -622,6 +622,9 @@
                     }
                     return;
                 }
+                if ($(e.target).is(':text')) {
+                    return;
+                }
                 refresh();
 
                 var point = getEventPosition(e),
