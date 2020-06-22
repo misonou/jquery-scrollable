@@ -56,8 +56,9 @@
         isPlaybook = /playbook/gi.test(navigator.appVersion),
         isTouchPad = /hp-tablet/gi.test(navigator.appVersion),
 
+        root = document.documentElement,
         hasTouch = window.ontouchstart !== undefined && !isTouchPad,
-        hasTransform = document.documentElement.style[vendor + 'Transform'] !== undefined,
+        hasTransform = root.style[vendor + 'Transform'] !== undefined,
         hasTransform3d = window.WebKitCSSMatrix && (new window.WebKitCSSMatrix()).m11 !== undefined,
 
         // value helpers
@@ -89,6 +90,7 @@
 
         // blocking layer to prevent click event after scrolling
         $blockLayer = $('<div style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:9999;background:white;opacity:0;filter:alpha(opacity=0);"></div>'),
+        $originDiv = $('<div style="position:fixed;top:0;left:0;">')[0],
         $activated = $(),
         $current,
         DATA_ID = 'xScrollable',
@@ -140,11 +142,54 @@
         };
     }
 
+    function Rect(l, t, r, b) {
+        var self = this;
+        self.left = l;
+        self.top = t;
+        self.right = r;
+        self.bottom = b;
+        self.width = self.right - self.left;
+        self.height = self.bottom - self.top;
+    }
+
+    function toPlainRect(l, t, r, b) {
+        function clip(v) {
+            // IE provides precision up to 0.05 but with floating point errors that hinder comparisons
+            return mround(v * 1000) / 1000;
+        }
+        if (l.top !== undefined) {
+            return new Rect(clip(l.left), clip(l.top), clip(l.right), clip(l.bottom));
+        }
+        if (r === undefined) {
+            return new Rect(l, t, l, t);
+        }
+        return new Rect(l, t, r, b);
+    }
+
+    function getRect(elm) {
+        var rect;
+        if (elm === root || elm === window) {
+            if (!document.body.contains($originDiv[0])) {
+                document.body.appendChild($originDiv[0]);
+            }
+            // origin used by CSS, DOMRect and properties like clientX/Y may move away from the top-left corner of the window
+            // when virtual keyboard is shown on mobile devices
+            var o = getRect($originDiv[0]);
+            rect = toPlainRect(0, 0, root.offsetWidth, root.offsetHeight).translate(o.left, o.top);
+        } else if (!root.contains(elm)) {
+            // IE10 throws Unspecified Error for detached elements
+            rect = toPlainRect(0, 0, 0, 0);
+        } else {
+            rect = toPlainRect(elm.getBoundingClientRect());
+        }
+        return rect;
+    }
+
     function getDimension($elm) {
         if ($elm[0]) {
             if (window.getComputedStyle) {
                 var style = window.getComputedStyle($elm[0]);
-                var rect = $elm[0].getBoundingClientRect();
+                var rect = getRect($elm[0]);
                 return {
                     width: (rect.right - rect.left) - (parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) + parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth)),
                     height: (rect.bottom - rect.top) - (parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth))
@@ -160,7 +205,7 @@
 
     function getOuterDimension($elm) {
         if ($elm[0]) {
-            var rect = $elm[0].getBoundingClientRect();
+            var rect = getRect($elm[0]);
             return {
                 width: rect.width,
                 height: rect.height
@@ -230,7 +275,7 @@
             return this;
         }
 
-        var options = {
+        var batchOptions = {
             content: '>:visible:eq(0)',
             cancel: '',
             getWrapperDimension: getDimension,
@@ -261,6 +306,10 @@
             glow: createGlow,
             glowClass: '',
             glowStyle: {},
+            pageItem: '',
+            pageItemAlign: 'center',
+            pageDirection: 'y',
+            snapToPage: false,
             sticky: '',
             stickyHandle: '',
             stickyToBottom: false,
@@ -271,32 +320,34 @@
             scrollStop: null,
             scrollEnd: null
         };
-        $.extend(options, optionOverrides);
+        $.extend(batchOptions, optionOverrides);
 
         // normalize options
-        $.extend(options.scrollbarTrackStyle, {
-            bottom: px(options.scrollbarInset),
-            right: px(options.scrollbarInset)
+        $.extend(batchOptions.scrollbarTrackStyle, {
+            bottom: px(batchOptions.scrollbarInset),
+            right: px(batchOptions.scrollbarInset)
         });
-        $.extend(options.scrollbarStyle, {
+        $.extend(batchOptions.scrollbarStyle, {
             bottom: 0,
             right: 0,
-            minWidth: px(options.scrollbarSize),
-            minHeight: px(options.scrollbarSize)
+            minWidth: px(batchOptions.scrollbarSize),
+            minHeight: px(batchOptions.scrollbarSize)
         });
-        options.hBounce = options.bounce && options.hBounce;
-        options.vBounce = options.bounce && options.vBounce;
-        if (options.handle === 'auto') {
-            options.handle = hasTouch ? 'content' : 'scrollbar';
+        batchOptions.hBounce = batchOptions.bounce && batchOptions.hBounce;
+        batchOptions.vBounce = batchOptions.bounce && batchOptions.vBounce;
+        if (batchOptions.handle === 'auto') {
+            batchOptions.handle = hasTouch ? 'content' : 'scrollbar';
         }
 
         // add selected elements to the collection
         $activated = $activated.add(this);
 
         return this.each(function () {
-            var $wrapper = $(this),
+            var options = $.extend(true, {}, batchOptions),
+                $wrapper = $(this),
                 $content = $(),
                 $sticky = $(),
+                $pageItems = $(),
                 $hScrollbar = options.scrollbar && options.hScroll && $(options.scrollbar($wrapper, 'x', options)),
                 $vScrollbar = options.scrollbar && options.vScroll && $(options.scrollbar($wrapper, 'y', options)),
                 $hGlow = options.glow && options.hGlow && $(options.glow($wrapper, 'x', options)).hide(),
@@ -316,9 +367,39 @@
                 cancelScroll,
                 cancelAnim;
 
+            function getPageIndex(offset) {
+                var props = options.pageDirection === 'x' ? ['left', 'right', 'width'] : ['top', 'bottom', 'height'];
+                var count = $pageItems.length;
+                var rect = getRect($wrapper[0]);
+                rect[props[0]] -= offset || 0;
+                rect[props[1]] -= offset || 0;
+
+                var alignFn = function (i, rect) {
+                    return (rect[props[0]] * ((count - i) / count) + rect[props[1]] * (i / count));
+                };
+                var center = (rect[props[0]] + rect[props[1]]) / 2;
+                var dist = Infinity;
+                var newIndex;
+                $pageItems.each(function (i, v) {
+                    var r = getRect(v);
+                    if ((r[props[2]] | 0) > (rect[props[2]] | 0)) {
+                        if ((r[props[0]] < center && r[props[1]] > rect[props[1]]) || (r[props[0]] < 0 && r[props[1]] > center)) {
+                            dist = 0;
+                            newIndex = i;
+                        }
+                    }
+                    var d = m.abs(alignFn(i, r) - alignFn(i, rect));
+                    if (d < dist) {
+                        dist = d;
+                        newIndex = i;
+                    }
+                });
+                return newIndex;
+            }
+
             function fireEvent(type, startX, startY, newX, newY, deltaX, deltaY) {
                 if (typeof options[type] === 'function') {
-                    options[type].call($wrapper[0], {
+                    var args = {
                         type: type,
                         startX: -startX,
                         startY: -startY,
@@ -327,16 +408,80 @@
                         deltaX: -deltaX || 0,
                         deltaY: -deltaY || 0,
                         percentX: ((newX === undefined ? x : newX) / minX) * 100 || 0,
-                        percentY: ((newY === undefined ? y : newY) / minY) * 100 || 0
-                    });
+                        percentY: ((newY === undefined ? y : newY) / minY) * 100 || 0,
+                        pageIndex: -1,
+                        pageItem: null
+                    };
+                    if (options.pageItem) {
+                        args.pageIndex = getPageIndex();
+                        args.pageItem = $pageItems[args.pageIndex];
+                    }
+                    options[type].call($wrapper[0], args);
                 }
             }
 
-            function normalizePosition(x, y) {
-                return {
-                    x: (x > 0 ? 0 : x < minX ? minX : mround(x)),
-                    y: (y > 0 ? 0 : y < minY ? minY : mround(y))
+            function normalizePosition(newX, newY, forcePageChange) {
+                var normalizaInternal = function (newX, newY) {
+                    return {
+                        x: (newX > 0 ? 0 : newX < minX ? minX : mround(newX)),
+                        y: (newY > 0 ? 0 : newY < minY ? minY : mround(newY))
+                    }
                 };
+                var newPos = normalizaInternal(newX, newY);
+                if (options.pageItem && options.snapToPage) {
+                    var align = options.pageItemAlign;
+                    var dir = options.pageDirection;
+                    var props = dir === 'x' ? ['left', 'right', 'width'] : ['top', 'bottom', 'height'];
+                    var oldPos = {
+                        x: x, 
+                        y: y
+                    };
+                    if (newPos[dir] !== oldPos[dir]) {
+                        var itemCount = $pageItems.length;
+                        var curIndex = getPageIndex();
+                        var newIndex = getPageIndex(newPos[dir] - oldPos[dir]);
+                        var r0 = getRect($wrapper[0]);
+                        var r1;
+                        if (forcePageChange && newIndex === curIndex && (newPos[dir] < oldPos[dir] ? curIndex < itemCount - 1 : curIndex > 0)) {
+                            r1 = getRect($pageItems[curIndex]);
+                            if (r1[props[2]] < r0[props[2]] || (newPos[dir] < oldPos[dir] ? mround(r1[props[1]]) <= r0[props[1]] : m.ceil(r1[props[0]]) >= r0[props[0]])) {
+                                newIndex += newPos[dir] < oldPos[dir] ? 1 : -1;
+                            }
+                        }
+                        r1 = getRect($pageItems[newIndex]);
+
+                        var alignProp = props[2];
+                        if (r1[props[2]] > r0[props[2]]) {
+                            alignProp = (newPos[dir] < oldPos[dir]) ^ (curIndex === newIndex) ? props[0] : props[1];
+                        } else if (align === props[0] || align === props[1]) {
+                            alignProp = align;
+                        }
+                        var snapPos;
+                        var snapped;
+                        switch(alignProp) {
+                            case props[0]:
+                                snapPos = r1[props[0]];
+                                break;
+                            case props[1]:
+                                snapPos = r1[props[1]] - r0[props[2]];
+                                break;
+                            default:
+                                snapPos = (r1[props[0]] + r1[props[1]] - r0[props[2]]) / 2;
+                                break;
+                        }
+                        snapPos = mround(oldPos[dir] + r0[props[0]] - snapPos);
+                        if (newIndex === curIndex) {
+                            newPos[dir] = m[newPos[dir] < oldPos[dir] ? 'max' : 'min'](snapPos, newPos[dir]);
+                            snapped = newPos[dir] === snapPos;
+                        } else {
+                            newPos[dir] = snapPos;
+                            snapped = true;
+                        }
+                        newPos = normalizaInternal(newPos.x, newPos.y);
+                        newPos.pageChanged = snapped;
+                    }
+                }
+                return newPos;
             }
 
             function setGlow(pressureX, pressureY) {
@@ -450,13 +595,13 @@
                 $wrapper.toggleClass(options.scrollableYClass + '-u', y < 0);
                 $wrapper.toggleClass(options.scrollableYClass + '-d', y > minY);
 
-                var r0 = $wrapper[0].getBoundingClientRect();
+                var r0 = getRect($wrapper[0]);
                 var leadingYPad = leadingY + parseFloat($wrapper.css('padding-top'));
                 $sticky.each(function (i, v) {
                     var target = $(v).data(DATA_ID_STICKY);
                     if (document.body.contains(target) && document.body.contains(v)) {
-                        var r1 = target.getBoundingClientRect();
-                        var r2 = v.getBoundingClientRect();
+                        var r1 = getRect(target);
+                        var r2 = getRect(v);
 
                         $(v).css('font-size', $(target).css('font-size'));
                         if (options.stickyToBottom && (r1.top > r0.bottom - r2.height)) {
@@ -484,7 +629,9 @@
 
             function scrollTo(newX, newY, duration, callback) {
                 // stop any running animation
-                cancelAnim && cancelAnim();
+                if (cancelAnim) {
+                    cancelAnim();
+                }
                 stopX = newX;
                 stopY = newY;
 
@@ -527,7 +674,7 @@
                         if (typeof callback === 'function') {
                             callback();
                         }
-                    }
+                    };
                 }
                 fireEvent('scrollStart', startX, startY);
                 animate();
@@ -547,7 +694,9 @@
                         var content = $(options.content, $wrapper)[0];
                         if (content) {
                             if (content !== $content[0]) {
-                                cancelScroll && cancelScroll();
+                                if (cancelScroll) {
+                                    cancelScroll();
+                                }
                                 if ($content[0]) {
                                     $content[0].scrollableOffsetX = x;
                                     $content[0].scrollableOffsetY = y;
@@ -570,11 +719,12 @@
                             });
                             $curSticky.not($sticky).remove();
                             $sticky.appendTo($wrapper);
+                            $pageItems = options.pageItem ? $(options.pageItem, content) : $();
                         }
                     }
                     if ($content[0]) {
-                        var r0 = $wrapper[0].getBoundingClientRect();
-                        var r1 = $content[0].getBoundingClientRect();
+                        var r0 = getRect($wrapper[0]);
+                        var r1 = getRect($content[0]);
                         leadingX = r1.left - r0.left - x;
                         leadingY = r1.top - r0.top - y;
                     }
@@ -606,7 +756,9 @@
                     $wrapper.toggleClass(options.scrollableYClass + '-d', y > minY);
 
                     if (($current && $current !== $wrapper) || x < minX || y < minY) {
-                        cancelScroll && cancelScroll();
+                        if (cancelScroll) {
+                            cancelScroll();
+                        }
                         var newPos = normalizePosition(x, y);
                         setPosition(newPos.x, newPos.y);
                     }
@@ -640,6 +792,7 @@
                     eventTarget = e.target,
                     bindedHandler = {},
                     contentScrolled = false,
+                    snappedToPage = false,
                     scrollbarMode,
                     factor = 1,
                     isDirY;
@@ -670,8 +823,13 @@
                     scrollTo(newPos.x, newPos.y, options.bounceDuration, callback);
                 }
 
+                function handleEnd() {
+                    fireEvent('scrollEnd', startX, startY);
+                    $wrapper.removeClass(options.scrollingClass);
+                }
+
                 function handleMove(e) {
-                    if ($current && $current !== $wrapper) {
+                    if ($current && $current !== $wrapper || snappedToPage) {
                         return;
                     }
                     var point = getEventPosition(e),
@@ -761,6 +919,17 @@
                         }
                     }
 
+                    if (options.pageItem && options.snapToPage) {
+                        var p = normalizePosition(newX, newY, true);
+                        newX = p.x;
+                        newY = p.y;
+                        if (p.pageChanged) {
+                            scrollTo(newX, newY, options.bounceDuration, handleEnd);
+                            snappedToPage = true;
+                            return;
+                        }
+                    }
+
                     fireEvent('touchMove', startX, startY, newX, newY, touchDeltaX, touchDeltaY);
                     if (newX !== x || newY !== y) {
                         fireEvent('scrollMove', startX, startY, newX, newY, deltaX, deltaY);
@@ -799,6 +968,9 @@
                         if ($vGlow) {
                             $vGlow.fadeOut();
                         }
+                        if (snappedToPage) {
+                            return;
+                        }
 
                         var duration = (+new Date()) - startTime,
                             momentumX = zeroMomentum,
@@ -809,10 +981,7 @@
                             momentumY = calculateMomentum(y - startY, duration, y > startY ? -y : y - minY, options.bounce && wrapperSize.height);
                         }
                         scrollTo(x + momentumX.dist, y + momentumY.dist, m.max(momentumX.time, momentumY.time), function () {
-                            bounceBack(function () {
-                                fireEvent('scrollEnd', startX, startY);
-                                $wrapper.removeClass(options.scrollingClass);
-                            });
+                            bounceBack(handleEnd);
                         });
                     } else {
                         $wrapper.removeClass(options.scrollingClass);
@@ -820,7 +989,9 @@
                 }
 
                 // stop any running animation
-                cancelAnim && cancelAnim()
+                if (cancelAnim) {
+                    cancelAnim();
+                }
 
                 bindedHandler[EV_MOVE] = handleMove;
                 bindedHandler[EV_END] = handleStop;
@@ -828,9 +999,11 @@
                 $(document).bind(bindedHandler);
                 cancelScroll = function () {
                     cancelScroll = null;
-                    cancelAnim && cancelAnim();
+                    if (cancelAnim) {
+                        cancelAnim();
+                    }
                     handleStop({});
-                }
+                };
 
                 // trick to let IE fire mousemove event when pointer moves outside the window
                 // and to prevent IE from selecting or dragging elements (e.preventDefault() does not work!)
@@ -884,15 +1057,17 @@
                     wheelState = {
                         startX: startX,
                         startY: startY
-                    }
+                    };
                     cancelScroll = function () {
                         clearTimeout(wheelState.timeout);
                         wheelState.cancelled = true;
                         cancelScroll = null;
-                        cancelAnim && cancelAnim();
+                        if (cancelAnim) {
+                            cancelAnim();
+                        }
                         fireEvent('scrollStop', startX, startY);
                         fireEvent('scrollEnd', startX, startY);
-                    }
+                    };
                 } else {
                   startX = wheelState.startX;
                   startY = wheelState.startY;
@@ -901,21 +1076,26 @@
                 if (wheelState.cancelled) {
                     return;
                 }
-                var newPos = normalizePosition(x + wheelDeltaX, y + wheelDeltaY);
+                var newPos = normalizePosition(x + wheelDeltaX, y + wheelDeltaY, true);
                 var newX = newPos.x;
                 var newY = newPos.y;
                 if (newX !== x || newY !== y) {
-                    clearTimeout(wheelState.timeout);
-                    wheelState.timeout = setTimeout(function () {
+                    var handleEnd = function () {
                         fireEvent('scrollStop', startX, startY);
                         fireEvent('scrollEnd', startX, startY);
                         wheelState = null;
                         cancelScroll = null;
-                    }, 200);
-                    fireEvent('scrollMove', startX, startY, newX, newY, wheelDeltaX, wheelDeltaY);
-                    setPosition(newX, newY);
-                    if ((minX < 0 || minY < 0) && e.cancelable) {
-                        e.preventDefault();
+                    };
+                    if (newPos.pageChanged) {
+                        scrollTo(newX, newY, options.bounceDuration, handleEnd);
+                    } else {
+                        clearTimeout(wheelState.timeout);
+                        wheelState.timeout = setTimeout(handleEnd, 200);
+                        fireEvent('scrollMove', startX, startY, newX, newY, wheelDeltaX, wheelDeltaY);
+                        setPosition(newX, newY);
+                        if ((minX < 0 || minY < 0) && e.cancelable) {
+                            e.preventDefault();
+                        }
                     }
                     e.stopPropagation();
                 }
@@ -954,7 +1134,7 @@
             function preventPullToRefresh(container) {
                 var prevent = false;
                 container.addEventListener('touchstart', function (e) {
-                    prevent = e.touches.length === 1 && (window.pageYOffset || document.body.scrollTop || document.documentElement.scrollTop) === 0;
+                    prevent = e.touches.length === 1 && (window.pageYOffset || document.body.scrollTop || root.scrollTop) === 0;
                 });
                 container.addEventListener('touchmove', function (e) {
                     if (prevent) {
@@ -998,6 +1178,10 @@
                         enabled = false;
                     }
                 },
+                setOptions: function (values) {
+                    $.extend(options, values);
+                    refresh(true);
+                },
                 refresh: function () {
                     refresh(true);
                 },
@@ -1010,7 +1194,9 @@
                     };
                 },
                 stop: function () {
-                    cancelScroll && cancelScroll();
+                    if (cancelScroll) {
+                        cancelScroll();
+                    }
                     stopX = x;
                     stopY = y;
                 },
@@ -1035,13 +1221,13 @@
                         refresh();
                         var oriE = parseOrigin(targetOrigin);
                         var oriW = parseOrigin(wrapperOrigin);
-                        var posE = target.getBoundingClientRect();
-                        var posW = $wrapper[0].getBoundingClientRect();
+                        var posE = getRect(target);
+                        var posW = getRect($wrapper[0]);
                         var newX = posE.left * (1 - oriE.percentX) + posE.right * oriE.percentX + oriE.offsetX - posW.left - wrapperSize.width * oriW.percentX - oriW.offsetX - x - leadingX;
                         var newY = posE.top * (1 - oriE.percentY) + posE.bottom * oriE.percentY + oriE.offsetY - posW.top - wrapperSize.height * oriW.percentY - oriW.offsetY - y - leadingY;
                         $sticky.each(function (i, v) {
                             if ($.contains($(v).data(DATA_ID_STICKY), target)) {
-                                newY -= v.getBoundingClientRect().height;
+                                newY -= getRect(v).height;
                             }
                         });
                         scrollToPreNormalized(newX, newY, duration || wrapperOrigin, callback || duration);
