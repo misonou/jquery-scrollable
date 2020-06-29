@@ -308,7 +308,7 @@
             glowStyle: {},
             pageItem: '',
             pageItemAlign: 'center',
-            pageDirection: 'y',
+            pageDirection: 'auto',
             snapToPage: false,
             sticky: '',
             stickyHandle: '',
@@ -361,6 +361,7 @@
                 stopY,
                 minX,
                 minY,
+                pageDirection,
                 contentSize,
                 wrapperSize,
                 scrollbarSize,
@@ -368,7 +369,7 @@
                 cancelAnim;
 
             function getPageIndex(offset) {
-                var props = options.pageDirection === 'x' ? ['left', 'right', 'width'] : ['top', 'bottom', 'height'];
+                var props = pageDirection === 'x' ? ['left', 'right', 'width'] : ['top', 'bottom', 'height'];
                 var count = $pageItems.length;
                 var rect = getRect($wrapper[0]);
                 rect[props[0]] -= offset || 0;
@@ -430,7 +431,7 @@
                 var newPos = normalizaInternal(newX, newY);
                 if (options.pageItem && options.snapToPage) {
                     var align = options.pageItemAlign;
-                    var dir = options.pageDirection;
+                    var dir = pageDirection;
                     var props = dir === 'x' ? ['left', 'right', 'width'] : ['top', 'bottom', 'height'];
                     var oldPos = {
                         x: x, 
@@ -742,6 +743,7 @@
                     };
                     minX = options.hScroll ? m.min(0, mround(wrapperSize.width - contentSize.width - leadingX + parseFloat($wrapper.css('padding-left')))) : 0;
                     minY = options.vScroll ? m.min(0, mround(wrapperSize.height - contentSize.height - leadingY + parseFloat($wrapper.css('padding-top')))) : 0;
+                    pageDirection = options.pageDirection === 'x' || options.pageDirection === 'y' ? options.pageDirection : minY ? 'y' : 'x';
                     if ($hScrollbar) {
                         $hScrollbar.toggle(enabled && minX < 0);
                     }
@@ -980,7 +982,14 @@
                             momentumX = calculateMomentum(x - startX, duration, x > startX ? -x : x - minX, options.bounce && wrapperSize.width);
                             momentumY = calculateMomentum(y - startY, duration, y > startY ? -y : y - minY, options.bounce && wrapperSize.height);
                         }
-                        scrollTo(x + momentumX.dist, y + momentumY.dist, m.max(momentumX.time, momentumY.time), function () {
+                        var newX = x + momentumX.dist,
+                            newY = y + momentumY.dist;
+                        if (options.pageItem && options.snapToPage) {
+                            var p = normalizePosition(newX, newY, true);
+                            newX = p.x;
+                            newY = p.y;
+                        }
+                        scrollTo(newX, newY, m.max(momentumX.time, momentumY.time), function () {
                             bounceBack(handleEnd);
                         });
                     } else {
