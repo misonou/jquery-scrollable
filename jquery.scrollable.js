@@ -1090,11 +1090,13 @@
                 var newY = newPos.y;
                 if (newX !== x || newY !== y) {
                     var handleEnd = function () {
+                        $wrapper.removeClass(options.scrollingClass);
                         fireEvent('scrollStop', startX, startY);
                         fireEvent('scrollEnd', startX, startY);
                         wheelState = null;
                         cancelScroll = null;
                     };
+                    $wrapper.addClass(options.scrollingClass);
                     if (newPos.pageChanged) {
                         scrollTo(newX, newY, options.bounceDuration, handleEnd);
                     } else {
