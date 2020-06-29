@@ -102,6 +102,21 @@ Below is an exhaustive list of options, with the default value shown.
     // CSS styles applied to the glowing effect element
     glowStyle: {},
 
+    // CSS selector specifying pages of scrolled content
+    // this will enable `pageItem` and `pageIndex` properties during scrollMove event
+    pageItem: '',
+
+    // specify how a page is aligned when the page size is smaller the container size
+    // possible values are 'center', 'left', 'top', 'bottom', and 'right'
+    pageItemAlign: 'center',
+
+    // specify content is paged horizontally or vertically
+    // possible values are 'auto', 'x', and 'y'
+    pageDirection: 'auto',
+
+    // specify whether it should align page to the container (i.e. never cross-page)
+    snapToPage: false,
+    
     // CSS selector specifying sections of content of which sticky header will be shown for
     sticky: '',
 
@@ -135,6 +150,15 @@ Below is an exhaustive list of options, with the default value shown.
 ## Methods
 
 All methods are called by jQuery plugin convention.
+
+### setOptions
+
+```javascript
+$elm.scrollable('setOptions', options)
+```
+
+Update options for a particular scoller.
+
 
 ### scrollTo
 
@@ -261,7 +285,8 @@ For `touchMove` and `scrollMove` event, the following properties are available o
 - `percentY`: current vertical position in percentage to the content height
 - `deltaX`: different of horizontal position between this and the last `touchMove` or `scrollMove` event
 - `deltaY`: different of vertical position between this and the last `touchMove` or `scrollMove` event
-
+- `pageIndex`: current index if paging is turned on by `pageItem` option
+- `pageItem`: current element if paging is turned on by `pageItem` option
 
 ### touchMove
 

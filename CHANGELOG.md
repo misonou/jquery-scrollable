@@ -1,3 +1,9 @@
+## v1.4.0 / 2020-06-29
+
+- Add `setOptions` method
+- Add `pageItem`, `snapToPage` and related options
+- Fix: scrolling indication CSS class (`options.scrollingClass`) not added when scrolling by mouse wheel
+
 ## v1.3.4 / 2020-04-25
 
 - Fix: handling of `wheel` events
