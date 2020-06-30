@@ -426,7 +426,7 @@
                     return {
                         x: (newX > 0 ? 0 : newX < minX ? minX : mround(newX)),
                         y: (newY > 0 ? 0 : newY < minY ? minY : mround(newY))
-                    }
+                    };
                 };
                 var newPos = normalizaInternal(newX, newY);
                 if (options.pageItem && options.snapToPage) {
@@ -723,9 +723,10 @@
                             $pageItems = options.pageItem ? $(options.pageItem, content) : $();
                         }
                     }
+                    var r0, r1;
                     if ($content[0]) {
-                        var r0 = getRect($wrapper[0]);
-                        var r1 = getRect($content[0]);
+                        r0 = getRect($wrapper[0]);
+                        r1 = getRect($content[0]);
                         leadingX = r1.left - r0.left - x;
                         leadingY = r1.top - r0.top - y;
                     }
@@ -743,7 +744,16 @@
                     };
                     minX = options.hScroll ? m.min(0, mround(wrapperSize.width - contentSize.width - leadingX + parseFloat($wrapper.css('padding-left')))) : 0;
                     minY = options.vScroll ? m.min(0, mround(wrapperSize.height - contentSize.height - leadingY + parseFloat($wrapper.css('padding-top')))) : 0;
-                    pageDirection = options.pageDirection === 'x' || options.pageDirection === 'y' ? options.pageDirection : minY ? 'y' : 'x';
+                    if (options.pageDirection === 'x' || options.pageDirection === 'y' ) {
+                        pageDirection = options.pageDirection;
+                    } else if (minX && minY && $pageItems[1]) {
+                        r0 = getRect($pageItems[0]);
+                        r1 = getRect($pageItems[1]);
+                        var centerX = (r1.left + r1.right) / 2;
+                        pageDirection = centerX > r0.right || centerX < r0.left ? 'x' : 'y';
+                    } else {
+                        pageDirection = minY ? 'y' : 'x';
+                    }
                     if ($hScrollbar) {
                         $hScrollbar.toggle(enabled && minX < 0);
                     }
