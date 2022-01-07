@@ -1,3 +1,7 @@
+## v1.4.1 / 2022-01-07
+
+- Fix: `pageDirection` detection
+
 ## v1.4.0 / 2020-06-29
 
 - Add `setOptions` method
