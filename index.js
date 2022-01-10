@@ -25,8 +25,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
-(function ($, window, m, array) {
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        define('jquery-scrollable', ['jquery'], factory);
+    } else if (typeof module === 'object' && module.exports) {
+        module.exports = factory(require('jquery'));
+    } else {
+        factory(jQuery);
+    }
+}(this, /** @type {($: JQueryStatic) => void} */ function ($) {
     'use strict';
 
     var zeroMomentum = {
@@ -47,6 +54,8 @@
         mround = function (r) {
             return r >> 0;
         },
+        array = Array.prototype,
+        m = Math,
 
         vendor = /webkit/i.test(navigator.appVersion) ? 'webkit' : /firefox/i.test(navigator.userAgent) ? 'Moz' : /trident/i.test(navigator.userAgent) ? 'ms' : window.opera ? 'O' : '',
 
@@ -1279,4 +1288,4 @@
         }
     } catch (e) {}
 
-}(jQuery, window, Math, []));
+}));

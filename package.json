@@ -1,7 +1,13 @@
 {
   "name": "jq-scrollable",
   "version": "1.4.1",
-  "devDependencies": {},
+  "main": "index.js",
+  "dependencies": {
+    "jquery": "^3.5.1"
+  },
+  "devDependencies": {
+    "uglify-js": "^3.12.5"
+  },
   "author": "misonou",
   "license": "MIT",
   "repository": {
@@ -9,5 +15,8 @@
     "url": "git+https://github.com/misonou/jquery-scrollable.git"
   },
   "homepage": "https://github.com/misonou/jquery-scrollable",
-  "scripts": {}
+  "scripts": {
+    "build": "node -e \"require('fs').copyFileSync('index.js', 'dist/jquery.scrollable.js')\" && uglifyjs -c -m --source-map -o dist/jquery.scrollable.min.js -- index.js",
+    "version": "npm run build && git add -A dist"
+  }
 }
