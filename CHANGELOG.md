@@ -1,3 +1,12 @@
+## v1.4.2 / 2022-01-12
+
+- Umd-ify and prebuild minified version
+- TypeScript definitions
+- Fix: honor end-padding of parent container
+- Fix: `scrollEnd` event not fired when `snapToPage` is on
+- Fix: position not normalized after refresh with `updateContent` flag
+- Fix: scrollbar styles and indication CSS classes not updated after refresh
+
 ## v1.4.1 / 2022-01-07
 
 - Fix: `pageDirection` detection

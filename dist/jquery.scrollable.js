@@ -1,7 +1,7 @@
 /*jshint regexp:true,browser:true,jquery:true,debug:true,-W083 */
 
 /*!
- * jQuery Scrollable v1.4.0
+ * jQuery Scrollable v1.4.2
  *
  * The MIT License (MIT)
  *
@@ -33,10 +33,9 @@
     } else {
         factory(jQuery);
     }
-}(this, /** @type {($: JQueryStatic, zeta: import("zeta-dom")) => JQueryScrollableStatic} */ function ($) {
+}(this, /** @type {($: JQueryStatic) => void} */ function ($) {
     'use strict';
 
-    var m = Math, array = [];
     var zeroMomentum = {
             dist: 0,
             time: 0
@@ -55,6 +54,8 @@
         mround = function (r) {
             return r >> 0;
         },
+        array = Array.prototype,
+        m = Math,
 
         vendor = /webkit/i.test(navigator.appVersion) ? 'webkit' : /firefox/i.test(navigator.userAgent) ? 'Moz' : /trident/i.test(navigator.userAgent) ? 'ms' : window.opera ? 'O' : '',
 
@@ -430,19 +431,19 @@
             }
 
             function normalizePosition(newX, newY, forcePageChange) {
-                var normalizaInternal = function (newX, newY) {
+                var normalizeInternal = function (newX, newY) {
                     return {
                         x: (newX > 0 ? 0 : newX < minX ? minX : mround(newX)),
                         y: (newY > 0 ? 0 : newY < minY ? minY : mround(newY))
                     };
                 };
-                var newPos = normalizaInternal(newX, newY);
+                var newPos = normalizeInternal(newX, newY);
                 if (options.pageItem && options.snapToPage) {
                     var align = options.pageItemAlign;
                     var dir = pageDirection;
                     var props = dir === 'x' ? ['left', 'right', 'width'] : ['top', 'bottom', 'height'];
                     var oldPos = {
-                        x: x, 
+                        x: x,
                         y: y
                     };
                     if (newPos[dir] !== oldPos[dir]) {
@@ -486,7 +487,7 @@
                             newPos[dir] = snapPos;
                             snapped = true;
                         }
-                        newPos = normalizaInternal(newPos.x, newPos.y);
+                        newPos = normalizeInternal(newPos.x, newPos.y);
                         newPos.pageChanged = snapped;
                     }
                 }
@@ -575,6 +576,7 @@
                             right: 0
                         });
                     }
+                    $hScrollbar.toggle(enabled && minX < 0);
                 }
                 if ($vScrollbar) {
                     var top = -y / contentSize.height * 100;
@@ -597,8 +599,11 @@
                             bottom: 0
                         });
                     }
+                    $vScrollbar.toggle(enabled && minY < 0);
                 }
 
+                $wrapper.toggleClass(options.scrollableXClass, minX < 0);
+                $wrapper.toggleClass(options.scrollableYClass, minY < 0);
                 $wrapper.toggleClass(options.scrollableXClass + '-l', x < 0);
                 $wrapper.toggleClass(options.scrollableXClass + '-r', x > minX);
                 $wrapper.toggleClass(options.scrollableYClass + '-u', y < 0);
@@ -731,12 +736,17 @@
                             $pageItems = options.pageItem ? $(options.pageItem, content) : $();
                         }
                     }
-                    var r0, r1;
+                    var r0, r1, trailingX = 0, trailingY = 0;
                     if ($content[0]) {
                         r0 = getRect($wrapper[0]);
                         r1 = getRect($content[0]);
                         leadingX = r1.left - r0.left - x;
                         leadingY = r1.top - r0.top - y;
+                        var $clip = $content.parentsUntil($wrapper).filter(function (i, v) {
+                            return $(v).css('overflow') !== 'visible';
+                        });
+                        trailingX = parseFloat($clip.css('padding-right'));
+                        trailingY = parseFloat($clip.css('padding-bottom'));
                     }
                     contentSize = $.extend({
                         width: 0,
@@ -747,11 +757,11 @@
                         height: 0
                     }, options.getWrapperDimension($wrapper));
                     scrollbarSize = {
-                        x: (wrapperSize.width - leadingX) / contentSize.width * 100 || 0,
-                        y: (wrapperSize.height - leadingY) / contentSize.height * 100 || 0
+                        x: (wrapperSize.width - leadingX - trailingX) / contentSize.width * 100 || 0,
+                        y: (wrapperSize.height - leadingY - trailingY) / contentSize.height * 100 || 0
                     };
-                    minX = options.hScroll ? m.min(0, mround(wrapperSize.width - contentSize.width - leadingX + parseFloat($wrapper.css('padding-left')))) : 0;
-                    minY = options.vScroll ? m.min(0, mround(wrapperSize.height - contentSize.height - leadingY + parseFloat($wrapper.css('padding-top')))) : 0;
+                    minX = options.hScroll ? m.min(0, mround(wrapperSize.width - contentSize.width - leadingX - trailingX + parseFloat($wrapper.css('padding-left')))) : 0;
+                    minY = options.vScroll ? m.min(0, mround(wrapperSize.height - contentSize.height - leadingY - trailingY + parseFloat($wrapper.css('padding-top')))) : 0;
                     if (options.pageDirection === 'x' || options.pageDirection === 'y' ) {
                         pageDirection = options.pageDirection;
                     } else if (minX && minY && $pageItems[1]) {
@@ -762,25 +772,15 @@
                     } else {
                         pageDirection = minY ? 'y' : 'x';
                     }
-                    if ($hScrollbar) {
-                        $hScrollbar.toggle(enabled && minX < 0);
-                    }
-                    if ($vScrollbar) {
-                        $vScrollbar.toggle(enabled && minY < 0);
-                    }
-                    $wrapper.toggleClass(options.scrollableXClass, minX < 0);
-                    $wrapper.toggleClass(options.scrollableYClass, minY < 0);
-                    $wrapper.toggleClass(options.scrollableXClass + '-l', x < 0);
-                    $wrapper.toggleClass(options.scrollableXClass + '-r', x > minX);
-                    $wrapper.toggleClass(options.scrollableYClass + '-u', y < 0);
-                    $wrapper.toggleClass(options.scrollableYClass + '-d', y > minY);
 
-                    if (($current && $current !== $wrapper) || x < minX || y < minY) {
+                    if (($current && $current !== $wrapper) || x < minX || y < minY || updateContent) {
                         if (cancelScroll) {
                             cancelScroll();
                         }
                         var newPos = normalizePosition(x, y);
                         setPosition(newPos.x, newPos.y);
+                    } else {
+                        setPosition(x, y);
                     }
                 }
             }
@@ -844,7 +844,9 @@
                 }
 
                 function handleEnd() {
-                    fireEvent('scrollEnd', startX, startY);
+                    if (contentScrolled) {
+                        fireEvent('scrollEnd', startX, startY);
+                    }
                     $wrapper.removeClass(options.scrollingClass);
                 }
 
@@ -989,6 +991,7 @@
                             $vGlow.fadeOut();
                         }
                         if (snappedToPage) {
+                            handleEnd();
                             return;
                         }
 
@@ -1011,7 +1014,7 @@
                             bounceBack(handleEnd);
                         });
                     } else {
-                        $wrapper.removeClass(options.scrollingClass);
+                        handleEnd();
                     }
                 }
 
