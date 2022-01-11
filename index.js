@@ -732,12 +732,17 @@
                             $pageItems = options.pageItem ? $(options.pageItem, content) : $();
                         }
                     }
-                    var r0, r1;
+                    var r0, r1, trailingX = 0, trailingY = 0;
                     if ($content[0]) {
                         r0 = getRect($wrapper[0]);
                         r1 = getRect($content[0]);
                         leadingX = r1.left - r0.left - x;
                         leadingY = r1.top - r0.top - y;
+                        var $clip = $content.parentsUntil($wrapper).filter(function (i, v) {
+                            return $(v).css('overflow') !== 'visible';
+                        });
+                        trailingX = parseFloat($clip.css('padding-right'));
+                        trailingY = parseFloat($clip.css('padding-bottom'));
                     }
                     contentSize = $.extend({
                         width: 0,
@@ -748,11 +753,11 @@
                         height: 0
                     }, options.getWrapperDimension($wrapper));
                     scrollbarSize = {
-                        x: (wrapperSize.width - leadingX) / contentSize.width * 100 || 0,
-                        y: (wrapperSize.height - leadingY) / contentSize.height * 100 || 0
+                        x: (wrapperSize.width - leadingX - trailingX) / contentSize.width * 100 || 0,
+                        y: (wrapperSize.height - leadingY - trailingY) / contentSize.height * 100 || 0
                     };
-                    minX = options.hScroll ? m.min(0, mround(wrapperSize.width - contentSize.width - leadingX + parseFloat($wrapper.css('padding-left')))) : 0;
-                    minY = options.vScroll ? m.min(0, mround(wrapperSize.height - contentSize.height - leadingY + parseFloat($wrapper.css('padding-top')))) : 0;
+                    minX = options.hScroll ? m.min(0, mround(wrapperSize.width - contentSize.width - leadingX - trailingX + parseFloat($wrapper.css('padding-left')))) : 0;
+                    minY = options.vScroll ? m.min(0, mround(wrapperSize.height - contentSize.height - leadingY - trailingY + parseFloat($wrapper.css('padding-top')))) : 0;
                     if (options.pageDirection === 'x' || options.pageDirection === 'y' ) {
                         pageDirection = options.pageDirection;
                     } else if (minX && minY && $pageItems[1]) {
