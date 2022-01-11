@@ -431,19 +431,19 @@
             }
 
             function normalizePosition(newX, newY, forcePageChange) {
-                var normalizaInternal = function (newX, newY) {
+                var normalizeInternal = function (newX, newY) {
                     return {
                         x: (newX > 0 ? 0 : newX < minX ? minX : mround(newX)),
                         y: (newY > 0 ? 0 : newY < minY ? minY : mround(newY))
                     };
                 };
-                var newPos = normalizaInternal(newX, newY);
+                var newPos = normalizeInternal(newX, newY);
                 if (options.pageItem && options.snapToPage) {
                     var align = options.pageItemAlign;
                     var dir = pageDirection;
                     var props = dir === 'x' ? ['left', 'right', 'width'] : ['top', 'bottom', 'height'];
                     var oldPos = {
-                        x: x, 
+                        x: x,
                         y: y
                     };
                     if (newPos[dir] !== oldPos[dir]) {
@@ -487,7 +487,7 @@
                             newPos[dir] = snapPos;
                             snapped = true;
                         }
-                        newPos = normalizaInternal(newPos.x, newPos.y);
+                        newPos = normalizeInternal(newPos.x, newPos.y);
                         newPos.pageChanged = snapped;
                     }
                 }
