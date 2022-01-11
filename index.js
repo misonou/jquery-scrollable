@@ -781,7 +781,7 @@
                     $wrapper.toggleClass(options.scrollableYClass + '-u', y < 0);
                     $wrapper.toggleClass(options.scrollableYClass + '-d', y > minY);
 
-                    if (($current && $current !== $wrapper) || x < minX || y < minY) {
+                    if (($current && $current !== $wrapper) || x < minX || y < minY || updateContent) {
                         if (cancelScroll) {
                             cancelScroll();
                         }
