@@ -850,7 +850,9 @@
                 }
 
                 function handleEnd() {
-                    fireEvent('scrollEnd', startX, startY);
+                    if (contentScrolled) {
+                        fireEvent('scrollEnd', startX, startY);
+                    }
                     $wrapper.removeClass(options.scrollingClass);
                 }
 
@@ -995,6 +997,7 @@
                             $vGlow.fadeOut();
                         }
                         if (snappedToPage) {
+                            handleEnd();
                             return;
                         }
 
@@ -1017,7 +1020,7 @@
                             bounceBack(handleEnd);
                         });
                     } else {
-                        $wrapper.removeClass(options.scrollingClass);
+                        handleEnd();
                     }
                 }
 
