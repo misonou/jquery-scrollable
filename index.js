@@ -576,6 +576,7 @@
                             right: 0
                         });
                     }
+                    $hScrollbar.toggle(enabled && minX < 0);
                 }
                 if ($vScrollbar) {
                     var top = -y / contentSize.height * 100;
@@ -598,8 +599,11 @@
                             bottom: 0
                         });
                     }
+                    $vScrollbar.toggle(enabled && minY < 0);
                 }
 
+                $wrapper.toggleClass(options.scrollableXClass, minX < 0);
+                $wrapper.toggleClass(options.scrollableYClass, minY < 0);
                 $wrapper.toggleClass(options.scrollableXClass + '-l', x < 0);
                 $wrapper.toggleClass(options.scrollableXClass + '-r', x > minX);
                 $wrapper.toggleClass(options.scrollableYClass + '-u', y < 0);
@@ -768,18 +772,6 @@
                     } else {
                         pageDirection = minY ? 'y' : 'x';
                     }
-                    if ($hScrollbar) {
-                        $hScrollbar.toggle(enabled && minX < 0);
-                    }
-                    if ($vScrollbar) {
-                        $vScrollbar.toggle(enabled && minY < 0);
-                    }
-                    $wrapper.toggleClass(options.scrollableXClass, minX < 0);
-                    $wrapper.toggleClass(options.scrollableYClass, minY < 0);
-                    $wrapper.toggleClass(options.scrollableXClass + '-l', x < 0);
-                    $wrapper.toggleClass(options.scrollableXClass + '-r', x > minX);
-                    $wrapper.toggleClass(options.scrollableYClass + '-u', y < 0);
-                    $wrapper.toggleClass(options.scrollableYClass + '-d', y > minY);
 
                     if (($current && $current !== $wrapper) || x < minX || y < minY || updateContent) {
                         if (cancelScroll) {
@@ -787,6 +779,8 @@
                         }
                         var newPos = normalizePosition(x, y);
                         setPosition(newPos.x, newPos.y);
+                    } else {
+                        setPosition(x, y);
                     }
                 }
             }
