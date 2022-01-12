@@ -738,13 +738,13 @@
                     }
                     var r0, r1, trailingX = 0, trailingY = 0;
                     if ($content[0]) {
+                        var $clip = $($content.parentsUntil($wrapper).filter(function (i, v) {
+                            return $(v).css('overflow') !== 'visible';
+                        })[0] || $wrapper[0]);
                         r0 = getRect($wrapper[0]);
                         r1 = getRect($content[0]);
                         leadingX = r1.left - r0.left - x;
                         leadingY = r1.top - r0.top - y;
-                        var $clip = $content.parentsUntil($wrapper).filter(function (i, v) {
-                            return $(v).css('overflow') !== 'visible';
-                        });
                         trailingX = parseFloat($clip.css('padding-right'));
                         trailingY = parseFloat($clip.css('padding-bottom'));
                     }
