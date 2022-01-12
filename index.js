@@ -773,7 +773,7 @@
                         pageDirection = minY ? 'y' : 'x';
                     }
 
-                    if (($current && $current !== $wrapper) || x < minX || y < minY || updateContent) {
+                    if (($current && $current !== $wrapper) || x < minX || y < minY) {
                         if (cancelScroll) {
                             cancelScroll();
                         }
