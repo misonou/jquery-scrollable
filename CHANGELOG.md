@@ -1,3 +1,8 @@
+## v1.4.3 / 2022-01-13
+
+- Fix: container become unscrollable due to end-padding calculation
+- Fix: scroll animation interrupted by refresh
+
 ## v1.4.2 / 2022-01-12
 
 - Umd-ify and prebuild minified version
