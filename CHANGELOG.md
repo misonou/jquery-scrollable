@@ -1,3 +1,7 @@
+## v1.4.4 / 2022-01-17
+
+- Fix: end-padding calculation
+
 ## v1.4.3 / 2022-01-13
 
 - Fix: container become unscrollable due to end-padding calculation
@@ -10,7 +14,7 @@
 - Fix: honor end-padding of parent container
 - Fix: `scrollEnd` event not fired when `snapToPage` is on
 - Fix: position not normalized after refresh with `updateContent` flag
-- Fix: scrollbar styles and indication CSS classes not updated after refresh
+- Fix: scrollbar styles and insdication CSS classes not updated after refresh
 
 ## v1.4.1 / 2022-01-07
 
