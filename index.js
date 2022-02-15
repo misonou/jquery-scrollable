@@ -1072,10 +1072,6 @@
                 if (canScrollInnerElement(e.target, $wrapper[0], wheelDeltaX, wheelDeltaY)) {
                     return;
                 }
-                if (vendor === 'Moz') {
-                    wheelDeltaX *= 50;
-                    wheelDeltaY *= 50;
-                }
                 if ((!options.vScroll || !minY) && !wheelDeltaX) {
                     wheelDeltaX = wheelDeltaY;
                 }
