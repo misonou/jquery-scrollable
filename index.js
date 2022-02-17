@@ -373,6 +373,8 @@
                 $hGlow = options.glow && options.hGlow && $(options.glow($wrapper, 'x', options)).hide(),
                 $vGlow = options.glow && options.vGlow && $(options.glow($wrapper, 'y', options)).hide(),
                 enabled = true,
+                collectMutations,
+                muteMutations,
                 x = 0,
                 y = 0,
                 leadingX = 0,
@@ -563,6 +565,7 @@
             }
 
             function setPosition(newX, newY) {
+                muteMutations = true;
                 x = mround(newX);
                 y = mround(newY);
 
@@ -658,6 +661,9 @@
                         }
                     }
                 });
+
+                collectMutations.takeRecords();
+                muteMutations = false;
             }
 
             function scrollTo(newX, newY, duration, callback) {
@@ -1202,6 +1208,24 @@
 
             preventPullToRefresh($wrapper[0]);
 
+            if (window.MutationObserver) {
+                collectMutations = new MutationObserver(function () {
+                    if (!muteMutations && enabled) {
+                        refresh();
+                    }
+                });
+                collectMutations.observe($wrapper[0], {
+                    subtree: true,
+                    childList: true,
+                    attributes: true,
+                    characterData: true
+                });
+            } else {
+                collectMutations = {
+                    takeRecords: function () { }
+                };
+            }
+
             // plugin interface
             $wrapper.data(DATA_ID, {
                 destroy: function () {
@@ -1214,6 +1238,9 @@
                     if ($vScrollbar) {
                         $vScrollbar.remove();
                     }
+                    // release memory from MutationObserver callback
+                    refresh = function () {};
+                    enabled = false;
                     $wrapper.data(DATA_ID, null);
                 },
                 enable: function () {
