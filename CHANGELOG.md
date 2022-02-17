@@ -1,3 +1,7 @@
+## v1.4.5 / 2022-02-17
+
+- Fix: scroll amount by mouse wheel in Firefox
+
 ## v1.4.4 / 2022-01-17
 
 - Fix: end-padding calculation

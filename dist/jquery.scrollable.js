@@ -1,7 +1,7 @@
 /*jshint regexp:true,browser:true,jquery:true,debug:true,-W083 */
 
 /*!
- * jQuery Scrollable v1.4.4
+ * jQuery Scrollable v1.4.5
  *
  * The MIT License (MIT)
  *
@@ -1071,10 +1071,6 @@
                 }
                 if (canScrollInnerElement(e.target, $wrapper[0], wheelDeltaX, wheelDeltaY)) {
                     return;
-                }
-                if (vendor === 'Moz') {
-                    wheelDeltaX *= 50;
-                    wheelDeltaY *= 50;
                 }
                 if ((!options.vScroll || !minY) && !wheelDeltaX) {
                     wheelDeltaX = wheelDeltaY;
