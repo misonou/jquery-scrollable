@@ -678,23 +678,32 @@
                     if (typeof callback === 'function') {
                         callback();
                     }
-                    return;
+                    return Promise.resolve();
                 }
 
                 var startTime = +new Date(),
                     startX = x,
-                    startY = y;
+                    startY = y,
+                    frameId,
+                    resolve;
 
-                function animate() {
-                    var elapsed = new Date() - startTime;
-
+                var promise = new Promise(function (res) {
+                    resolve = res;
+                });
+                var finish = function () {
+                    cancelAnim = null;
+                    cancelFrame(frameId);
+                    fireEvent('scrollEnd', startX, startY, x, y);
+                    if (typeof callback === 'function') {
+                        callback();
+                    }
+                    resolve();
+                };
+                var animate = function () {
+                    var elapsed = (+new Date()) - startTime;
                     if (elapsed >= duration) {
-                        cancelAnim = null;
                         setPosition(newX, newY);
-                        fireEvent('scrollEnd', startX, startY, newX, newY);
-                        if (typeof callback === 'function') {
-                            callback();
-                        }
+                        finish();
                         return;
                     }
 
@@ -705,24 +714,18 @@
 
                     setPosition(stepX, stepY);
                     fireEvent('scrollMove', startX, startY, stepX, stepY, stepX - x, stepY - y);
-                    var id = nextFrame(animate);
-                    cancelAnim = function () {
-                        cancelFrame(id);
-                        cancelAnim = null;
-                        fireEvent('scrollEnd', startX, startY, x, y);
-                        if (typeof callback === 'function') {
-                            callback();
-                        }
-                    };
-                }
+                    frameId = nextFrame(animate);
+                };
+                cancelAnim = finish;
                 fireEvent('scrollStart', startX, startY);
                 animate();
+                return promise;
             }
 
             function scrollToPreNormalized(x, y, duration, callback) {
                 refresh();
                 var p = normalizePosition(-x || 0, -y || 0);
-                scrollTo(p.x, p.y, +duration || 0, callback);
+                return scrollTo(p.x, p.y, +duration || 0, callback);
             }
 
             function scrollToElement(target, targetOrigin, wrapperOrigin, duration, callback) {
@@ -740,7 +743,9 @@
                             newY -= getRect(v).height;
                         }
                     });
-                    scrollToPreNormalized(newX, newY, duration || wrapperOrigin, callback || duration);
+                    return scrollToPreNormalized(newX, newY, duration || wrapperOrigin, callback || duration);
+                } else {
+                    return Promise.resolve();
                 }
             }
 
@@ -1286,16 +1291,16 @@
                     return -stopY;
                 },
                 scrollBy: function (dx, dy, duration, callback) {
-                    scrollToPreNormalized((dx || 0) - x, (dy || 0) - y, duration, callback);
+                    return scrollToPreNormalized((dx || 0) - x, (dy || 0) - y, duration, callback);
                 },
                 scrollTo: function (x, y, duration, callback) {
-                    scrollToPreNormalized(x, y, duration, callback);
+                    return scrollToPreNormalized(x, y, duration, callback);
                 },
                 scrollToPage: function (x, y, duration, callback) {
-                    scrollToPreNormalized(x * wrapperSize.width || 0, y * wrapperSize.height, duration, callback);
+                    return scrollToPreNormalized(x * wrapperSize.width || 0, y * wrapperSize.height, duration, callback);
                 },
                 scrollToElement: function (target, targetOrigin, wrapperOrigin, duration, callback) {
-                    scrollToElement(target, targetOrigin, wrapperOrigin, duration, callback);
+                    return scrollToElement(target, targetOrigin, wrapperOrigin, duration, callback);
                 }
             });
 
