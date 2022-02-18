@@ -61,8 +61,6 @@
 
         // browser capabilities
         isAndroid = /android/gi.test(navigator.appVersion),
-        isIDevice = /iphone|ipad/gi.test(navigator.appVersion),
-        isPlaybook = /playbook/gi.test(navigator.appVersion),
         isTouchPad = /hp-tablet/gi.test(navigator.appVersion),
 
         root = document.documentElement,
@@ -267,6 +265,19 @@
         }
     }
 
+    function preventPullToRefresh(container) {
+        var prevent = false;
+        container.addEventListener('touchstart', function (e) {
+            prevent = e.touches.length === 1 && (window.pageYOffset || document.body.scrollTop || root.scrollTop) === 0;
+        });
+        container.addEventListener('touchmove', function (e) {
+            if (prevent) {
+                prevent = false;
+                e.preventDefault();
+            }
+        });
+    }
+
     $.fn.scrollable = function (optionOverrides) {
         if (typeof optionOverrides === 'string') {
             var args = arguments;
@@ -407,25 +418,33 @@
                 return newIndex;
             }
 
+            function getScrollPadding() {
+                return {
+                    top: leadingY,
+                    left: leadingX,
+                    right: $hScrollbar ? options.scrollbarSize + options.scrollbarInset * 2 : 0,
+                    bottom: $vScrollbar ? options.scrollbarSize + options.scrollbarInset * 2 : 0
+                };
+            }
+
             function fireEvent(type, startX, startY, newX, newY, deltaX, deltaY) {
                 if (typeof options[type] === 'function') {
+                    var pageIndex = options.pageItem ? getPageIndex() : -1;
+                    var curX = newX === undefined ? x : newX;
+                    var curY = newY === undefined ? y : newY;
                     var args = {
                         type: type,
                         startX: -startX,
                         startY: -startY,
-                        offsetX: newX === undefined ? -x : -newX,
-                        offsetY: newY === undefined ? -y : -newY,
+                        offsetX: -curX,
+                        offsetY: -curY,
                         deltaX: -deltaX || 0,
                         deltaY: -deltaY || 0,
-                        percentX: ((newX === undefined ? x : newX) / minX) * 100 || 0,
-                        percentY: ((newY === undefined ? y : newY) / minY) * 100 || 0,
-                        pageIndex: -1,
-                        pageItem: null
+                        percentX: (curX / minX) * 100 || 0,
+                        percentY: (curY / minY) * 100 || 0,
+                        pageIndex: pageIndex,
+                        pageItem: $pageItems[pageIndex] || null
                     };
-                    if (options.pageItem) {
-                        args.pageIndex = getPageIndex();
-                        args.pageItem = $pageItems[args.pageIndex];
-                    }
                     options[type].call($wrapper[0], args);
                 }
             }
@@ -694,10 +713,35 @@
                 animate();
             }
 
+            function scrollToPreNormalized(x, y, duration, callback) {
+                refresh();
+                var p = normalizePosition(-x || 0, -y || 0);
+                scrollTo(p.x, p.y, +duration || 0, callback);
+            }
+
+            function scrollToElement(target, targetOrigin, wrapperOrigin, duration, callback) {
+                target = $(target, $content)[0];
+                if (target) {
+                    refresh();
+                    var oriE = parseOrigin(targetOrigin);
+                    var oriW = parseOrigin(wrapperOrigin);
+                    var posE = getRect(target);
+                    var posW = getRect($wrapper[0]);
+                    var newX = posE.left * (1 - oriE.percentX) + posE.right * oriE.percentX + oriE.offsetX - posW.left - wrapperSize.width * oriW.percentX - oriW.offsetX - x - leadingX;
+                    var newY = posE.top * (1 - oriE.percentY) + posE.bottom * oriE.percentY + oriE.offsetY - posW.top - wrapperSize.height * oriW.percentY - oriW.offsetY - y - leadingY;
+                    $sticky.each(function (i, v) {
+                        if ($.contains($(v).data(DATA_ID_STICKY), target)) {
+                            newY -= getRect(v).height;
+                        }
+                    });
+                    scrollToPreNormalized(newX, newY, duration || wrapperOrigin, callback || duration);
+                }
+            }
+
             function createStickyClone(v) {
                 var $clone = $(v.cloneNode(false)).append($(options.stickyHandle, v).clone()).addClass(options.stickyClass).data(DATA_ID_STICKY, v);
                 $clone.click(function () {
-                    $wrapper.scrollable('scrollToElement', v, 'left top', 200);
+                    scrollToElement(v, 'left top', 200);
                 });
                 return $clone[0];
             }
@@ -1098,8 +1142,8 @@
                         fireEvent('scrollEnd', startX, startY);
                     };
                 } else {
-                  startX = wheelState.startX;
-                  startY = wheelState.startY;
+                    startX = wheelState.startX;
+                    startY = wheelState.startY;
                 }
                 wheelState.timestamp = timestamp;
                 if (wheelState.cancelled) {
@@ -1156,24 +1200,6 @@
                 $wrapper.css('touch-action', 'none');
             }
 
-            function scrollToPreNormalized(x, y, duration, callback) {
-                refresh();
-                var p = normalizePosition(-x || 0, -y || 0);
-                scrollTo(p.x, p.y, +duration || 0, callback);
-            }
-
-            function preventPullToRefresh(container) {
-                var prevent = false;
-                container.addEventListener('touchstart', function (e) {
-                    prevent = e.touches.length === 1 && (window.pageYOffset || document.body.scrollTop || root.scrollTop) === 0;
-                });
-                container.addEventListener('touchmove', function (e) {
-                    if (prevent) {
-                        prevent = false;
-                        e.preventDefault();
-                    }
-                });
-            }
             preventPullToRefresh($wrapper[0]);
 
             // plugin interface
@@ -1217,12 +1243,7 @@
                     refresh(true);
                 },
                 scrollPadding: function () {
-                    return {
-                        top: leadingY,
-                        left: leadingX,
-                        right: $hScrollbar ? options.scrollbarSize + options.scrollbarInset * 2 : 0,
-                        bottom: $vScrollbar ? options.scrollbarSize + options.scrollbarInset * 2 : 0
-                    };
+                    return getScrollPadding();
                 },
                 stop: function () {
                     if (cancelScroll) {
@@ -1247,22 +1268,7 @@
                     scrollToPreNormalized(x * wrapperSize.width || 0, y * wrapperSize.height, duration, callback);
                 },
                 scrollToElement: function (target, targetOrigin, wrapperOrigin, duration, callback) {
-                    target = $(target, $content)[0];
-                    if (target) {
-                        refresh();
-                        var oriE = parseOrigin(targetOrigin);
-                        var oriW = parseOrigin(wrapperOrigin);
-                        var posE = getRect(target);
-                        var posW = getRect($wrapper[0]);
-                        var newX = posE.left * (1 - oriE.percentX) + posE.right * oriE.percentX + oriE.offsetX - posW.left - wrapperSize.width * oriW.percentX - oriW.offsetX - x - leadingX;
-                        var newY = posE.top * (1 - oriE.percentY) + posE.bottom * oriE.percentY + oriE.offsetY - posW.top - wrapperSize.height * oriW.percentY - oriW.offsetY - y - leadingY;
-                        $sticky.each(function (i, v) {
-                            if ($.contains($(v).data(DATA_ID_STICKY), target)) {
-                                newY -= getRect(v).height;
-                            }
-                        });
-                        scrollToPreNormalized(newX, newY, duration || wrapperOrigin, callback || duration);
-                    }
+                    scrollToElement(target, targetOrigin, wrapperOrigin, duration, callback);
                 }
             });
 
