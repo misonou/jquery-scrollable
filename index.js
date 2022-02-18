@@ -1186,6 +1186,12 @@
                     e.stopPropagation();
                 }
             };
+            handlers.transitionend = function () {
+                refresh();
+            };
+            handlers.animationend = function () {
+                refresh();
+            };
             handlers.focusin = function (e) {
                 var scrollTop = $wrapper[0].scrollTop,
                     scrollLeft = $wrapper[0].scrollLeft;
