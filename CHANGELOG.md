@@ -1,3 +1,9 @@
+## v1.5.0 / 2022-02-18
+
+- All scrolling method now returns promise to indicate when scrolling has ended
+- Automatically re-calculate content dimension when DOM has updated
+- Automatically re-calculate content dimension at `animationend` and `transitionend` events
+
 ## v1.4.5 / 2022-02-17
 
 - Fix: scroll amount by mouse wheel in Firefox
