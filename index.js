@@ -1222,7 +1222,7 @@
             if (window.MutationObserver) {
                 collectMutations = new MutationObserver(function () {
                     if (!muteMutations && enabled) {
-                        refresh();
+                        refresh(true);
                     }
                 });
                 collectMutations.observe($wrapper[0], {
