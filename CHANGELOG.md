@@ -1,3 +1,8 @@
+## v1.5.1 / 2022-03-10
+
+- Fix: scrolling target not updated on DOM mutations
+- Fix: incorrect calculation on scroll bar size
+
 ## v1.5.0 / 2022-02-18
 
 - All scrolling method now returns promise to indicate when scrolling has ended

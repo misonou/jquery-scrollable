@@ -1,7 +1,7 @@
 /*jshint regexp:true,browser:true,jquery:true,debug:true,-W083 */
 
 /*!
- * jQuery Scrollable v1.5.0
+ * jQuery Scrollable v1.5.1
  *
  * The MIT License (MIT)
  *
@@ -814,12 +814,12 @@
                         width: 0,
                         height: 0
                     }, options.getWrapperDimension($wrapper));
-                    scrollbarSize = {
-                        x: (wrapperSize.width - leadingX - trailingX) / contentSize.width * 100 || 0,
-                        y: (wrapperSize.height - leadingY - trailingY) / contentSize.height * 100 || 0
-                    };
                     minX = options.hScroll ? m.min(0, mround(wrapperSize.width - contentSize.width - leadingX - trailingX + parseFloat($wrapper.css('padding-left')))) : 0;
                     minY = options.vScroll ? m.min(0, mround(wrapperSize.height - contentSize.height - leadingY - trailingY + parseFloat($wrapper.css('padding-top')))) : 0;
+                    scrollbarSize = {
+                        x: (1 + minX / contentSize.width) * 100 || 0,
+                        y: (1 + minY / contentSize.height) * 100 || 0
+                    };
                     if (options.pageDirection === 'x' || options.pageDirection === 'y' ) {
                         pageDirection = options.pageDirection;
                     } else if (minX && minY && $pageItems[1]) {
@@ -1222,7 +1222,7 @@
             if (window.MutationObserver) {
                 collectMutations = new MutationObserver(function () {
                     if (!muteMutations && enabled) {
-                        refresh();
+                        refresh(true);
                     }
                 });
                 collectMutations.observe($wrapper[0], {
