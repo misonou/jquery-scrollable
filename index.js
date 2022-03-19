@@ -67,6 +67,7 @@
         hasTouch = window.ontouchstart !== undefined && !isTouchPad,
         hasTransform = root.style[vendor + 'Transform'] !== undefined,
         hasTransform3d = window.WebKitCSSMatrix && (new window.WebKitCSSMatrix()).m11 !== undefined,
+        hasWheelDeltaX = false,
 
         // value helpers
         trnOpen = 'translate' + (hasTransform3d ? '3d(' : '('),
@@ -1105,7 +1106,10 @@
             handlers[EV_WHEEL] = function (e) {
                 var ev = e.originalEvent,
                     wheelDeltaX = 0,
-                    wheelDeltaY = 0;
+                    wheelDeltaY = 0,
+                    canScrollX = options.vScroll && minY,
+                    canScrollY = options.hScroll && minX,
+                    isDirY;
 
                 if (e.isDefaultPrevented()) {
                     return;
@@ -1127,7 +1131,12 @@
                 if (canScrollInnerElement(e.target, $wrapper[0], wheelDeltaX, wheelDeltaY)) {
                     return;
                 }
-                if ((!options.vScroll || !minY) && !wheelDeltaX) {
+                if (hasWheelDeltaX) {
+                    isDirY = m.abs(wheelDeltaY) > m.abs(wheelDeltaX);
+                    if ((!canScrollY && !isDirY) || (!canScrollX && isDirY)) {
+                        return;
+                    }
+                } else if (!canScrollY && !wheelDeltaX) {
                     wheelDeltaX = wheelDeltaY;
                 }
                 wheelDeltaX *= options.hScroll;
@@ -1323,6 +1332,13 @@
             });
             $activated.scrollable('refresh');
         }, isAndroid ? 200 : 0);
+    });
+
+    $(window).on(EV_WHEEL, function detectWheelDeltaX(e) {
+        if (e.originalEvent.deltaX > 0) {
+            hasWheelDeltaX = true;
+            $(window).off(EV_WHEEL, detectWheelDeltaX);
+        }
     });
 
     try {
