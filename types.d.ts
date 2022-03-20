@@ -19,6 +19,7 @@ interface JQueryScrollable {
     scrollTop(): number;
     scrollBy(x: number, y: number, duration?: number, callback?: () => void): Promise<void>;
     scrollTo(x: number, y: number, duration?: number, callback?: () => void): Promise<void>;
+    scrollByPage(x: number, y: number, duration?: number, callback?: () => void): Promise<void>;
     scrollToPage(x: number, y: number, duration?: number, callback?: () => void): Promise<void>;
     scrollToElement(target: Element, targetOrigin: string, duration: number, callback?: () => void): Promise<void>;
     scrollToElement(target: Element, targetOrigin?: string, wrapperOrigin?: string, duration?: number, callback?: () => void): Promise<void>;

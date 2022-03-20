@@ -1311,6 +1311,9 @@
                 scrollTo: function (x, y, duration, callback) {
                     return scrollToPreNormalized(x, y, duration, callback);
                 },
+                scrollByPage: function (dx, dy, duration, callback) {
+                    return scrollToPreNormalized((dx * wrapperSize.width || 0) - x, (dy * wrapperSize.height || 0) - y, duration, callback);
+                },
                 scrollToPage: function (x, y, duration, callback) {
                     return scrollToPreNormalized(x * wrapperSize.width || 0, y * wrapperSize.height, duration, callback);
                 },
