@@ -1024,7 +1024,7 @@
                     if ($current === $wrapper) {
                         $current = null;
                     }
-                    $(document).unbind(bindedHandler);
+                    $(document).off(bindedHandler);
 
                     if (eventTarget.releaseCapture) {
                         eventTarget.releaseCapture();
@@ -1086,7 +1086,7 @@
                 bindedHandler[EV_MOVE] = handleMove;
                 bindedHandler[EV_END] = handleStop;
                 bindedHandler[EV_CANCEL] = handleStop;
-                $(document).bind(bindedHandler);
+                $(document).on(bindedHandler);
                 cancelScroll = function () {
                     cancelScroll = null;
                     if (cancelAnim) {
@@ -1211,7 +1211,7 @@
                     scrollTo(x - scrollLeft, y - scrollTop, 0);
                 }
             };
-            $wrapper.bind(handlers);
+            $wrapper.on(handlers);
 
             // setup initial style
             if ($hScrollbar && options.handle === 'content') {
@@ -1252,7 +1252,7 @@
                 destroy: function () {
                     setPosition(0, 0);
                     $activated.splice($.inArray($wrapper[0], $activated), 1);
-                    $wrapper.unbind(handlers);
+                    $wrapper.off(handlers);
                     if ($hScrollbar) {
                         $hScrollbar.remove();
                     }
@@ -1266,14 +1266,14 @@
                 },
                 enable: function () {
                     if (!enabled) {
-                        $wrapper.bind(handlers);
+                        $wrapper.on(handlers);
                         enabled = true;
                         refresh();
                     }
                 },
                 disable: function () {
                     if (enabled) {
-                        $wrapper.unbind(handlers);
+                        $wrapper.off(handlers);
                         if ($hScrollbar) {
                             $hScrollbar.hide();
                         }
@@ -1328,7 +1328,7 @@
     };
 
     var resizeTimeout;
-    $(window).bind(EV_RESIZE, function () {
+    $(window).on(EV_RESIZE, function () {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(function () {
             $activated = $activated.filter(function () {
@@ -1347,7 +1347,7 @@
 
     try {
         if (window.top !== window.self) {
-            $(window.top).mouseenter(function () {
+            $(window.top).on('mouseenter', function () {
                 $(document).trigger(EV_CANCEL);
             });
         }
