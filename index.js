@@ -744,7 +744,7 @@
                             newY -= getRect(v).height;
                         }
                     });
-                    return scrollToPreNormalized(newX, newY, duration || wrapperOrigin, callback || duration);
+                    return scrollToPreNormalized(m.round(newX), m.round(newY), duration || wrapperOrigin, callback || duration);
                 } else {
                     return Promise.resolve();
                 }
