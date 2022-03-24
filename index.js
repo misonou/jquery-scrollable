@@ -302,6 +302,7 @@
             getWrapperDimension: getDimension,
             getContentDimension: getOuterDimension,
             handle: 'auto',
+            wheel: true,
             hScroll: true,
             vScroll: true,
             hGlow: false,
@@ -1111,7 +1112,7 @@
                     canScrollY = options.hScroll && minX,
                     isDirY;
 
-                if (e.isDefaultPrevented()) {
+                if (!options.wheel || e.isDefaultPrevented()) {
                     return;
                 }
                 if (ev.deltaX !== undefined) {

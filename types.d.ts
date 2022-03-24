@@ -53,6 +53,7 @@ interface JQueryScrollableOptions extends JQueryScrollableScrollbarOptions {
     getWrapperDimension: (elm: JQuery<HTMLElement>) => { width: number; height: number; },
     getContentDimension: (elm: JQuery<HTMLElement>) => { width: number; height: number; },
     handle: 'auto' | 'scrollbar' | 'content' | 'both',
+    wheel: boolean;
     hScroll: boolean;
     vScroll: boolean;
     bounce: boolean;
