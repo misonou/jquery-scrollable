@@ -1,3 +1,10 @@
+## v1.6.0 / 2022-03-27
+
+- Add `wheel` option to enable or disable wheel scrolling
+- Add `scrollByPage` method
+- Fix: use true rounding for position determined when calling `scrollToElement`
+- Fix: improve horizontal or vertical wheel scrolling when using touchpad
+
 ## v1.5.1 / 2022-03-10
 
 - Fix: scrolling target not updated on DOM mutations

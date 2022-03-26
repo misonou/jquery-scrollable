@@ -1,7 +1,7 @@
 /*jshint regexp:true,browser:true,jquery:true,debug:true,-W083 */
 
 /*!
- * jQuery Scrollable v1.5.1
+ * jQuery Scrollable v1.6.0
  *
  * The MIT License (MIT)
  *
@@ -67,6 +67,7 @@
         hasTouch = window.ontouchstart !== undefined && !isTouchPad,
         hasTransform = root.style[vendor + 'Transform'] !== undefined,
         hasTransform3d = window.WebKitCSSMatrix && (new window.WebKitCSSMatrix()).m11 !== undefined,
+        hasWheelDeltaX = false,
 
         // value helpers
         trnOpen = 'translate' + (hasTransform3d ? '3d(' : '('),
@@ -301,6 +302,7 @@
             getWrapperDimension: getDimension,
             getContentDimension: getOuterDimension,
             handle: 'auto',
+            wheel: true,
             hScroll: true,
             vScroll: true,
             hGlow: false,
@@ -743,7 +745,7 @@
                             newY -= getRect(v).height;
                         }
                     });
-                    return scrollToPreNormalized(newX, newY, duration || wrapperOrigin, callback || duration);
+                    return scrollToPreNormalized(m.round(newX), m.round(newY), duration || wrapperOrigin, callback || duration);
                 } else {
                     return Promise.resolve();
                 }
@@ -1022,7 +1024,7 @@
                     if ($current === $wrapper) {
                         $current = null;
                     }
-                    $(document).unbind(bindedHandler);
+                    $(document).off(bindedHandler);
 
                     if (eventTarget.releaseCapture) {
                         eventTarget.releaseCapture();
@@ -1084,7 +1086,7 @@
                 bindedHandler[EV_MOVE] = handleMove;
                 bindedHandler[EV_END] = handleStop;
                 bindedHandler[EV_CANCEL] = handleStop;
-                $(document).bind(bindedHandler);
+                $(document).on(bindedHandler);
                 cancelScroll = function () {
                     cancelScroll = null;
                     if (cancelAnim) {
@@ -1105,9 +1107,12 @@
             handlers[EV_WHEEL] = function (e) {
                 var ev = e.originalEvent,
                     wheelDeltaX = 0,
-                    wheelDeltaY = 0;
+                    wheelDeltaY = 0,
+                    canScrollX = options.vScroll && minY,
+                    canScrollY = options.hScroll && minX,
+                    isDirY;
 
-                if (e.isDefaultPrevented()) {
+                if (!options.wheel || e.isDefaultPrevented()) {
                     return;
                 }
                 if (ev.deltaX !== undefined) {
@@ -1127,7 +1132,12 @@
                 if (canScrollInnerElement(e.target, $wrapper[0], wheelDeltaX, wheelDeltaY)) {
                     return;
                 }
-                if ((!options.vScroll || !minY) && !wheelDeltaX) {
+                if (hasWheelDeltaX) {
+                    isDirY = m.abs(wheelDeltaY) > m.abs(wheelDeltaX);
+                    if ((!canScrollY && !isDirY) || (!canScrollX && isDirY)) {
+                        return;
+                    }
+                } else if (!canScrollY && !wheelDeltaX) {
                     wheelDeltaX = wheelDeltaY;
                 }
                 wheelDeltaX *= options.hScroll;
@@ -1201,7 +1211,7 @@
                     scrollTo(x - scrollLeft, y - scrollTop, 0);
                 }
             };
-            $wrapper.bind(handlers);
+            $wrapper.on(handlers);
 
             // setup initial style
             if ($hScrollbar && options.handle === 'content') {
@@ -1242,7 +1252,7 @@
                 destroy: function () {
                     setPosition(0, 0);
                     $activated.splice($.inArray($wrapper[0], $activated), 1);
-                    $wrapper.unbind(handlers);
+                    $wrapper.off(handlers);
                     if ($hScrollbar) {
                         $hScrollbar.remove();
                     }
@@ -1256,14 +1266,14 @@
                 },
                 enable: function () {
                     if (!enabled) {
-                        $wrapper.bind(handlers);
+                        $wrapper.on(handlers);
                         enabled = true;
                         refresh();
                     }
                 },
                 disable: function () {
                     if (enabled) {
-                        $wrapper.unbind(handlers);
+                        $wrapper.off(handlers);
                         if ($hScrollbar) {
                             $hScrollbar.hide();
                         }
@@ -1302,6 +1312,9 @@
                 scrollTo: function (x, y, duration, callback) {
                     return scrollToPreNormalized(x, y, duration, callback);
                 },
+                scrollByPage: function (dx, dy, duration, callback) {
+                    return scrollToPreNormalized((dx * wrapperSize.width || 0) - x, (dy * wrapperSize.height || 0) - y, duration, callback);
+                },
                 scrollToPage: function (x, y, duration, callback) {
                     return scrollToPreNormalized(x * wrapperSize.width || 0, y * wrapperSize.height, duration, callback);
                 },
@@ -1315,7 +1328,7 @@
     };
 
     var resizeTimeout;
-    $(window).bind(EV_RESIZE, function () {
+    $(window).on(EV_RESIZE, function () {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(function () {
             $activated = $activated.filter(function () {
@@ -1325,9 +1338,16 @@
         }, isAndroid ? 200 : 0);
     });
 
+    $(window).on(EV_WHEEL, function detectWheelDeltaX(e) {
+        if (e.originalEvent.deltaX > 0) {
+            hasWheelDeltaX = true;
+            $(window).off(EV_WHEEL, detectWheelDeltaX);
+        }
+    });
+
     try {
         if (window.top !== window.self) {
-            $(window.top).mouseenter(function () {
+            $(window.top).on('mouseenter', function () {
                 $(document).trigger(EV_CANCEL);
             });
         }

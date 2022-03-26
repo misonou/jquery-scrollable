@@ -30,6 +30,9 @@ Below is an exhaustive list of options, with the default value shown.
     // based on the existence of touch events
     handle: 'auto',
 
+    // whether scrolling by mouse wheel event is enabled
+    wheel: true,
+
     // whether horizontal scrolling is allowed when the width of content is larger than that of container
     hScroll: true,
 
@@ -215,6 +218,17 @@ $elm.scrollable('scrollBy', dx, dy, duration, callback)
 ```
 
 Scroll the content element by the specified amount in each direction in pixels.
+
+If duration in milliseconds is supplied, the scrolling will be animated in such duration of time and
+the optional callback will be fired after the animation is complete.
+
+### scrollByPage
+
+```javascript
+$elm.scrollable('scrollByPage', x, y, duration, callback)
+```
+
+Scroll the content element by specified number of pages in each direction.
 
 If duration in milliseconds is supplied, the scrolling will be animated in such duration of time and
 the optional callback will be fired after the animation is complete.
