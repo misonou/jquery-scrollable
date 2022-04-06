@@ -84,10 +84,6 @@
 
         // events
         EV_RESIZE = 'orientationchange resize',
-        EV_START = hasTouch ? 'touchstart' : 'mousedown',
-        EV_MOVE = hasTouch ? 'touchmove' : 'mousemove',
-        EV_END = hasTouch ? 'touchend' : 'mouseup',
-        EV_CANCEL = hasTouch ? 'touchcancel' : 'mouseup',
         EV_WHEEL = 'onwheel' in window ? 'wheel' : vendor === 'Moz' ? 'DOMMouseScroll' : 'mousewheel',
 
         nextFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function (callback) {
@@ -143,7 +139,7 @@
     }
 
     function getEventPosition(e) {
-        var point = hasTouch ? e.originalEvent.touches[0] : e;
+        var point = (e.originalEvent.touches || [e])[0];
         return {
             x: point.pageX,
             y: point.pageY
@@ -357,9 +353,6 @@
         });
         batchOptions.hBounce = batchOptions.bounce && batchOptions.hBounce;
         batchOptions.vBounce = batchOptions.bounce && batchOptions.vBounce;
-        if (batchOptions.handle === 'auto') {
-            batchOptions.handle = hasTouch ? 'content' : 'scrollbar';
-        }
 
         // add selected elements to the collection
         $activated = $activated.add(this);
@@ -845,8 +838,16 @@
                 }
             }
 
-            var handlers = {};
-            handlers[EV_START] = function (e) {
+            function startScroll(e) {
+                var hasTouch = e.type === 'touchstart',
+                    handle = options.handle,
+                    EV_MOVE = hasTouch ? 'touchmove' : 'mousemove',
+                    EV_END = hasTouch ? 'touchend' : 'mouseup',
+                    EV_CANCEL = hasTouch ? 'touchcancel' : 'mouseup';
+
+                if (handle === 'auto') {
+                    handle = hasTouch ? 'content' : 'scrollbar';
+                }
                 // only start scrolling for left click and one-finger touch
                 if ((!hasTouch && e.which !== 1) || (hasTouch && e.originalEvent.touches.length !== 1) || $(e.target).is(options.cancel) || $(options.cancel, $wrapper).has(e.target).length) {
                     if (e.which === 2) {
@@ -877,7 +878,7 @@
                     factor = 1,
                     isDirY;
 
-                if (options.handle === 'scrollbar' || options.handle === 'both') {
+                if (handle === 'scrollbar' || handle === 'both') {
                     if ($hScrollbar && minX < 0 && getHit($hScrollbar, 10, point)) {
                         scrollbarMode = true;
                         isDirY = false;
@@ -888,7 +889,7 @@
                         factor = -100 / scrollbarSize.y * (1 - leadingY / wrapperSize.height);
                     }
                 }
-                if (options.handle === 'scrollbar' && !scrollbarMode) {
+                if (!hasTouch && handle === 'scrollbar' && !scrollbarMode) {
                     return;
                 }
                 if (!hasTouch) {
@@ -1102,8 +1103,12 @@
                 }
 
                 $wrapper.addClass(options.scrollingClass);
-            };
+            }
+
             var wheelState;
+            var handlers = {};
+            handlers.touchstart = startScroll;
+            handlers.mousedown = startScroll;
             handlers[EV_WHEEL] = function (e) {
                 var ev = e.originalEvent,
                     wheelDeltaX = 0,
@@ -1348,7 +1353,7 @@
     try {
         if (window.top !== window.self) {
             $(window.top).on('mouseenter', function () {
-                $(document).trigger(EV_CANCEL);
+                $(document).trigger('mouseup');
             });
         }
     } catch (e) {}
