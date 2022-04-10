@@ -1,3 +1,7 @@
+## v1.6.1 / 2022-04-10
+
+- Fix: bind simultaneously to mouse and touch events
+
 ## v1.6.0 / 2022-03-27
 
 - Add `wheel` option to enable or disable wheel scrolling
