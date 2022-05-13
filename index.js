@@ -1157,6 +1157,9 @@
                         startX: startX,
                         startY: startY
                     };
+                    if (!cancelScroll) {
+                        fireEvent('scrollStart', startX, startY);
+                    }
                     cancelScroll = function () {
                         clearTimeout(wheelState.timeout);
                         wheelState.cancelled = true;
