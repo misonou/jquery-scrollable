@@ -1,3 +1,8 @@
+## v1.6.2 / 2022-05-19
+
+- Fix: `scrollTop` and `scrollLeft` return `NaN` initially
+- Fix: missing `scrollStart` event when scrolled by wheel
+
 ## v1.6.1 / 2022-04-10
 
 - Fix: bind simultaneously to mouse and touch events

@@ -1,7 +1,7 @@
 /*jshint regexp:true,browser:true,jquery:true,debug:true,-W083 */
 
 /*!
- * jQuery Scrollable v1.6.0
+ * jQuery Scrollable v1.6.1
  *
  * The MIT License (MIT)
  *
@@ -374,8 +374,8 @@
                 y = 0,
                 leadingX = 0,
                 leadingY = 0,
-                stopX,
-                stopY,
+                stopX = 0,
+                stopY = 0,
                 minX,
                 minY,
                 pageDirection,
@@ -1157,6 +1157,9 @@
                         startX: startX,
                         startY: startY
                     };
+                    if (!cancelScroll) {
+                        fireEvent('scrollStart', startX, startY);
+                    }
                     cancelScroll = function () {
                         clearTimeout(wheelState.timeout);
                         wheelState.cancelled = true;
