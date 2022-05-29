@@ -661,7 +661,7 @@
                 muteMutations = false;
             }
 
-            function scrollTo(newX, newY, duration, callback) {
+            function scrollTo(newX, newY, duration, callback, eventStartX, eventStartY) {
                 // stop any running animation
                 if (cancelAnim) {
                     cancelAnim();
@@ -676,6 +676,12 @@
                     return Promise.resolve();
                 }
 
+                var fireStart = eventStartX === undefined;
+                if (fireStart) {
+                    eventStartX = x;
+                    eventStartY = y;
+                }
+
                 var startTime = +new Date(),
                     startX = x,
                     startY = y,
@@ -688,7 +694,9 @@
                 var finish = function () {
                     cancelAnim = null;
                     cancelFrame(frameId);
-                    fireEvent('scrollEnd', startX, startY, x, y);
+                    if (fireStart) {
+                        fireEvent('scrollEnd', eventStartX, eventStartY, x, y);
+                    }
                     if (typeof callback === 'function') {
                         callback();
                     }
@@ -708,11 +716,13 @@
                         stepY = (newY - startY) * easeOut + startY;
 
                     setPosition(stepX, stepY);
-                    fireEvent('scrollMove', startX, startY, stepX, stepY, stepX - x, stepY - y);
+                    fireEvent('scrollMove', eventStartX, eventStartY, stepX, stepY, stepX - x, stepY - y);
                     frameId = nextFrame(animate);
                 };
                 cancelAnim = finish;
-                fireEvent('scrollStart', startX, startY);
+                if (fireStart){
+                    fireEvent('scrollStart', eventStartX, eventStartY);
+                }
                 animate();
                 return promise;
             }
@@ -901,7 +911,7 @@
 
                 function bounceBack(callback) {
                     var newPos = normalizePosition(x, y);
-                    scrollTo(newPos.x, newPos.y, options.bounceDuration, callback);
+                    scrollTo(newPos.x, newPos.y, options.bounceDuration, callback, startX, startY);
                 }
 
                 function handleEnd() {
@@ -1007,7 +1017,7 @@
                         newX = p.x;
                         newY = p.y;
                         if (p.pageChanged) {
-                            scrollTo(newX, newY, options.bounceDuration, handleEnd);
+                            scrollTo(newX, newY, options.bounceDuration, handleEnd, startX, startY);
                             snappedToPage = true;
                             return;
                         }
@@ -1073,7 +1083,7 @@
                         }
                         scrollTo(newX, newY, m.max(momentumX.time, momentumY.time), function () {
                             bounceBack(handleEnd);
-                        });
+                        }, startX, startY);
                     } else {
                         handleEnd();
                     }
@@ -1191,7 +1201,7 @@
                     };
                     $wrapper.addClass(options.scrollingClass);
                     if (newPos.pageChanged) {
-                        scrollTo(newX, newY, options.bounceDuration, handleEnd);
+                        scrollTo(newX, newY, options.bounceDuration, handleEnd, startX, startY);
                     } else {
                         clearTimeout(wheelState.timeout);
                         wheelState.timeout = setTimeout(handleEnd, 200);
