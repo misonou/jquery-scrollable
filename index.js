@@ -1207,6 +1207,8 @@
                         wheelState.timeout = setTimeout(handleEnd, 200);
                         fireEvent('scrollMove', startX, startY, newX, newY, wheelDeltaX, wheelDeltaY);
                         setPosition(newX, newY);
+                        stopX = newX;
+                        stopY = newY;
                         if ((minX < 0 || minY < 0) && e.cancelable) {
                             e.preventDefault();
                         }
