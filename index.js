@@ -280,7 +280,29 @@
             var args = arguments;
             var returnValue;
             this.each(function () {
-                var value = $(this).data(DATA_ID)[optionOverrides].apply(null, [].slice.call(args, 1));
+                var obj = $.data(this, DATA_ID);
+                var value;
+                if (!obj) {
+                    console.warn('Scrollable ' + optionOverrides + ' should not be called before initialization');
+                    switch (optionOverrides) {
+                        case 'scrollLeft':
+                        case 'scrollTop':
+                            value = 0;
+                            break;
+                        case 'scrollPadding':
+                            value = { top: 0, left: 0, right: 0, bottom: 0 };
+                            break;
+                        case 'scrollBy':
+                        case 'scrollTo':
+                        case 'scrollByPage':
+                        case 'scrollToPage':
+                        case 'scrollToElement':
+                            value = Promise.resolve();
+                            break;
+                    }
+                } else {
+                    value = obj[optionOverrides].apply(null, [].slice.call(args, 1));
+                }
                 if (value !== undefined) {
                     returnValue = value;
                     return false;
