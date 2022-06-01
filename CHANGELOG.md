@@ -1,3 +1,10 @@
+## v1.6.3 / 2022-06-01
+
+- Fix: prevent exception when calling method on uninitialized element
+- Fix: extra `scrollStart` and `scrollEnd` event fired during momemtum and bouncing phase
+- Fix: incorrect `startX` and `startY` reported in scroll events during momemtum and bouncing phase
+- Fix: incorrect value reported from `scrollLeft` and `scrollTop` method after scrolling by mouse wheel
+
 ## v1.6.2 / 2022-05-19
 
 - Fix: `scrollTop` and `scrollLeft` return `NaN` initially

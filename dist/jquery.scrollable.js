@@ -280,7 +280,29 @@
             var args = arguments;
             var returnValue;
             this.each(function () {
-                var value = $(this).data(DATA_ID)[optionOverrides].apply(null, [].slice.call(args, 1));
+                var obj = $.data(this, DATA_ID);
+                var value;
+                if (!obj) {
+                    console.warn('Scrollable ' + optionOverrides + ' should not be called before initialization');
+                    switch (optionOverrides) {
+                        case 'scrollLeft':
+                        case 'scrollTop':
+                            value = 0;
+                            break;
+                        case 'scrollPadding':
+                            value = { top: 0, left: 0, right: 0, bottom: 0 };
+                            break;
+                        case 'scrollBy':
+                        case 'scrollTo':
+                        case 'scrollByPage':
+                        case 'scrollToPage':
+                        case 'scrollToElement':
+                            value = Promise.resolve();
+                            break;
+                    }
+                } else {
+                    value = obj[optionOverrides].apply(null, [].slice.call(args, 1));
+                }
                 if (value !== undefined) {
                     returnValue = value;
                     return false;
@@ -661,7 +683,7 @@
                 muteMutations = false;
             }
 
-            function scrollTo(newX, newY, duration, callback) {
+            function scrollTo(newX, newY, duration, callback, eventStartX, eventStartY) {
                 // stop any running animation
                 if (cancelAnim) {
                     cancelAnim();
@@ -676,6 +698,12 @@
                     return Promise.resolve();
                 }
 
+                var fireStart = eventStartX === undefined;
+                if (fireStart) {
+                    eventStartX = x;
+                    eventStartY = y;
+                }
+
                 var startTime = +new Date(),
                     startX = x,
                     startY = y,
@@ -688,7 +716,9 @@
                 var finish = function () {
                     cancelAnim = null;
                     cancelFrame(frameId);
-                    fireEvent('scrollEnd', startX, startY, x, y);
+                    if (fireStart) {
+                        fireEvent('scrollEnd', eventStartX, eventStartY, x, y);
+                    }
                     if (typeof callback === 'function') {
                         callback();
                     }
@@ -708,11 +738,13 @@
                         stepY = (newY - startY) * easeOut + startY;
 
                     setPosition(stepX, stepY);
-                    fireEvent('scrollMove', startX, startY, stepX, stepY, stepX - x, stepY - y);
+                    fireEvent('scrollMove', eventStartX, eventStartY, stepX, stepY, stepX - x, stepY - y);
                     frameId = nextFrame(animate);
                 };
                 cancelAnim = finish;
-                fireEvent('scrollStart', startX, startY);
+                if (fireStart){
+                    fireEvent('scrollStart', eventStartX, eventStartY);
+                }
                 animate();
                 return promise;
             }
@@ -901,7 +933,7 @@
 
                 function bounceBack(callback) {
                     var newPos = normalizePosition(x, y);
-                    scrollTo(newPos.x, newPos.y, options.bounceDuration, callback);
+                    scrollTo(newPos.x, newPos.y, options.bounceDuration, callback, startX, startY);
                 }
 
                 function handleEnd() {
@@ -1007,7 +1039,7 @@
                         newX = p.x;
                         newY = p.y;
                         if (p.pageChanged) {
-                            scrollTo(newX, newY, options.bounceDuration, handleEnd);
+                            scrollTo(newX, newY, options.bounceDuration, handleEnd, startX, startY);
                             snappedToPage = true;
                             return;
                         }
@@ -1073,7 +1105,7 @@
                         }
                         scrollTo(newX, newY, m.max(momentumX.time, momentumY.time), function () {
                             bounceBack(handleEnd);
-                        });
+                        }, startX, startY);
                     } else {
                         handleEnd();
                     }
@@ -1191,12 +1223,14 @@
                     };
                     $wrapper.addClass(options.scrollingClass);
                     if (newPos.pageChanged) {
-                        scrollTo(newX, newY, options.bounceDuration, handleEnd);
+                        scrollTo(newX, newY, options.bounceDuration, handleEnd, startX, startY);
                     } else {
                         clearTimeout(wheelState.timeout);
                         wheelState.timeout = setTimeout(handleEnd, 200);
                         fireEvent('scrollMove', startX, startY, newX, newY, wheelDeltaX, wheelDeltaY);
                         setPosition(newX, newY);
+                        stopX = newX;
+                        stopY = newY;
                         if ((minX < 0 || minY < 0) && e.cancelable) {
                             e.preventDefault();
                         }
