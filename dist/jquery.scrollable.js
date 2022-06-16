@@ -1250,7 +1250,7 @@
                 if (scrollTop || scrollLeft) {
                     $wrapper[0].scrollTop = 0;
                     $wrapper[0].scrollLeft = 0;
-                    scrollTo(x - scrollLeft, y - scrollTop, 0);
+                    scrollToPreNormalized(scrollLeft - x, scrollTop - y, 0);
                 }
             };
             $wrapper.on(handlers);

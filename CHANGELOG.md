@@ -1,3 +1,7 @@
+## v1.6.4 / 2022-06-16
+
+- Fix: should not over scroll when fixing native auto scrolling behavior
+
 ## v1.6.3 / 2022-06-01
 
 - Fix: prevent exception when calling method on uninitialized element
