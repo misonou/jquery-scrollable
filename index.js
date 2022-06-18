@@ -376,9 +376,6 @@
         batchOptions.hBounce = batchOptions.bounce && batchOptions.hBounce;
         batchOptions.vBounce = batchOptions.bounce && batchOptions.vBounce;
 
-        // add selected elements to the collection
-        $activated = $activated.add(this);
-
         return this.each(function () {
             var options = $.extend(true, {}, batchOptions),
                 $wrapper = $(this),
@@ -406,6 +403,11 @@
                 scrollbarSize,
                 cancelScroll,
                 cancelAnim;
+
+            // add selected elements to the collection
+            if ($.inArray($activated, this) < 0) {
+                $activated.splice(0, 0, this);
+            }
 
             function getPageIndex(offset) {
                 var props = pageDirection === 'x' ? ['left', 'right', 'width'] : ['top', 'bottom', 'height'];
