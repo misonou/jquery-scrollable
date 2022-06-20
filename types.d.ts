@@ -4,7 +4,8 @@ interface JQuery<TElement = HTMLElement> {
 }
 
 interface JQueryStatic {
-    scrollableOptions: JQueryScrollableOptions;
+    scrollable(element: Element): JQueryScrollable | undefined;
+    scrollable(element: Element, options: JQueryScrollableOptions): JQueryScrollable;
 }
 
 interface JQueryScrollable {

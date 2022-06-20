@@ -1390,6 +1390,13 @@
         });
     };
 
+    $.scrollable = function (element, options) {
+        if (typeof options === 'object') {
+            $(element).scrollable(options);
+        }
+        return $.data(element, DATA_ID);
+    };
+
     var resizeTimeout;
     $(window).on(EV_RESIZE, function () {
         clearTimeout(resizeTimeout);
