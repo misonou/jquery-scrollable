@@ -1253,6 +1253,27 @@
                     scrollToPreNormalized(scrollLeft - x, scrollTop - y, 0);
                 }
             };
+            handlers.keydown = function (e) {
+                var key = e.keyCode;
+                if (e.isDefaultPrevented() || ($(document.activeElement).is('select,button,input,textarea') && key !== 33 && key !== 34)) {
+                    return;
+                }
+                switch (key) {
+                    case 32: // space
+                    case 33: // pageUp
+                    case 34: // pageDown
+                        scrollToPreNormalized(-x, (wrapperSize.height * (key === 33 ? -0.8 : 0.8)) - y, 50);
+                        e.preventDefault();
+                        break;
+                    case 37: // leftArrow
+                    case 38: // upArrow
+                    case 39: // rightArrow
+                    case 40: // downArrow
+                        scrollToPreNormalized((key === 37 ? -50 : key === 39 ? 50 : 0) - x, (key === 38 ? -50 : key === 40 ? 50 : 0) - y, 50);
+                        e.preventDefault();
+                        break;
+                }
+            };
             $wrapper.on(handlers);
 
             // setup initial style
@@ -1384,6 +1405,23 @@
         if (e.originalEvent.deltaX > 0) {
             hasWheelDeltaX = true;
             $(window).off(EV_WHEEL, detectWheelDeltaX);
+        }
+    });
+
+    $(window).on('keydown', function (e) {
+        if (!e.isDefaultPrevented()) {
+            switch (e.keyCode) {
+                case 32: // space
+                case 33: // pageUp
+                case 34: // pageDown
+                case 37: // leftArrow
+                case 38: // upArrow
+                case 39: // rightArrow
+                case 40: // downArrow
+                    if ($activated.length) {
+                        $($.uniqueSort($activated)).eq(0).triggerHandler(e);
+                    }
+            }
         }
     });
 
