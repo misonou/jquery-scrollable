@@ -751,9 +751,9 @@
                 return promise;
             }
 
-            function scrollToPreNormalized(x, y, duration, callback) {
+            function scrollToPreNormalized(x, y, duration, callback, forcePageChange) {
                 refresh();
-                var p = normalizePosition(-x || 0, -y || 0);
+                var p = normalizePosition(-x || 0, -y || 0, forcePageChange);
                 return scrollTo(p.x, p.y, +duration || 0, callback);
             }
 
@@ -1357,7 +1357,7 @@
                     return scrollToPreNormalized(x, y, duration, callback);
                 },
                 scrollByPage: function (dx, dy, duration, callback) {
-                    return scrollToPreNormalized((dx * wrapperSize.width || 0) - x, (dy * wrapperSize.height || 0) - y, duration, callback);
+                    return scrollToPreNormalized((dx * wrapperSize.width || 0) - x, (dy * wrapperSize.height || 0) - y, duration, callback, true);
                 },
                 scrollToPage: function (x, y, duration, callback) {
                     return scrollToPreNormalized(x * wrapperSize.width || 0, y * wrapperSize.height, duration, callback);
