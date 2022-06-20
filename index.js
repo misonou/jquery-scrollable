@@ -40,6 +40,10 @@
             dist: 0,
             time: 0
         },
+        zeroSize = {
+            width: 0,
+            height: 0
+        },
         zeroOrigin = {
             percentX: 0,
             percentY: 0,
@@ -398,8 +402,8 @@
                 minX,
                 minY,
                 pageDirection,
-                contentSize,
-                wrapperSize,
+                contentSize = zeroSize,
+                wrapperSize = zeroSize,
                 scrollbarSize,
                 cancelScroll,
                 cancelAnim;
@@ -835,14 +839,8 @@
                             trailingY = r0.bottom - r2.bottom - parseFloat($wrapper.css('padding-bottom')) + parseFloat($clip.css('padding-bottom'));
                         }
                     }
-                    contentSize = $.extend({
-                        width: 0,
-                        height: 0
-                    }, options.getContentDimension($content));
-                    wrapperSize = $.extend({
-                        width: 0,
-                        height: 0
-                    }, options.getWrapperDimension($wrapper));
+                    contentSize = $.extend({}, zeroSize, options.getContentDimension($content));
+                    wrapperSize = $.extend({}, zeroSize, options.getWrapperDimension($wrapper));
                     minX = options.hScroll ? m.min(0, mround(wrapperSize.width - contentSize.width - leadingX - trailingX + parseFloat($wrapper.css('padding-left')))) : 0;
                     minY = options.vScroll ? m.min(0, mround(wrapperSize.height - contentSize.height - leadingY - trailingY + parseFloat($wrapper.css('padding-top')))) : 0;
                     scrollbarSize = {
