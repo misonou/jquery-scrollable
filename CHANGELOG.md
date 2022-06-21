@@ -1,3 +1,11 @@
+## v1.7.0 / 2022-06-21
+
+- Add method to directly get scrollable api
+- Add key binding for scrolling by keyboard
+- Fix: error when content or wrapper size is undefined
+- Fix: force page change when calling `scrollByPage`
+- Fix: memory leak due to retained jquery object
+
 ## v1.6.4 / 2022-06-16
 
 - Fix: should not over scroll when fixing native auto scrolling behavior

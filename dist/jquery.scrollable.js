@@ -40,6 +40,10 @@
             dist: 0,
             time: 0
         },
+        zeroSize = {
+            width: 0,
+            height: 0
+        },
         zeroOrigin = {
             percentX: 0,
             percentY: 0,
@@ -376,9 +380,6 @@
         batchOptions.hBounce = batchOptions.bounce && batchOptions.hBounce;
         batchOptions.vBounce = batchOptions.bounce && batchOptions.vBounce;
 
-        // add selected elements to the collection
-        $activated = $activated.add(this);
-
         return this.each(function () {
             var options = $.extend(true, {}, batchOptions),
                 $wrapper = $(this),
@@ -401,11 +402,16 @@
                 minX,
                 minY,
                 pageDirection,
-                contentSize,
-                wrapperSize,
+                contentSize = zeroSize,
+                wrapperSize = zeroSize,
                 scrollbarSize,
                 cancelScroll,
                 cancelAnim;
+
+            // add selected elements to the collection
+            if ($.inArray($activated, this) < 0) {
+                $activated.splice(0, 0, this);
+            }
 
             function getPageIndex(offset) {
                 var props = pageDirection === 'x' ? ['left', 'right', 'width'] : ['top', 'bottom', 'height'];
@@ -749,9 +755,9 @@
                 return promise;
             }
 
-            function scrollToPreNormalized(x, y, duration, callback) {
+            function scrollToPreNormalized(x, y, duration, callback, forcePageChange) {
                 refresh();
-                var p = normalizePosition(-x || 0, -y || 0);
+                var p = normalizePosition(-x || 0, -y || 0, forcePageChange);
                 return scrollTo(p.x, p.y, +duration || 0, callback);
             }
 
@@ -833,14 +839,8 @@
                             trailingY = r0.bottom - r2.bottom - parseFloat($wrapper.css('padding-bottom')) + parseFloat($clip.css('padding-bottom'));
                         }
                     }
-                    contentSize = $.extend({
-                        width: 0,
-                        height: 0
-                    }, options.getContentDimension($content));
-                    wrapperSize = $.extend({
-                        width: 0,
-                        height: 0
-                    }, options.getWrapperDimension($wrapper));
+                    contentSize = $.extend({}, zeroSize, options.getContentDimension($content));
+                    wrapperSize = $.extend({}, zeroSize, options.getWrapperDimension($wrapper));
                     minX = options.hScroll ? m.min(0, mround(wrapperSize.width - contentSize.width - leadingX - trailingX + parseFloat($wrapper.css('padding-left')))) : 0;
                     minY = options.vScroll ? m.min(0, mround(wrapperSize.height - contentSize.height - leadingY - trailingY + parseFloat($wrapper.css('padding-top')))) : 0;
                     scrollbarSize = {
@@ -1253,6 +1253,27 @@
                     scrollToPreNormalized(scrollLeft - x, scrollTop - y, 0);
                 }
             };
+            handlers.keydown = function (e) {
+                var key = e.keyCode;
+                if (e.isDefaultPrevented() || ($(document.activeElement).is('select,button,input,textarea') && key !== 33 && key !== 34)) {
+                    return;
+                }
+                switch (key) {
+                    case 32: // space
+                    case 33: // pageUp
+                    case 34: // pageDown
+                        scrollToPreNormalized(-x, (wrapperSize.height * (key === 33 ? -0.8 : 0.8)) - y, 50);
+                        e.preventDefault();
+                        break;
+                    case 37: // leftArrow
+                    case 38: // upArrow
+                    case 39: // rightArrow
+                    case 40: // downArrow
+                        scrollToPreNormalized((key === 37 ? -50 : key === 39 ? 50 : 0) - x, (key === 38 ? -50 : key === 40 ? 50 : 0) - y, 50);
+                        e.preventDefault();
+                        break;
+                }
+            };
             $wrapper.on(handlers);
 
             // setup initial style
@@ -1355,7 +1376,7 @@
                     return scrollToPreNormalized(x, y, duration, callback);
                 },
                 scrollByPage: function (dx, dy, duration, callback) {
-                    return scrollToPreNormalized((dx * wrapperSize.width || 0) - x, (dy * wrapperSize.height || 0) - y, duration, callback);
+                    return scrollToPreNormalized((dx * wrapperSize.width || 0) - x, (dy * wrapperSize.height || 0) - y, duration, callback, true);
                 },
                 scrollToPage: function (x, y, duration, callback) {
                     return scrollToPreNormalized(x * wrapperSize.width || 0, y * wrapperSize.height, duration, callback);
@@ -1367,6 +1388,13 @@
 
             refresh(true);
         });
+    };
+
+    $.scrollable = function (element, options) {
+        if (typeof options === 'object') {
+            $(element).scrollable(options);
+        }
+        return $.data(element, DATA_ID);
     };
 
     var resizeTimeout;
@@ -1384,6 +1412,23 @@
         if (e.originalEvent.deltaX > 0) {
             hasWheelDeltaX = true;
             $(window).off(EV_WHEEL, detectWheelDeltaX);
+        }
+    });
+
+    $(window).on('keydown', function (e) {
+        if (!e.isDefaultPrevented()) {
+            switch (e.keyCode) {
+                case 32: // space
+                case 33: // pageUp
+                case 34: // pageDown
+                case 37: // leftArrow
+                case 38: // upArrow
+                case 39: // rightArrow
+                case 40: // downArrow
+                    if ($activated.length) {
+                        $($.uniqueSort($activated)).eq(0).triggerHandler(e);
+                    }
+            }
         }
     });
 
