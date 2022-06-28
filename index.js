@@ -734,6 +734,7 @@
                     var elapsed = (+new Date()) - startTime;
                     if (elapsed >= duration) {
                         setPosition(newX, newY);
+                        fireEvent('scrollMove', eventStartX, eventStartY, newX, newY, newX - x, newY - y);
                         finish();
                         return;
                     }
