@@ -1,3 +1,7 @@
+## v1.7.1 / 2022-06-29
+
+- Fix: `scrollMove` event not fired when scroll duration is 0
+
 ## v1.7.0 / 2022-06-21
 
 - Add method to directly get scrollable api
