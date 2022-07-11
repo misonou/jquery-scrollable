@@ -865,6 +865,8 @@
                         }
                         var newPos = normalizePosition(x, y);
                         setPosition(newPos.x, newPos.y);
+                        stopX = x;
+                        stopY = y;
                     } else {
                         setPosition(x, y);
                     }
