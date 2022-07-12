@@ -1,3 +1,7 @@
+## v1.7.2 / 2022-07-12
+
+- Fix: `scrollLeft` and `scrollTop` may report incorrect values after refresh
+
 ## v1.7.1 / 2022-06-29
 
 - Fix: `scrollMove` event not fired when scroll duration is 0
