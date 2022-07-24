@@ -1327,8 +1327,14 @@
                     }
                     // release memory from MutationObserver callback
                     refresh = function () {};
+                    options = {};
                     enabled = false;
                     $wrapper.data(DATA_ID, null);
+                    $wrapper.splice(0, 1);
+                    $content.splice(0, 1);
+                    if (collectMutations.disconnect) {
+                        collectMutations.disconnect();
+                    }
                 },
                 enable: function () {
                     if (!enabled) {
@@ -1404,9 +1410,6 @@
     $(window).on(EV_RESIZE, function () {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(function () {
-            $activated = $activated.filter(function () {
-                return !!$(this).data(DATA_ID);
-            });
             $activated.scrollable('refresh');
         }, isAndroid ? 200 : 0);
     });

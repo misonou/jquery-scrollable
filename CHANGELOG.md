@@ -1,3 +1,7 @@
+## v1.7.3 / 2022-07-25
+
+- Fix: memory leak issue
+
 ## v1.7.2 / 2022-07-12
 
 - Fix: `scrollLeft` and `scrollTop` may report incorrect values after refresh
