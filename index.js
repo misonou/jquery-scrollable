@@ -863,10 +863,15 @@
                         if (cancelScroll) {
                             cancelScroll();
                         }
+                        var startX = x;
+                        var startY = y;
                         var newPos = normalizePosition(x, y);
+                        fireEvent('scrollStart', startX, startY);
                         setPosition(newPos.x, newPos.y);
                         stopX = x;
                         stopY = y;
+                        fireEvent('scrollMove', startX, startY);
+                        fireEvent('scrollEnd', startX, startY);
                     } else {
                         setPosition(x, y);
                     }
