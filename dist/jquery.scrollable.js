@@ -1,7 +1,7 @@
 /*jshint regexp:true,browser:true,jquery:true,debug:true,-W083 */
 
 /*!
- * jQuery Scrollable v1.6.1
+ * jQuery Scrollable v1.7.3
  *
  * The MIT License (MIT)
  *
@@ -221,13 +221,23 @@
         }
     }
 
-    function getHit($elm, margin, point) {
-        var pos = $elm.offset(),
-            top = pos.top - margin,
-            left = pos.left - margin,
-            bottom = pos.top + $elm.outerHeight() + margin,
-            right = pos.left + $elm.outerWidth() + margin;
-        return point.x >= left && point.x <= right && point.y >= top && point.y <= bottom;
+    function getHit($elm, margin, point, isDirY) {
+        var r0 = getRect($elm[0]);
+        var hitX = point.x + margin >= r0.left && point.x - margin <= r0.right;
+        var hitY = point.y + margin >= r0.top && point.y - margin <= r0.bottom;
+        if (hitX && hitY) {
+            return 2;
+        }
+        var r1 = getRect($elm.parent()[0]);
+        if (isDirY) {
+            if (hitX && point.y >= r1.top && point.y <= r1.bottom) {
+                return point.y > r0.bottom ? 1 : -1;
+            }
+        } else {
+            if (hitY && point.x >= r1.left && point.x <= r1.right) {
+                return point.x > r0.right ? 1 : -1;
+            }
+        }
     }
 
     function calculateMomentum(dist, time, maxDist, overshoot) {
@@ -405,6 +415,7 @@
                 contentSize = zeroSize,
                 wrapperSize = zeroSize,
                 scrollbarSize,
+                lastPoint,
                 cancelScroll,
                 cancelAnim;
 
@@ -762,6 +773,10 @@
                 return scrollTo(p.x, p.y, +duration || 0, callback);
             }
 
+            function scrollByPage(dx, dy, duration, callback) {
+                return scrollToPreNormalized((dx * wrapperSize.width || 0) - x, (dy * wrapperSize.height || 0) - y, duration, callback, true);
+            }
+
             function scrollToElement(target, targetOrigin, wrapperOrigin, duration, callback) {
                 target = $(target, $content)[0];
                 if (target) {
@@ -863,10 +878,15 @@
                         if (cancelScroll) {
                             cancelScroll();
                         }
+                        var startX = x;
+                        var startY = y;
                         var newPos = normalizePosition(x, y);
+                        fireEvent('scrollStart', startX, startY);
                         setPosition(newPos.x, newPos.y);
                         stopX = x;
                         stopY = y;
+                        fireEvent('scrollMove', startX, startY);
+                        fireEvent('scrollEnd', startX, startY);
                     } else {
                         setPosition(x, y);
                     }
@@ -913,15 +933,38 @@
                     factor = 1,
                     isDirY;
 
+                if (hasTouch && e.originalEvent.touches.length === 1) {
+                    lastPoint = point;
+                } else if (!hasTouch && lastPoint && point.x === lastPoint.x && point.y === lastPointY) {
+                    return;
+                }
                 if (handle === 'scrollbar' || handle === 'both') {
-                    if ($hScrollbar && minX < 0 && getHit($hScrollbar, 10, point)) {
-                        scrollbarMode = true;
-                        isDirY = false;
-                        factor = -100 / scrollbarSize.x * (1 - leadingX / wrapperSize.width);
-                    } else if ($vScrollbar && minY < 0 && getHit($vScrollbar, 10, point)) {
-                        scrollbarMode = true;
-                        isDirY = true;
-                        factor = -100 / scrollbarSize.y * (1 - leadingY / wrapperSize.height);
+                    var hit = $hScrollbar && minX < 0 && getHit($hScrollbar, 5, point, false);
+                    switch (hit) {
+                        case 1:
+                        case -1:
+                            e.preventDefault();
+                            scrollByPage(hit, 0, 100);
+                            return;
+                        case 2:
+                            scrollbarMode = true;
+                            isDirY = false;
+                            factor = -100 / scrollbarSize.x * (1 - leadingX / wrapperSize.width);
+                            break;
+                        default:
+                            hit = $vScrollbar && minY < 0 && getHit($vScrollbar, 5, point, true);
+                            switch (hit) {
+                                case 1:
+                                case -1:
+                                    e.preventDefault();
+                                    scrollByPage(0, hit, 100);
+                                    return;
+                                case 2:
+                                    scrollbarMode = true;
+                                    isDirY = true;
+                                    factor = -100 / scrollbarSize.y * (1 - leadingY / wrapperSize.height);
+                                    break;
+                            }
                     }
                 }
                 if (!hasTouch && handle === 'scrollbar' && !scrollbarMode) {
@@ -947,6 +990,7 @@
                 }
 
                 function handleMove(e) {
+                    lastPoint = null;
                     if ($current && $current !== $wrapper || snappedToPage) {
                         return;
                     }
@@ -1385,7 +1429,7 @@
                     return scrollToPreNormalized(x, y, duration, callback);
                 },
                 scrollByPage: function (dx, dy, duration, callback) {
-                    return scrollToPreNormalized((dx * wrapperSize.width || 0) - x, (dy * wrapperSize.height || 0) - y, duration, callback, true);
+                    return scrollByPage(dx, dy, duration, callback);
                 },
                 scrollToPage: function (x, y, duration, callback) {
                     return scrollToPreNormalized(x * wrapperSize.width || 0, y * wrapperSize.height, duration, callback);

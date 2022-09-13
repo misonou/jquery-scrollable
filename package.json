@@ -1,6 +1,6 @@
 {
   "name": "jq-scrollable",
-  "version": "1.7.3",
+  "version": "1.8.0",
   "main": "index.js",
   "dependencies": {
     "jquery": "^3.5.1"

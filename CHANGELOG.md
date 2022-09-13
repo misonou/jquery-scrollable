@@ -1,3 +1,9 @@
+## v1.8.0 / 2022-09-13
+
+- Allow clicking on scrollbar track area to scroll by page
+- Fix: missing events when content is scrolled after refresh
+- Fix: do not handle mousedown event after touch
+
 ## v1.7.3 / 2022-07-25
 
 - Fix: memory leak issue
