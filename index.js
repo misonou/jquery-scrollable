@@ -405,6 +405,7 @@
                 contentSize = zeroSize,
                 wrapperSize = zeroSize,
                 scrollbarSize,
+                lastPoint,
                 cancelScroll,
                 cancelAnim;
 
@@ -918,6 +919,11 @@
                     factor = 1,
                     isDirY;
 
+                if (hasTouch && e.originalEvent.touches.length === 1) {
+                    lastPoint = point;
+                } else if (!hasTouch && lastPoint && point.x === lastPoint.x && point.y === lastPointY) {
+                    return;
+                }
                 if (handle === 'scrollbar' || handle === 'both') {
                     if ($hScrollbar && minX < 0 && getHit($hScrollbar, 10, point)) {
                         scrollbarMode = true;
@@ -952,6 +958,7 @@
                 }
 
                 function handleMove(e) {
+                    lastPoint = null;
                     if ($current && $current !== $wrapper || snappedToPage) {
                         return;
                     }
