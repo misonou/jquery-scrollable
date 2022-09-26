@@ -1,3 +1,7 @@
+## v1.8.1 / 2022-09-26
+
+- Fix: mouse event being prevented when using pen device
+
 ## v1.8.0 / 2022-09-13
 
 - Allow clicking on scrollbar track area to scroll by page

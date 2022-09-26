@@ -276,19 +276,6 @@
         }
     }
 
-    function preventPullToRefresh(container) {
-        var prevent = false;
-        container.addEventListener('touchstart', function (e) {
-            prevent = e.touches.length === 1 && (window.pageYOffset || document.body.scrollTop || root.scrollTop) === 0;
-        });
-        container.addEventListener('touchmove', function (e) {
-            if (prevent) {
-                prevent = false;
-                e.preventDefault();
-            }
-        });
-    }
-
     $.fn.scrollable = function (optionOverrides) {
         if (typeof optionOverrides === 'string') {
             var args = arguments;
@@ -894,7 +881,8 @@
             }
 
             function startScroll(e) {
-                var hasTouch = e.type === 'touchstart',
+                var touches = e.originalEvent.touches,
+                    hasTouch = touches && (touches[0].touchType || true),
                     handle = options.handle,
                     EV_MOVE = hasTouch ? 'touchmove' : 'mousemove',
                     EV_END = hasTouch ? 'touchend' : 'mouseup',
@@ -904,7 +892,7 @@
                     handle = hasTouch ? 'content' : 'scrollbar';
                 }
                 // only start scrolling for left click and one-finger touch
-                if ((!hasTouch && e.which !== 1) || (hasTouch && e.originalEvent.touches.length !== 1) || $(e.target).is(options.cancel) || $(options.cancel, $wrapper).has(e.target).length) {
+                if ((!hasTouch && e.which !== 1) || (hasTouch && touches.length !== 1) || $(e.target).is(options.cancel) || $(options.cancel, $wrapper).has(e.target).length) {
                     if (e.which === 2) {
                         e.preventDefault();
                     }
@@ -933,7 +921,7 @@
                     factor = 1,
                     isDirY;
 
-                if (hasTouch && e.originalEvent.touches.length === 1) {
+                if (hasTouch && touches.length === 1) {
                     lastPoint = point;
                 } else if (!hasTouch && lastPoint && point.x === lastPoint.x && point.y === lastPointY) {
                     return;
@@ -1007,10 +995,10 @@
                         hBounce = options.hBounce && !scrollbarMode,
                         vBounce = options.vBounce && !scrollbarMode;
 
-                    e.preventDefault();
-                    if (!deltaX && !deltaY) {
+                    if ((!deltaX && !deltaY) || (!contentScrolled && hasTouch === 'stylus' && distX < 10 && distY < 10)) {
                         return;
                     }
+                    e.preventDefault();
                     lastPointX = point.x;
                     lastPointY = point.y;
 
@@ -1336,8 +1324,6 @@
             if (hasTouch) {
                 $wrapper.css('touch-action', 'none');
             }
-
-            preventPullToRefresh($wrapper[0]);
 
             if (window.MutationObserver) {
                 collectMutations = new MutationObserver(function () {
