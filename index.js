@@ -844,8 +844,8 @@
                     }
                     contentSize = $.extend({}, zeroSize, options.getContentDimension($content));
                     wrapperSize = $.extend({}, zeroSize, options.getWrapperDimension($wrapper));
-                    minX = options.hScroll ? m.min(0, mround(wrapperSize.width - contentSize.width - leadingX - trailingX + parseFloat($wrapper.css('padding-left')))) : 0;
-                    minY = options.vScroll ? m.min(0, mround(wrapperSize.height - contentSize.height - leadingY - trailingY + parseFloat($wrapper.css('padding-top')))) : 0;
+                    minX = options.hScroll ? m.min(0, mround(wrapperSize.width - contentSize.width - leadingX - trailingX + parseFloat($wrapper.css('padding-left')) + parseFloat($wrapper.css('border-left-width')))) : 0;
+                    minY = options.vScroll ? m.min(0, mround(wrapperSize.height - contentSize.height - leadingY - trailingY + parseFloat($wrapper.css('padding-top')) + parseFloat($wrapper.css('border-top-width')))) : 0;
                     scrollbarSize = {
                         x: (1 + minX / contentSize.width) * 100 || 0,
                         y: (1 + minY / contentSize.height) * 100 || 0
