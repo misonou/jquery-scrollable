@@ -1184,7 +1184,7 @@
                     canScrollY = options.hScroll && minX,
                     isDirY;
 
-                if (!options.wheel || e.isDefaultPrevented()) {
+                if (!options.wheel || e.ctrlKey || e.altKey || e.shiftKey || e.metaKey || e.isDefaultPrevented()) {
                     return;
                 }
                 if (ev.deltaX !== undefined) {
