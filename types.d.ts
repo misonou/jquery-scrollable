@@ -79,5 +79,6 @@ interface JQueryScrollableOptions extends JQueryScrollableScrollbarOptions {
     scrollStart: (e: JQueryScrollableEventProps) => void,
     scrollMove: (e: JQueryScrollableEventProps) => void,
     scrollStop: (e: JQueryScrollableEventProps) => void,
-    scrollEnd: (e: JQueryScrollableEventProps) => void
+    scrollEnd: (e: JQueryScrollableEventProps) => void,
+    scrollProgressChange: (e: JQueryScrollableEventProps) => void;
 }

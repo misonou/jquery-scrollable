@@ -37,9 +37,9 @@
     'use strict';
 
     var zeroMomentum = {
-            dist: 0,
-            time: 0
-        },
+        dist: 0,
+        time: 0
+    },
         zeroSize = {
             width: 0,
             height: 0
@@ -359,7 +359,8 @@
             scrollStart: null,
             scrollMove: null,
             scrollStop: null,
-            scrollEnd: null
+            scrollEnd: null,
+            scrollProgressChange: null
         };
         $.extend(batchOptions, optionOverrides);
 
@@ -463,12 +464,15 @@
                         offsetY: -curY,
                         deltaX: -deltaX || 0,
                         deltaY: -deltaY || 0,
-                        percentX: (curX / minX) * 100 || 0,
-                        percentY: (curY / minY) * 100 || 0,
+                        percentX: minX ? (curX / minX) * 100 : 100,
+                        percentY: minY ? (curY / minY) * 100 : 100,
                         pageIndex: pageIndex,
                         pageItem: $pageItems[pageIndex] || null
                     };
                     options[type].call($wrapper[0], args);
+                }
+                if (type === 'scrollMove') {
+                    fireEvent('scrollProgressChange', startX, startY, newX, newY, deltaX, deltaY);
                 }
             }
 
@@ -510,7 +514,7 @@
                         }
                         var snapPos;
                         var snapped;
-                        switch(alignProp) {
+                        switch (alignProp) {
                             case props[0]:
                                 snapPos = r1[props[0]];
                                 break;
@@ -747,7 +751,7 @@
                     frameId = nextFrame(animate);
                 };
                 cancelAnim = finish;
-                if (fireStart){
+                if (fireStart) {
                     fireEvent('scrollStart', eventStartX, eventStartY);
                 }
                 animate();
@@ -827,6 +831,7 @@
                             $pageItems = options.pageItem ? $(options.pageItem, content) : $();
                         }
                     }
+                    var oMinX = minX, oMinY = minY;
                     var r0, r1, trailingX = 0, trailingY = 0;
                     if ($content[0]) {
                         var $clip = $content.parentsUntil($wrapper).filter(function (i, v) {
@@ -850,7 +855,7 @@
                         x: (1 + minX / contentSize.width) * 100 || 0,
                         y: (1 + minY / contentSize.height) * 100 || 0
                     };
-                    if (options.pageDirection === 'x' || options.pageDirection === 'y' ) {
+                    if (options.pageDirection === 'x' || options.pageDirection === 'y') {
                         pageDirection = options.pageDirection;
                     } else if (minX && minY && $pageItems[1]) {
                         r0 = getRect($pageItems[0]);
@@ -876,6 +881,9 @@
                         fireEvent('scrollEnd', startX, startY);
                     } else {
                         setPosition(x, y);
+                        if (oMinX !== minX || oMinY !== minY) {
+                            fireEvent('scrollProgressChange', x, y);
+                        }
                     }
                 }
             }
@@ -1356,7 +1364,7 @@
                         $vScrollbar.remove();
                     }
                     // release memory from MutationObserver callback
-                    refresh = function () {};
+                    refresh = function () { };
                     options = {};
                     enabled = false;
                     $wrapper.data(DATA_ID, null);
@@ -1474,6 +1482,6 @@
                 $(document).trigger('mouseup');
             });
         }
-    } catch (e) {}
+    } catch (e) { }
 
 }));
