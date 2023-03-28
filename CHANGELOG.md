@@ -1,3 +1,9 @@
+## v1.9.0 / 2023-03-29
+
+- Add `scrollProgressChange` event
+- Fix: dimension calculation issue when container has border
+- Fix: should not scroll for wheel event with modified key (Ctrl/Shift/Alt/Meta)
+
 ## v1.8.1 / 2022-09-26
 
 - Fix: mouse event being prevented when using pen device

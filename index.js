@@ -1,7 +1,7 @@
 /*jshint regexp:true,browser:true,jquery:true,debug:true,-W083 */
 
 /*!
- * jQuery Scrollable v1.7.3
+ * jQuery Scrollable v1.9.0
  *
  * The MIT License (MIT)
  *
