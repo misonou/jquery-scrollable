@@ -1188,8 +1188,8 @@
                 var ev = e.originalEvent,
                     wheelDeltaX = 0,
                     wheelDeltaY = 0,
-                    canScrollX = options.hScroll && minY,
-                    canScrollY = options.vScroll && minX,
+                    canScrollX = options.hScroll && minX,
+                    canScrollY = options.vScroll && minY,
                     isDirY;
 
                 if (!options.wheel || e.ctrlKey || e.altKey || e.shiftKey || e.metaKey || e.isDefaultPrevented()) {
@@ -1214,10 +1214,10 @@
                 }
                 if (hasWheelDeltaX) {
                     isDirY = m.abs(wheelDeltaY) > m.abs(wheelDeltaX);
-                    if ((!canScrollY && !isDirY) || (!canScrollX && isDirY)) {
+                    if ((!canScrollX && !isDirY) || (!canScrollY && isDirY)) {
                         return;
                     }
-                } else if (!canScrollY && !wheelDeltaX) {
+                } else if (!canScrollX && !wheelDeltaX) {
                     wheelDeltaX = wheelDeltaY;
                 }
                 wheelDeltaX *= options.hScroll;
