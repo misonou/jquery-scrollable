@@ -145,8 +145,8 @@
     function getEventPosition(e) {
         var point = (e.originalEvent.touches || [e])[0];
         return {
-            x: point.pageX,
-            y: point.pageY
+            x: point.clientX,
+            y: point.clientY
         };
     }
 
@@ -1188,8 +1188,8 @@
                 var ev = e.originalEvent,
                     wheelDeltaX = 0,
                     wheelDeltaY = 0,
-                    canScrollX = options.vScroll && minY,
-                    canScrollY = options.hScroll && minX,
+                    canScrollX = options.hScroll && minY,
+                    canScrollY = options.vScroll && minX,
                     isDirY;
 
                 if (!options.wheel || e.ctrlKey || e.altKey || e.shiftKey || e.metaKey || e.isDefaultPrevented()) {

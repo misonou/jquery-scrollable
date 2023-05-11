@@ -1,3 +1,8 @@
+## v1.9.1 / 2023-05-11
+
+- Fix: unable to scroll by mouse wheel if either `hScroll` or `vScroll` is set to `false`
+- Fix: unable to drag scrollbar when page is scrolled down due to hit test failure
+
 ## v1.9.0 / 2023-03-29
 
 - Add `scrollProgressChange` event
