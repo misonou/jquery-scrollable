@@ -145,8 +145,8 @@
     function getEventPosition(e) {
         var point = (e.originalEvent.touches || [e])[0];
         return {
-            x: point.pageX,
-            y: point.pageY
+            x: point.clientX,
+            y: point.clientY
         };
     }
 
