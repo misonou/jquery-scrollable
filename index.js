@@ -1217,7 +1217,7 @@
                     if ((!canScrollX && !isDirY) || (!canScrollY && isDirY)) {
                         return;
                     }
-                } else if (!canScrollX && !wheelDeltaX) {
+                } else if (!canScrollY && !wheelDeltaX) {
                     wheelDeltaX = wheelDeltaY;
                 }
                 wheelDeltaX *= options.hScroll;
