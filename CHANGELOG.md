@@ -1,3 +1,7 @@
+## v1.9.3 / 2023-05-12
+
+- Fix: restore wheel behavior when only x-dir is scrollable
+
 ## v1.9.2 / 2023-05-11
 
 - Fix: unable to scroll by mouse wheel if either `hScroll` or `vScroll` is set to `false`
