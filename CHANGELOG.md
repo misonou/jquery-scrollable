@@ -1,3 +1,8 @@
+## v1.10.0 / 2023-06-07
+
+- Lock scrolling element when using mouse wheel, similar to default browser behavior
+- Honor `overscroll-behavior: none` on container element
+
 ## v1.9.3 / 2023-05-12
 
 - Fix: restore wheel behavior when only x-dir is scrollable

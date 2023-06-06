@@ -1,7 +1,7 @@
 /*jshint regexp:true,browser:true,jquery:true,debug:true,-W083 */
 
 /*!
- * jQuery Scrollable v1.9.0
+ * jQuery Scrollable v1.10.0
  *
  * The MIT License (MIT)
  *
@@ -101,6 +101,7 @@
         $originDiv = $('<div style="position:fixed;top:0;left:0;">')[0],
         $activated = $(),
         $current,
+        wheelLock,
         DATA_ID = 'xScrollable',
         DATA_ID_STICKY = 'xScrollableSticky';
 
@@ -896,6 +897,8 @@
                     EV_END = hasTouch ? 'touchend' : 'mouseup',
                     EV_CANCEL = hasTouch ? 'touchcancel' : 'mouseup';
 
+                clearTimeout(wheelLock);
+
                 if (handle === 'auto') {
                     handle = hasTouch ? 'content' : 'scrollbar';
                 }
@@ -1209,6 +1212,9 @@
                 if (!wheelDeltaX && !wheelDeltaY) {
                     return;
                 }
+                if ($current && $current !== $wrapper && ($wrapper.find($current)[0] || $current.find($wrapper)[0])) {
+                    return;
+                }
                 if (canScrollInnerElement(e.target, $wrapper[0], wheelDeltaX, wheelDeltaY)) {
                     return;
                 }
@@ -1264,6 +1270,7 @@
                         wheelState = null;
                         cancelScroll = null;
                     };
+                    $current = $wrapper;
                     $wrapper.addClass(options.scrollingClass);
                     if (newPos.pageChanged) {
                         scrollTo(newX, newY, options.bounceDuration, handleEnd, startX, startY);
@@ -1274,11 +1281,17 @@
                         setPosition(newX, newY);
                         stopX = newX;
                         stopY = newY;
-                        if ((minX < 0 || minY < 0) && e.cancelable) {
-                            e.preventDefault();
-                        }
                     }
+                } else if ($current !== $wrapper && $wrapper.css('overscroll-behavior') !== 'auto') {
+                    $current = $wrapper;
+                }
+                if ($current === $wrapper) {
                     e.stopPropagation();
+                    e.preventDefault();
+                    clearTimeout(wheelLock);
+                    wheelLock = setTimeout(function () {
+                        $current = null;
+                    }, 250);
                 }
             };
             handlers.transitionend = function () {
