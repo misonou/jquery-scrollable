@@ -1282,6 +1282,8 @@
                         stopX = newX;
                         stopY = newY;
                     }
+                } else if ($current !== $wrapper && $wrapper.css('overscroll-behavior') !== 'auto') {
+                    $current = $wrapper;
                 }
                 if ($current === $wrapper) {
                     e.stopPropagation();
