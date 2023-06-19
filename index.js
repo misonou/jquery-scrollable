@@ -1209,6 +1209,7 @@
                 } else if (ev.detail !== undefined) {
                     wheelDeltaY = -ev.detail;
                 }
+                hasWheelDeltaX = hasWheelDeltaX || wheelDeltaX !== 0;
                 if (!wheelDeltaX && !wheelDeltaY) {
                     return;
                 }
@@ -1466,7 +1467,7 @@
     });
 
     $(window).on(EV_WHEEL, function detectWheelDeltaX(e) {
-        if (e.originalEvent.deltaX > 0) {
+        if (e.originalEvent.deltaX !== 0) {
             hasWheelDeltaX = true;
             $(window).off(EV_WHEEL, detectWheelDeltaX);
         }
