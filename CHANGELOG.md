@@ -1,3 +1,7 @@
+## v1.10.1 / 2023-06-19
+
+- Fix: presence of x-direction in wheel event not detected properly
+
 ## v1.10.0 / 2023-06-07
 
 - Lock scrolling element when using mouse wheel, similar to default browser behavior
