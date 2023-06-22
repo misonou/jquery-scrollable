@@ -1490,6 +1490,16 @@
         }
     });
 
+    $(window).on('hashchange', function () {
+        if (location.hash.slice(1)) {
+            $(location.hash).parents().each(function (i, v) {
+                if ($.inArray(v, $activated) >= 0) {
+                    v.scrollTop = 0;
+                }
+            });
+        }
+    });
+
     try {
         if (window.top !== window.self) {
             $(window.top).on('mouseenter', function () {
