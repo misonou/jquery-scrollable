@@ -85,6 +85,14 @@
         px = function (v) {
             return (v || 0) + 'px';
         },
+        cssvar = isCSSVarSupported() ? function (varname, value) {
+            return 'var(--jqs-' + varname + ', ' + value + ')';
+        } : function (_, value) {
+            return value;
+        },
+        coalesce = function (v, def) {
+            return v === undefined ? def : v;
+        },
 
         // events
         EV_RESIZE = 'orientationchange resize',
@@ -105,6 +113,10 @@
         DATA_ID = 'xScrollable',
         DATA_ID_STICKY = 'xScrollableSticky';
 
+    function isCSSVarSupported() {
+        return window.CSS && CSS.supports('color', 'var(--primary)');
+    }
+
     function parseOrigin(value) {
         if (/(left|center|right)?(?:((?:^|\s|[+-]?)\d+(?:\.\d+)?)(px|%))?(?:\s+(top|center|bottom)?(?:((?:^|\s|[+-]?)\d+(?:\.\d+)?)(px|%))?)?/g.test(value)) {
             return {
@@ -121,8 +133,8 @@
         var $track = $('<div style="position:absolute;font-size:0;z-index:1;"><div style="position:absolute;"></div></div>').appendTo($elm),
             $scrollbar = $track.children().eq(0);
 
-        $track.css(dir === 'x' ? 'left' : 'top', px(options.scrollbarInset));
         $track.css(options.scrollbarTrackStyle);
+        $track.css(dir === 'x' ? 'left' : 'top', options.scrollbarTrackStyle[dir === 'x' ? 'right' : 'bottom']);
         $scrollbar.css(options.scrollbarStyle);
         if (options.scrollbarClass) {
             $track.addClass(options.scrollbarClass + ' ' + options.scrollbarClass + '-' + dir);
@@ -337,10 +349,7 @@
             scrollbarClass: '',
             scrollbarInset: 3,
             scrollbarSize: 5,
-            scrollbarStyle: {
-                backgroundColor: 'black',
-                opacity: 0.7
-            },
+            scrollbarStyle: {},
             scrollbarTrackStyle: {},
             glow: createGlow,
             glowClass: '',
@@ -363,15 +372,24 @@
         $.extend(batchOptions, optionOverrides);
 
         // normalize options
-        $.extend(batchOptions.scrollbarTrackStyle, {
-            bottom: px(batchOptions.scrollbarInset),
-            right: px(batchOptions.scrollbarInset)
+        var cssInset = optionOverrides.scrollbarInset !== undefined ? px(optionOverrides.scrollbarInset) : cssvar('scrollbar-inset', '3px'),
+            cssSize = optionOverrides.scrollbarSize !== undefined ? px(optionOverrides.scrollbarSize) : cssvar('scrollbar-size', '5px'),
+            cssInsetXY = 'calc(' + cssSize + ' + ' + cssInset + ' * 2)',
+            scrollbarStyle = batchOptions.scrollbarStyle,
+            scrollbarTrackStyle = batchOptions.scrollbarTrackStyle;
+
+        $.extend(scrollbarTrackStyle, {
+            bottom: cssInset,
+            right: cssInset
         });
-        $.extend(batchOptions.scrollbarStyle, {
+        $.extend(scrollbarStyle, {
+            backgroundColor: coalesce(scrollbarStyle.backgroundColor, cssvar('scrollbar-color', 'black')),
+            borderRadius: coalesce(scrollbarStyle.borderRadius, cssvar('scrollbar-radius', 0)),
+            opacity: coalesce(scrollbarStyle.opacity, cssvar('scrollbar-opacity', 0.7)),
             bottom: 0,
             right: 0,
-            minWidth: px(batchOptions.scrollbarSize),
-            minHeight: px(batchOptions.scrollbarSize)
+            minWidth: cssSize,
+            minHeight: cssSize
         });
         batchOptions.hBounce = batchOptions.bounce && batchOptions.hBounce;
         batchOptions.vBounce = batchOptions.bounce && batchOptions.vBounce;
@@ -444,8 +462,8 @@
                 return {
                     top: leadingY,
                     left: leadingX,
-                    right: $hScrollbar ? options.scrollbarSize + options.scrollbarInset * 2 : 0,
-                    bottom: $vScrollbar ? options.scrollbarSize + options.scrollbarInset * 2 : 0
+                    right: $vScrollbar ? $vScrollbar.width() + parseFloat($vScrollbar.parent().css('right')) * 2 : 0,
+                    bottom: $hScrollbar ? $hScrollbar.height() + parseFloat($hScrollbar.parent().css('bottom')) * 2 : 0
                 };
             }
 
@@ -622,6 +640,7 @@
                         });
                     }
                     $hScrollbar.toggle(enabled && minX < 0);
+                    $hScrollbar.parent().css('right', $vScrollbar && minY ? cssInsetXY : cssInset);
                 }
                 if ($vScrollbar) {
                     var top = -y / contentSize.height * 100;
@@ -645,6 +664,7 @@
                         });
                     }
                     $vScrollbar.toggle(enabled && minY < 0);
+                    $vScrollbar.parent().css('bottom', $hScrollbar && minX ? cssInsetXY : cssInset);
                 }
 
                 $wrapper.toggleClass(options.scrollableXClass, minX < 0);
