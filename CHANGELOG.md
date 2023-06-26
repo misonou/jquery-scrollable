@@ -1,3 +1,8 @@
+## v1.10.2 / 2023-06-26
+
+- Fix: improve interoperability with nested native scrollable area
+- Fix: prevent native scrolling upon `hashchange` (content offset by scrollTop/scrollLeft of parent element)
+
 ## v1.10.1 / 2023-06-19
 
 - Fix: presence of x-direction in wheel event not detected properly

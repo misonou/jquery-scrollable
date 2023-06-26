@@ -262,19 +262,16 @@
     }
 
     function canScrollInnerElement(cur, parent, deltaX, deltaY) {
+        var clampX, clampY;
         for (; cur !== parent; cur = cur.parentNode) {
             var style = getComputedStyle(cur);
-            if (deltaY && cur.scrollHeight > cur.offsetHeight && (style.overflowY === 'auto' || style.overflowY === 'scroll')) {
-                if ((deltaY > 0 && cur.scrollTop > 0) || (deltaY < 0 && cur.scrollTop + cur.offsetHeight < cur.scrollHeight)) {
-                    return true;
-                }
-            }
-            if (deltaX && cur.scrollWidth > cur.offsetWidth && (style.overflowX === 'auto' || style.overflowX === 'scroll')) {
-                if ((deltaX > 0 && cur.scrollLeft > 0) || (deltaX < 0 && cur.scrollLeft + cur.offsetWidth < cur.scrollWidth)) {
-                    return true;
-                }
-            }
+            clampY = clampY || (cur.scrollHeight > cur.offsetHeight && (style.overflowY === 'auto' || style.overflowY === 'scroll'));
+            clampX = clampX || (cur.scrollWidth > cur.offsetWidth && (style.overflowX === 'auto' || style.overflowX === 'scroll'));
         }
+        return (clampX || clampY) && {
+            x: clampX,
+            y: clampY
+        };
     }
 
     $.fn.scrollable = function (optionOverrides) {
@@ -1013,24 +1010,32 @@
                     lastPointX = point.x;
                     lastPointY = point.y;
 
-                    if (!scrollbarMode && isDirY === undefined) {
-                        // exit if the gesture does not suggest a scroll
-                        if ((!hasTouch && distX < 6 && distY < 6) || (!options.vScroll && thisDirY) || (!options.hScroll && !thisDirY)) {
-                            return;
-                        }
-                        // check if user is scrolling inner content
-                        if (canScrollInnerElement(e.target, $wrapper[0], deltaX, deltaY)) {
-                            handleStop(e);
-                            return;
-                        }
-                        // check if user is scrolling outer content when content of this container is underflow
-                        if (((thisDirY && !minY) || (!thisDirY && !minX)) && (canScrollInnerElement($wrapper[0], document.body, deltaX, deltaY) || $wrapper.parents().filter(function (i, v) { return $(v).data(DATA_ID); })[0])) {
-                            handleStop(e);
-                            return;
-                        }
-                    }
                     if (isDirY === undefined) {
-                        isDirY = thisDirY;
+                        if (!scrollbarMode) {
+                            // exit if the gesture does not suggest a scroll
+                            if ((!hasTouch && distX < 6 && distY < 6) || (!options.vScroll && thisDirY) || (!options.hScroll && !thisDirY)) {
+                                return;
+                            }
+                            // check if user is scrolling inner content
+                            var scrollInner = canScrollInnerElement(e.target, $wrapper[0], deltaX, deltaY);
+                            if (scrollInner && scrollInner.x && scrollInner.y) {
+                                handleStop(e);
+                                return;
+                            }
+                            // check if user is scrolling outer content when content of this container is underflow
+                            if (((thisDirY && !minY) || (!thisDirY && !minX)) && ($wrapper.parents().filter(function (i, v) { return $.inArray(v, $activated) >= 0; })[0] || canScrollInnerElement($wrapper[0], document.body, deltaX, deltaY))) {
+                                handleStop(e);
+                                return;
+                            }
+                            isDirY = 0;
+                            if (scrollInner) {
+                                isDirY = !scrollInner.y;
+                            } else if (options.lockDirection) {
+                                isDirY = distX >= distY + 6 ? false : distY >= distX + 6 ? true : isDirY;
+                            }
+                        } else {
+                            isDirY = thisDirY;
+                        }
                     }
                     $current = $current || $wrapper;
 
@@ -1043,14 +1048,14 @@
                     }
 
                     // lock direction
-                    if (!options.vScroll || (!scrollbarMode && options.lockDirection && distX >= distY + 6) || (scrollbarMode && !isDirY)) {
+                    if (!options.vScroll || (isDirY !== 0 && !isDirY)) {
                         newY = y;
                         deltaY = 0;
                         if (options.vScroll) {
                             touchDeltaY = 0;
                         }
                     }
-                    if (!options.hScroll || (!scrollbarMode && options.lockDirection && distY >= distX + 6) || (scrollbarMode && isDirY)) {
+                    if (!options.hScroll || (isDirY !== 0 && isDirY)) {
                         newX = x;
                         deltaX = 0;
                         if (options.hScroll) {
@@ -1210,17 +1215,18 @@
                     wheelDeltaY = -ev.detail;
                 }
                 hasWheelDeltaX = hasWheelDeltaX || wheelDeltaX !== 0;
+                isDirY = !hasWheelDeltaX || m.abs(wheelDeltaY) > m.abs(wheelDeltaX);
                 if (!wheelDeltaX && !wheelDeltaY) {
                     return;
                 }
                 if ($current && $current !== $wrapper && ($wrapper.find($current)[0] || $current.find($wrapper)[0])) {
                     return;
                 }
-                if (canScrollInnerElement(e.target, $wrapper[0], wheelDeltaX, wheelDeltaY)) {
+                var scrollInner = canScrollInnerElement(e.target, $wrapper[0], wheelDeltaX, wheelDeltaY);
+                if (scrollInner && (isDirY ? scrollInner.y : scrollInner.x)) {
                     return;
                 }
                 if (hasWheelDeltaX) {
-                    isDirY = m.abs(wheelDeltaY) > m.abs(wheelDeltaX);
                     if ((!canScrollX && !isDirY) || (!canScrollY && isDirY)) {
                         return;
                     }
@@ -1487,6 +1493,16 @@
                         $($.uniqueSort($activated)).eq(0).triggerHandler(e);
                     }
             }
+        }
+    });
+
+    $(window).on('hashchange', function () {
+        if (location.hash.slice(1)) {
+            $(location.hash).parents().each(function (i, v) {
+                if ($.inArray(v, $activated) >= 0) {
+                    v.scrollTop = 0;
+                }
+            });
         }
     });
 
