@@ -459,11 +459,19 @@
             }
 
             function getScrollPadding() {
+                var style = getComputedStyle($wrapper[0]);
+                var getValue = function (prop) {
+                    return style[prop] === 'auto' || !style[prop] ? undefined : parseFloat(style[prop]);
+                };
+                var top = getValue('scrollPaddingTop');
+                var left = getValue('scrollPaddingLeft');
+                var right = getValue('scrollPaddingRight');
+                var bottom = getValue('scrollPaddingBottom');
                 return {
-                    top: leadingY,
-                    left: leadingX,
-                    right: $vScrollbar ? $vScrollbar.width() + parseFloat($vScrollbar.parent().css('right')) * 2 : 0,
-                    bottom: $hScrollbar ? $hScrollbar.height() + parseFloat($hScrollbar.parent().css('bottom')) * 2 : 0
+                    top: top !== undefined ? top : leadingY,
+                    left: left !== undefined ? left : leadingX,
+                    right: right !== undefined ? right : $vScrollbar ? $vScrollbar.width() + parseFloat($vScrollbar.parent().css('right')) * 2 : 0,
+                    bottom: bottom !== undefined ? bottom : $hScrollbar ? $hScrollbar.height() + parseFloat($hScrollbar.parent().css('bottom')) * 2 : 0
                 };
             }
 
@@ -790,12 +798,19 @@
                 target = $(target, $content)[0];
                 if (target) {
                     refresh();
+                    var scrollPadding = getScrollPadding();
                     var oriE = parseOrigin(targetOrigin);
                     var oriW = parseOrigin(wrapperOrigin);
                     var posE = getRect(target);
                     var posW = getRect($wrapper[0]);
-                    var newX = posE.left * (1 - oriE.percentX) + posE.right * oriE.percentX + oriE.offsetX - posW.left - wrapperSize.width * oriW.percentX - oriW.offsetX - x - leadingX;
-                    var newY = posE.top * (1 - oriE.percentY) + posE.bottom * oriE.percentY + oriE.offsetY - posW.top - wrapperSize.height * oriW.percentY - oriW.offsetY - y - leadingY;
+                    posW = toPlainRect(
+                        posW.left + scrollPadding.left,
+                        posW.top + scrollPadding.top,
+                        posW.right - scrollPadding.right,
+                        posW.bottom - scrollPadding.bottom
+                    );
+                    var newX = posE.left * (1 - oriE.percentX) + posE.right * oriE.percentX + oriE.offsetX - posW.left - posW.width * oriW.percentX - oriW.offsetX - x;
+                    var newY = posE.top * (1 - oriE.percentY) + posE.bottom * oriE.percentY + oriE.offsetY - posW.top - posW.height * oriW.percentY - oriW.offsetY - y;
                     $sticky.each(function (i, v) {
                         if ($.contains($(v).data(DATA_ID_STICKY), target)) {
                             newY -= getRect(v).height;
