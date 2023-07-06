@@ -1329,11 +1329,17 @@
             };
             handlers.focusin = function (e) {
                 var scrollTop = $wrapper[0].scrollTop,
-                    scrollLeft = $wrapper[0].scrollLeft;
+                    scrollLeft = $wrapper[0].scrollLeft,
+                    prevX = stopX,
+                    prevY = stopY;
                 if (scrollTop || scrollLeft) {
                     $wrapper[0].scrollTop = 0;
                     $wrapper[0].scrollLeft = 0;
-                    scrollToPreNormalized(scrollLeft - x, scrollTop - y, 0);
+                    nextFrame(function () {
+                        if (!cancelAnim && stopX === prevX && stopY === prevY) {
+                            scrollToPreNormalized(scrollLeft - x, scrollTop - y, 0);
+                        }
+                    });
                 }
             };
             handlers.keydown = function (e) {
