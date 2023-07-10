@@ -1,3 +1,10 @@
+## v1.11.0 / 2023-07-10
+
+- Support styling by CSS variables
+- Allow overriding in-view content area calculation by `scroll-padding` CSS property
+- Fix: skip scrolling in `focusin` event when it has been handled by others
+- Fix: scrolling by keyboard should act on visible scrollable instances only
+
 ## v1.10.2 / 2023-06-26
 
 - Fix: improve interoperability with nested native scrollable area

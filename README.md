@@ -146,9 +146,25 @@ Below is an exhaustive list of options, with the default value shown.
     scrollStop: null,
 
     // specify an event listener for the scrollEnd event
-    scrollEnd: null
+    scrollEnd: null,
+
+    // specify an event listener for the scrollProgressChange event
+    scrollProgressChange: null
 }
 ```
+
+## Styling scrollbar
+
+Since `v1.11.0`, scrollbar can be styled by the following CSS variables
+
+- `--jqs-scrollbar-inset`
+- `--jqs-scrollbar-size`
+- `--jqs-scrollbar-color`
+- `--jqs-scrollbar-radius`
+- `--jqs-scrollbar-opacity`
+
+The corresponding `scrollbarInset`, `scrollbarSize` and `scrollbarStyle` (`backgroundColor`, `borderRadius`, `opacity`) options,
+when specified, will override values from CSS variables.
 
 ## Methods
 
@@ -322,6 +338,10 @@ the `momentum` or `bounce` option is on.
 ### scrollEnd
 
 Fired when the scrolling action is complete. The content element has now stayed in the final position.
+
+### scrollProgressChange
+
+Fired when the percentage of how far content has been scrolled changed, either due to scrolling, change of content, or change of container's dimensions.
 
 # License
 
