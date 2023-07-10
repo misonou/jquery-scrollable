@@ -1516,7 +1516,7 @@
                 case 39: // rightArrow
                 case 40: // downArrow
                     if ($activated.length) {
-                        $($.uniqueSort($activated)).eq(0).triggerHandler(e);
+                        $($.uniqueSort($activated)).filter(':visible').eq(0).triggerHandler(e);
                     }
             }
         }
