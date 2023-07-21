@@ -931,8 +931,8 @@
 
                 clearTimeout(wheelLock);
 
-                if (handle === 'auto') {
-                    handle = hasTouch ? 'content' : 'scrollbar';
+                if (e.ctrlKey || e.altKey || e.shiftKey || e.metaKey || e.isDefaultPrevented()) {
+                    return;
                 }
                 // only start scrolling for left click and one-finger touch
                 if ((!hasTouch && e.which !== 1) || (hasTouch && touches.length !== 1) || $(e.target).is(options.cancel) || $(options.cancel, $wrapper).has(e.target).length) {
@@ -964,6 +964,9 @@
                     factor = 1,
                     isDirY;
 
+                if (handle === 'auto') {
+                    handle = hasTouch ? 'content' : 'scrollbar';
+                }
                 if (hasTouch && touches.length === 1) {
                     lastPoint = point;
                 } else if (!hasTouch && lastPoint && point.x === lastPoint.x && point.y === lastPointY) {
