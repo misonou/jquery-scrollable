@@ -400,6 +400,7 @@
                 $content = $(),
                 $sticky = $(),
                 $pageItems = $(),
+                $middle = $(),
                 $hScrollbar = options.scrollbar && options.hScroll && $(options.scrollbar($wrapper, 'x', options)),
                 $vScrollbar = options.scrollbar && options.vScroll && $(options.scrollbar($wrapper, 'y', options)),
                 $hGlow = options.glow && options.hGlow && $(options.glow($wrapper, 'x', options)).hide(),
@@ -413,6 +414,8 @@
                 leadingY = 0,
                 stopX = 0,
                 stopY = 0,
+                pendingX = 0,
+                pendingY = 0,
                 minX,
                 minY,
                 pageDirection,
@@ -617,6 +620,8 @@
                 muteMutations = true;
                 x = mround(newX);
                 y = mround(newY);
+                pendingX = 0;
+                pendingY = 0;
 
                 if (hasTransform) {
                     $content.css(vendor + 'Transform', translate(px(x), px(y)));
@@ -822,6 +827,28 @@
                 }
             }
 
+            function fixNativeScroll(element) {
+                var scrollTop = element.scrollTop,
+                    scrollLeft = element.scrollLeft;
+                if (scrollTop || scrollLeft) {
+                    if (enabled && !pendingX && !pendingY) {
+                        nextFrame(function () {
+                            if (pendingX || pendingY) {
+                                scrollToPreNormalized(pendingX - x, pendingY - y, 0);
+                            }
+                        });
+                    }
+                    pendingX += scrollLeft;
+                    pendingY += scrollTop;
+                    element.scrollTop = 0;
+                    element.scrollLeft = 0;
+                }
+            }
+
+            function fixNativeScrollHandler(e) {
+                fixNativeScroll(e.currentTarget);
+            }
+
             function createStickyClone(v) {
                 var $clone = $(v.cloneNode(false)).append($(options.stickyHandle, v).clone()).addClass(options.stickyClass).data(DATA_ID_STICKY, v);
                 $clone.click(function () {
@@ -852,6 +879,7 @@
                                 }
                                 x = content.scrollableOffsetX || 0;
                                 y = content.scrollableOffsetY || 0;
+                                $middle = $content.parentsUntil($wrapper).not($middle).on('scroll', fixNativeScrollHandler).end();
                             }
                             var $curSticky = $($sticky);
                             $sticky = $(options.sticky, content).map(function (i, v) {
@@ -1228,6 +1256,13 @@
 
             var wheelState;
             var handlers = {};
+            handlers.focusin = function () {
+                fixNativeScroll($wrapper[0]);
+                $middle.each(function (i, v) {
+                    fixNativeScroll(v);
+                });
+            };
+            handlers.scroll = fixNativeScrollHandler;
             handlers.touchstart = startScroll;
             handlers.mousedown = startScroll;
             handlers[EV_WHEEL] = function (e) {
@@ -1345,21 +1380,6 @@
             handlers.animationend = function () {
                 refresh();
             };
-            handlers.focusin = function (e) {
-                var scrollTop = $wrapper[0].scrollTop,
-                    scrollLeft = $wrapper[0].scrollLeft,
-                    prevX = stopX,
-                    prevY = stopY;
-                if (scrollTop || scrollLeft) {
-                    $wrapper[0].scrollTop = 0;
-                    $wrapper[0].scrollLeft = 0;
-                    nextFrame(function () {
-                        if (!cancelAnim && stopX === prevX && stopY === prevY) {
-                            scrollToPreNormalized(scrollLeft - x, scrollTop - y, 0);
-                        }
-                    });
-                }
-            };
             handlers.keydown = function (e) {
                 var key = e.keyCode;
                 if (e.isDefaultPrevented() || ($(document.activeElement).is('select,button,input,textarea') && key !== 33 && key !== 34)) {
@@ -1421,6 +1441,7 @@
                     setPosition(0, 0);
                     $activated.splice($.inArray($wrapper[0], $activated), 1);
                     $wrapper.off(handlers);
+                    $middle.off('scroll', fixNativeScrollHandler);
                     if ($hScrollbar) {
                         $hScrollbar.remove();
                     }
