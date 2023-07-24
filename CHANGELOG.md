@@ -1,3 +1,8 @@
+## v1.11.1 / 2023-07-24
+
+- Fix: prevent scroll on mouse and touch events if default is prevented
+- Fix: handle native scroll happened between wrapper and content
+
 ## v1.11.0 / 2023-07-10
 
 - Support styling by CSS variables
