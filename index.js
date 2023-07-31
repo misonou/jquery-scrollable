@@ -232,19 +232,12 @@
 
     function getDimension($elm) {
         if ($elm[0]) {
-            if (window.getComputedStyle) {
-                var style = window.getComputedStyle($elm[0]);
-                var rect = getRect($elm[0]);
-                return {
-                    width: (rect.right - rect.left) - (parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) + parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth)),
-                    height: (rect.bottom - rect.top) - (parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth))
-                };
-            } else {
-                return {
-                    width: $elm.width(),
-                    height: $elm.height()
-                };
-            }
+            var style = getComputedStyle($elm[0]);
+            var rect = getRect($elm[0]);
+            return {
+                width: (rect.right - rect.left) - (parseFloat(style[pPadding[1]]) + parseFloat(style[pPadding[3]]) + parseFloat(style[pBorder[1]]) + parseFloat(style[pBorder[3]])),
+                height: (rect.bottom - rect.top) - (parseFloat(style[pPadding[0]]) + parseFloat(style[pPadding[2]]) + parseFloat(style[pBorder[0]]) + parseFloat(style[pBorder[2]]))
+            };
         }
     }
 
