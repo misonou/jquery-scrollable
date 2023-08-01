@@ -1,7 +1,7 @@
 /*jshint regexp:true,browser:true,jquery:true,debug:true,-W083 */
 
 /*!
- * jQuery Scrollable v1.11.1
+ * jQuery Scrollable v1.11.2
  *
  * The MIT License (MIT)
  *
@@ -55,6 +55,30 @@
             right: 1,
             bottom: 1
         },
+        pMargin = [
+            'marginTop',
+            'marginRight',
+            'marginBottom',
+            'marginLeft'
+        ],
+        pPadding = [
+            'paddingTop',
+            'paddingRight',
+            'paddingBottom',
+            'paddingLeft'
+        ],
+        pBorder = [
+            'borderTopWidth',
+            'borderRightWidth',
+            'borderBottomWidth',
+            'borderLeftWidth'
+        ],
+        pScrollPadding = [
+            'scrollPaddingTop',
+            'scrollPaddingRight',
+            'scrollPaddingBottom',
+            'scrollPaddingLeft'
+        ],
         mround = function (r) {
             return r >> 0;
         },
@@ -208,19 +232,12 @@
 
     function getDimension($elm) {
         if ($elm[0]) {
-            if (window.getComputedStyle) {
-                var style = window.getComputedStyle($elm[0]);
-                var rect = getRect($elm[0]);
-                return {
-                    width: (rect.right - rect.left) - (parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) + parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth)),
-                    height: (rect.bottom - rect.top) - (parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth))
-                };
-            } else {
-                return {
-                    width: $elm.width(),
-                    height: $elm.height()
-                };
-            }
+            var style = getComputedStyle($elm[0]);
+            var rect = getRect($elm[0]);
+            return {
+                width: (rect.right - rect.left) - (parseFloat(style[pPadding[1]]) + parseFloat(style[pPadding[3]]) + parseFloat(style[pBorder[1]]) + parseFloat(style[pBorder[3]])),
+                height: (rect.bottom - rect.top) - (parseFloat(style[pPadding[0]]) + parseFloat(style[pPadding[2]]) + parseFloat(style[pBorder[0]]) + parseFloat(style[pBorder[2]]))
+            };
         }
     }
 
@@ -466,10 +483,10 @@
                 var getValue = function (prop) {
                     return style[prop] === 'auto' || !style[prop] ? undefined : parseFloat(style[prop]);
                 };
-                var top = getValue('scrollPaddingTop');
-                var left = getValue('scrollPaddingLeft');
-                var right = getValue('scrollPaddingRight');
-                var bottom = getValue('scrollPaddingBottom');
+                var top = getValue(pScrollPadding[0]);
+                var left = getValue(pScrollPadding[3]);
+                var right = getValue(pScrollPadding[1]);
+                var bottom = getValue(pScrollPadding[2]);
                 return {
                     top: top !== undefined ? top : leadingY,
                     left: left !== undefined ? left : leadingX,
@@ -893,6 +910,7 @@
                         }
                     }
                     var oMinX = minX, oMinY = minY;
+                    var style = getComputedStyle($wrapper[0]);
                     var r0, r1, trailingX = 0, trailingY = 0;
                     if ($content[0]) {
                         var $clip = $content.parentsUntil($wrapper).filter(function (i, v) {
@@ -900,18 +918,20 @@
                         });
                         r0 = getRect($wrapper[0]);
                         r1 = getRect($content[0]);
-                        leadingX = r1.left - r0.left - x;
-                        leadingY = r1.top - r0.top - y;
+                        leadingX = r1.left - r0.left - x - parseFloat(style[pPadding[3]]) - parseFloat(style[pBorder[3]]);
+                        leadingY = r1.top - r0.top - y - parseFloat(style[pPadding[0]]) - parseFloat(style[pBorder[0]]);
                         if ($clip[0]) {
                             var r2 = getRect($clip[0]);
-                            trailingX = r0.right - r2.right - parseFloat($wrapper.css('padding-right')) + parseFloat($clip.css('padding-right'));
-                            trailingY = r0.bottom - r2.bottom - parseFloat($wrapper.css('padding-bottom')) + parseFloat($clip.css('padding-bottom'));
+                            trailingX = r0.right - r2.right + parseFloat($clip.css(pPadding[1]));
+                            trailingY = r0.bottom - r2.bottom + parseFloat($clip.css(pPadding[2]));
                         }
+                        trailingX += Math.min(0, parseFloat($content.css(pMargin[1]))) - parseFloat(style[pBorder[1]]);
+                        trailingY += Math.min(0, parseFloat($content.css(pMargin[2]))) - parseFloat(style[pBorder[2]]);
                     }
                     contentSize = $.extend({}, zeroSize, options.getContentDimension($content));
                     wrapperSize = $.extend({}, zeroSize, options.getWrapperDimension($wrapper));
-                    minX = options.hScroll ? m.min(0, mround(wrapperSize.width - contentSize.width - leadingX - trailingX + parseFloat($wrapper.css('padding-left')) + parseFloat($wrapper.css('border-left-width')))) : 0;
-                    minY = options.vScroll ? m.min(0, mround(wrapperSize.height - contentSize.height - leadingY - trailingY + parseFloat($wrapper.css('padding-top')) + parseFloat($wrapper.css('border-top-width')))) : 0;
+                    minX = options.hScroll ? m.min(0, mround(wrapperSize.width - contentSize.width - leadingX - trailingX)) : 0;
+                    minY = options.vScroll ? m.min(0, mround(wrapperSize.height - contentSize.height - leadingY - trailingY)) : 0;
                     scrollbarSize = {
                         x: (1 + minX / contentSize.width) * 100 || 0,
                         y: (1 + minY / contentSize.height) * 100 || 0

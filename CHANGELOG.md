@@ -1,3 +1,7 @@
+## v1.11.2 / 2023-08-01
+
+- Fix: max scroll offset calculation with border and negative margin
+
 ## v1.11.1 / 2023-07-24
 
 - Fix: prevent scroll on mouse and touch events if default is prevented
