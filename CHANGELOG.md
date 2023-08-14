@@ -1,3 +1,7 @@
+## v1.11.3 / 2023/08-14
+
+- Fix: max scroll offset calculation issue when content is hidden
+
 ## v1.11.2 / 2023-08-01
 
 - Fix: max scroll offset calculation with border and negative margin

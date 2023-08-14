@@ -1,7 +1,7 @@
 /*jshint regexp:true,browser:true,jquery:true,debug:true,-W083 */
 
 /*!
- * jQuery Scrollable v1.11.2
+ * jQuery Scrollable v1.11.3
  *
  * The MIT License (MIT)
  *
@@ -912,7 +912,7 @@
                     var oMinX = minX, oMinY = minY;
                     var style = getComputedStyle($wrapper[0]);
                     var r0, r1, trailingX = 0, trailingY = 0;
-                    if ($content[0]) {
+                    if ($content.is(':visible')) {
                         var $clip = $content.parentsUntil($wrapper).filter(function (i, v) {
                             return $(v).css('overflow') !== 'visible';
                         });
