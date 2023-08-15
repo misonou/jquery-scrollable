@@ -1293,7 +1293,7 @@
                     canScrollY = options.vScroll && minY,
                     isDirY;
 
-                if (!options.wheel || e.ctrlKey || e.altKey || e.shiftKey || e.metaKey || e.isDefaultPrevented()) {
+                if (!options.wheel || e.ctrlKey || e.altKey || e.shiftKey || e.metaKey || e.isDefaultPrevented() || (!canScrollX && !canScrollY)) {
                     return;
                 }
                 if (ev.deltaX !== undefined) {
