@@ -329,7 +329,10 @@
                             break;
                     }
                 } else {
-                    value = obj[optionOverrides].apply(null, [].slice.call(args, 1));
+                    value = obj[optionOverrides];
+                    if (typeof value === 'function') {
+                        value = value.apply(null, [].slice.call(args, 1));
+                    }
                 }
                 if (value !== undefined) {
                     returnValue = value;
@@ -1457,6 +1460,27 @@
 
             // plugin interface
             $wrapper.data(DATA_ID, {
+                get scrollTarget() {
+                    return $content[0] || null;
+                },
+                get scrollX() {
+                    return -x;
+                },
+                get scrollY() {
+                    return -y;
+                },
+                get scrollPercentX() {
+                    return minX ? (x / minX) * 100 : 100;
+                },
+                get scrollPercentY() {
+                    return minY ? (y / minY) * 100 : 100;
+                },
+                get scrollMaxX() {
+                    return -minX;
+                },
+                get scrollMaxY() {
+                    return -minY;
+                },
                 destroy: function () {
                     setPosition(0, 0);
                     $activated.splice($.inArray($wrapper[0], $activated), 1);

@@ -1,6 +1,8 @@
 interface JQuery<TElement = HTMLElement> {
     scrollable(options: Partial<JQueryScrollableOptions>): this;
-    scrollable<T extends keyof JQueryScrollable>(action: T, ...args: Parameters<JQueryScrollable[T]>): ReturnType<JQueryScrollable[T]> extends void ? this : ReturnType<JQueryScrollable[T]>;
+    scrollable<T extends keyof JQueryScrollable>(action: T, ...args: JQueryScrollable[T] extends (...args) => any ? Parameters<JQueryScrollable[T]> : []): JQueryScrollable[T] extends (...args) => any ?
+        ReturnType<JQueryScrollable[T]> extends void ? this : ReturnType<JQueryScrollable[T]> :
+        JQueryScrollable[T];
 }
 
 interface JQueryStatic {
@@ -9,6 +11,14 @@ interface JQueryStatic {
 }
 
 interface JQueryScrollable {
+    readonly scrollTarget: Element | null;
+    readonly scrollX: number;
+    readonly scrollY: number;
+    readonly scrollPercentX: number;
+    readonly scrollPercentY: number;
+    readonly scrollMaxX: number;
+    readonly scrollMaxY: number;
+
     destroy(): void;
     enable(): void;
     disable(): void;
