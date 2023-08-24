@@ -1,7 +1,7 @@
 /*jshint regexp:true,browser:true,jquery:true,debug:true,-W083 */
 
 /*!
- * jQuery Scrollable v1.11.3
+ * jQuery Scrollable v1.11.4
  *
  * The MIT License (MIT)
  *
@@ -1293,7 +1293,7 @@
                     canScrollY = options.vScroll && minY,
                     isDirY;
 
-                if (!options.wheel || e.ctrlKey || e.altKey || e.shiftKey || e.metaKey || e.isDefaultPrevented()) {
+                if (!options.wheel || e.ctrlKey || e.altKey || e.shiftKey || e.metaKey || e.isDefaultPrevented() || (!canScrollX && !canScrollY)) {
                     return;
                 }
                 if (ev.deltaX !== undefined) {

@@ -1,4 +1,8 @@
-## v1.11.3 / 2023/08-14
+## v1.11.4 / 2023-08-24
+
+- Fix: treat area as unscrollable by wheel when content is underflow
+
+## v1.11.3 / 2023-08-14
 
 - Fix: max scroll offset calculation issue when content is hidden
 
