@@ -498,24 +498,28 @@
                 };
             }
 
+            function getScrollState(startX, startY, newX, newY, deltaX, deltaY) {
+                var pageIndex = options.pageItem ? getPageIndex() : -1;
+                var curX = newX === undefined ? x : newX;
+                var curY = newY === undefined ? y : newY;
+                return {
+                    startX: -startX,
+                    startY: -startY,
+                    offsetX: -curX,
+                    offsetY: -curY,
+                    deltaX: -deltaX || 0,
+                    deltaY: -deltaY || 0,
+                    percentX: minX ? (curX / minX) * 100 : 100,
+                    percentY: minY ? (curY / minY) * 100 : 100,
+                    pageIndex: pageIndex,
+                    pageItem: $pageItems[pageIndex] || null
+                };
+            }
+
             function fireEvent(type, startX, startY, newX, newY, deltaX, deltaY) {
                 if (typeof options[type] === 'function') {
-                    var pageIndex = options.pageItem ? getPageIndex() : -1;
-                    var curX = newX === undefined ? x : newX;
-                    var curY = newY === undefined ? y : newY;
-                    var args = {
-                        type: type,
-                        startX: -startX,
-                        startY: -startY,
-                        offsetX: -curX,
-                        offsetY: -curY,
-                        deltaX: -deltaX || 0,
-                        deltaY: -deltaY || 0,
-                        percentX: minX ? (curX / minX) * 100 : 100,
-                        percentY: minY ? (curY / minY) * 100 : 100,
-                        pageIndex: pageIndex,
-                        pageItem: $pageItems[pageIndex] || null
-                    };
+                    var args = getScrollState(startX, startY, newX, newY, deltaX, deltaY);
+                    args.type = type;
                     options[type].call($wrapper[0], args);
                 }
                 if (type === 'scrollMove') {
@@ -742,6 +746,10 @@
                 muteMutations = false;
             }
 
+            function getResolvePromise() {
+                return $.extend(Promise.resolve(), getScrollState(x, y));
+            }
+
             function scrollTo(newX, newY, duration, callback, eventStartX, eventStartY) {
                 // stop any running animation
                 if (cancelAnim) {
@@ -754,7 +762,7 @@
                     if (typeof callback === 'function') {
                         callback();
                     }
-                    return Promise.resolve();
+                    return getResolvePromise();
                 }
 
                 var fireStart = eventStartX === undefined;
@@ -806,7 +814,7 @@
                     fireEvent('scrollStart', eventStartX, eventStartY);
                 }
                 animate();
-                return promise;
+                return $.extend(promise, getScrollState(startX, startY, newX, newY, newX - startX, newY - startY));
             }
 
             function scrollToPreNormalized(x, y, duration, callback, forcePageChange) {
@@ -843,7 +851,7 @@
                     });
                     return scrollToPreNormalized(m.round(newX), m.round(newY), duration || wrapperOrigin, callback || duration);
                 } else {
-                    return Promise.resolve();
+                    return getResolvePromise();
                 }
             }
 

@@ -28,12 +28,12 @@ interface JQueryScrollable {
     stop(): void;
     scrollLeft(): number;
     scrollTop(): number;
-    scrollBy(x: number, y: number, duration?: number, callback?: () => void): Promise<void>;
-    scrollTo(x: number, y: number, duration?: number, callback?: () => void): Promise<void>;
-    scrollByPage(x: number, y: number, duration?: number, callback?: () => void): Promise<void>;
-    scrollToPage(x: number, y: number, duration?: number, callback?: () => void): Promise<void>;
-    scrollToElement(target: Element, targetOrigin: string, duration: number, callback?: () => void): Promise<void>;
-    scrollToElement(target: Element, targetOrigin?: string, wrapperOrigin?: string, duration?: number, callback?: () => void): Promise<void>;
+    scrollBy(x: number, y: number, duration?: number, callback?: () => void): Promise<void> & JQueryScrollableState;
+    scrollTo(x: number, y: number, duration?: number, callback?: () => void): Promise<void> & JQueryScrollableState;
+    scrollByPage(x: number, y: number, duration?: number, callback?: () => void): Promise<void> & JQueryScrollableState;
+    scrollToPage(x: number, y: number, duration?: number, callback?: () => void): Promise<void> & JQueryScrollableState;
+    scrollToElement(target: Element, targetOrigin: string, duration: number, callback?: () => void): Promise<void> & JQueryScrollableState;
+    scrollToElement(target: Element, targetOrigin?: string, wrapperOrigin?: string, duration?: number, callback?: () => void): Promise<void> & JQueryScrollableState;
 }
 
 interface JQueryScrollableScrollbarOptions {
@@ -44,8 +44,7 @@ interface JQueryScrollableScrollbarOptions {
     scrollbarTrackStyle?: Partial<CSSStyleDeclaration>;
 }
 
-interface JQueryScrollableEventProps {
-    readonly type: string;
+interface JQueryScrollableState {
     readonly startX: number;
     readonly startY: number;
     readonly offsetX: number;
@@ -56,6 +55,10 @@ interface JQueryScrollableEventProps {
     readonly percentY: number;
     readonly pageIndex: number;
     readonly pageItem: Element | null;
+}
+
+interface JQueryScrollableEventProps extends JQueryScrollableState {
+    readonly type: string;
 }
 
 interface JQueryScrollableOptions extends JQueryScrollableScrollbarOptions {
