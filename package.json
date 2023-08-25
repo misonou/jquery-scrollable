@@ -6,7 +6,7 @@
     "jquery": "^3.5.1"
   },
   "devDependencies": {
-    "uglify-js": "^3.12.5"
+    "webpack": "^5.88.2"
   },
   "author": "misonou",
   "license": "MIT",
@@ -16,7 +16,7 @@
   },
   "homepage": "https://github.com/misonou/jquery-scrollable",
   "scripts": {
-    "build": "node -e \"require('fs').copyFileSync('index.js', 'dist/jquery.scrollable.js')\" && uglifyjs -c -m --source-map -o dist/jquery.scrollable.min.js -- index.js",
+    "build": "cross-env NODE_OPTIONS=--openssl-legacy-provider webpack",
     "version": "npm run build && git add -A dist"
   }
 }
