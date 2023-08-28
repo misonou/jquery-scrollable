@@ -922,6 +922,7 @@ const $ = require('jquery');
                     } else {
                         pageDirection = minY ? 'y' : 'x';
                     }
+                    $wrapper.css('touch-action', (['none', 'pan-x', 'pan-y', 'auto'])[!minY * 2 + !minX]);
 
                     if (($current && $current !== $wrapper) || x < minX || y < minY) {
                         if (cancelScroll) {
@@ -1408,9 +1409,6 @@ const $ = require('jquery');
             }
             if ($wrapper.css('overflow') !== 'hidden' && $wrapper.css('overflow') !== 'visible') {
                 $wrapper.css('overflow', 'hidden');
-            }
-            if (hasTouch) {
-                $wrapper.css('touch-action', 'none');
             }
 
             if (window.MutationObserver) {
