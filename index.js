@@ -60,7 +60,6 @@ const $ = require('jquery');
         hasTouch = window.ontouchstart !== undefined && !isTouchPad,
         hasTransform = root.style[vendor + 'Transform'] !== undefined,
         hasTransform3d = window.WebKitCSSMatrix && (new window.WebKitCSSMatrix()).m11 !== undefined,
-        hasWheelDeltaX = false,
 
         // value helpers
         trnOpen = 'translate' + (hasTransform3d ? '3d(' : '('),
@@ -1284,8 +1283,7 @@ const $ = require('jquery');
                 } else if (ev.detail !== undefined) {
                     wheelDeltaY = -ev.detail;
                 }
-                hasWheelDeltaX = hasWheelDeltaX || wheelDeltaX !== 0;
-                isDirY = !hasWheelDeltaX || m.abs(wheelDeltaY) > m.abs(wheelDeltaX);
+                isDirY = m.abs(wheelDeltaY) > m.abs(wheelDeltaX);
                 if (!wheelDeltaX && !wheelDeltaY) {
                     return;
                 }
@@ -1296,12 +1294,8 @@ const $ = require('jquery');
                 if (scrollInner && (isDirY ? scrollInner.y : scrollInner.x)) {
                     return;
                 }
-                if (hasWheelDeltaX) {
-                    if ((!canScrollX && !isDirY) || (!canScrollY && isDirY)) {
-                        return;
-                    }
-                } else if (!canScrollY && !wheelDeltaX) {
-                    wheelDeltaX = wheelDeltaY;
+                if ((!canScrollX && !isDirY) || (!canScrollY && isDirY)) {
+                    return;
                 }
                 wheelDeltaX *= options.hScroll;
                 wheelDeltaY *= options.vScroll;
@@ -1550,13 +1544,6 @@ const $ = require('jquery');
         resizeTimeout = setTimeout(function () {
             $activated.scrollable('refresh');
         }, isAndroid ? 200 : 0);
-    });
-
-    $(window).on(EV_WHEEL, function detectWheelDeltaX(e) {
-        if (e.originalEvent.deltaX !== 0) {
-            hasWheelDeltaX = true;
-            $(window).off(EV_WHEEL, detectWheelDeltaX);
-        }
     });
 
     $(window).on('keydown', function (e) {
