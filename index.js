@@ -93,7 +93,7 @@ const $ = require('jquery');
         cancelFrame = window.cancelAnimationFrame || window.webkitCancelAnimationFrame || window.webkitCancelRequestAnimationFrame || window.mozCancelRequestAnimationFrame || window.oCancelRequestAnimationFrame || window.msCancelRequestAnimationFrame || clearTimeout,
 
         // blocking layer to prevent click event after scrolling
-        $blockLayer = $('<div style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:9999;background:white;opacity:0;filter:alpha(opacity=0);"></div>'),
+        $blockLayer = $('<div style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:white;opacity:0;filter:alpha(opacity=0);"></div>'),
         $originDiv = $('<div style="position:fixed;top:0;left:0;">')[0],
         $activated = $(),
         $current,
@@ -1104,7 +1104,7 @@ const $ = require('jquery');
                     if (!contentScrolled) {
                         contentScrolled = true;
                         if (!hasTouch) {
-                            $blockLayer.appendTo($wrapper);
+                            $blockLayer.appendTo(document.body);
                         }
                         fireEvent('scrollStart', startX, startY);
                     }
@@ -1261,6 +1261,85 @@ const $ = require('jquery');
             handlers.scroll = fixNativeScrollHandler;
             handlers.touchstart = startScroll;
             handlers.mousedown = startScroll;
+            handlers.auxclick = function (e) {
+                var ev = e.originalEvent;
+                var canScrollX = options.hScroll && minX;
+                var canScrollY = options.vScroll && minY;
+                var defaultCursor = 'all-scroll';
+                var contentScrolled;
+                var timeout;
+                var startX;
+                var startY;
+
+                if ((!canScrollX && !canScrollY) || e.which !== 2) {
+                    return;
+                }
+
+                function handleStop() {
+                    clearInterval(timeout);
+                    if (contentScrolled) {
+                        fireEvent('scrollEnd', startX, startY);
+                        fireEvent('scrollStop', startX, startY);
+                        $wrapper.removeClass(options.scrollingClass);
+                    }
+                    $(document).off(bindedHandler);
+                    $blockLayer.detach().css('cursor', 'default');
+                    cancelScroll = null;
+                }
+
+                function handleScroll(e) {
+                    var deltaX = e.clientX - ev.clientX;
+                    var deltaY = e.clientY - ev.clientY;
+                    var shouldScrollX = canScrollX && m.abs(deltaX) >= 20;
+                    var shouldScrollY = canScrollY && m.abs(deltaY) >= 20;
+
+                    function scroll() {
+                        var newPos = normalizePosition(x - deltaX * 0.1, y - deltaY * 0.1, true);
+                        var newX = newPos.x;
+                        var newY = newPos.y;
+                        if (newX !== x || newY !== y) {
+                            if (!contentScrolled) {
+                                startX = x;
+                                startY = y;
+                                contentScrolled = true;
+                                $wrapper.addClass(options.scrollingClass);
+                                fireEvent('scrollStart', startX, startY);
+                            }
+                            fireEvent('scrollMove', startX, startY, newX, newY, deltaX, deltaY);
+                            setPosition(newX, newY);
+                        }
+                    }
+
+                    clearInterval(timeout);
+                    if (shouldScrollX || shouldScrollY) {
+                        scroll();
+                        timeout = setInterval(scroll, 20);
+                        $blockLayer.css('cursor', (!shouldScrollY ? '' : deltaY < 0 ? 'n' : 's') + (!shouldScrollX ? '' : deltaX < 0 ? 'w' : 'e') + '-resize');
+                    } else {
+                        $blockLayer.css('cursor', defaultCursor);
+                    }
+                }
+
+                // stop any running animation
+                if (cancelAnim) {
+                    cancelAnim();
+                }
+                e.stopPropagation();
+
+                var bindedHandler = {
+                    mousemove: handleScroll,
+                    mousedown: handleStop
+                };
+                $(document).on(bindedHandler);
+                cancelScroll = function () {
+                    cancelScroll = null;
+                    if (cancelAnim) {
+                        cancelAnim();
+                    }
+                    handleStop();
+                };
+                $blockLayer.appendTo(document.body).css('cursor', defaultCursor);
+            };
             handlers[EV_WHEEL] = function (e) {
                 var ev = e.originalEvent,
                     wheelDeltaX = 0,
