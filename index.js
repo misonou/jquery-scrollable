@@ -455,10 +455,10 @@ const $ = require('jquery');
                 var right = getValue(pScrollPadding[1]);
                 var bottom = getValue(pScrollPadding[2]);
                 return {
-                    top: top !== undefined ? top : leadingY,
-                    left: left !== undefined ? left : leadingX,
-                    right: right !== undefined ? right : $vScrollbar ? $vScrollbar.width() + parseFloat($vScrollbar.parent().css('right')) * 2 : 0,
-                    bottom: bottom !== undefined ? bottom : $hScrollbar ? $hScrollbar.height() + parseFloat($hScrollbar.parent().css('bottom')) * 2 : 0
+                    top: getValue(pBorder[0]) + (top !== undefined ? top : leadingY + (leadingY && getValue(pPadding[0]))),
+                    left: getValue(pBorder[3]) + (left !== undefined ? left : leadingX + (leadingX && getValue(pPadding[3]))),
+                    right: getValue(pBorder[1]) + (right !== undefined ? right : $vScrollbar ? $vScrollbar.width() + parseFloat($vScrollbar.parent().css('right')) * 2 : 0),
+                    bottom: getValue(pBorder[2]) + (bottom !== undefined ? bottom : $hScrollbar ? $hScrollbar.height() + parseFloat($hScrollbar.parent().css('bottom')) * 2 : 0)
                 };
             }
 
