@@ -320,7 +320,7 @@ const $ = require('jquery');
         }
 
         var batchOptions = {
-            content: '>:visible:eq(0)',
+            content: '>*',
             cancel: '',
             getWrapperDimension: getDimension,
             getContentDimension: getOuterDimension,
@@ -893,7 +893,7 @@ const $ = require('jquery');
             function refresh(updateContent) {
                 if ($wrapper.is(':visible')) {
                     if (updateContent) {
-                        var content = $(options.content, $wrapper)[0];
+                        var content = $(options.content, $wrapper).filter(':visible')[0];
                         if (content) {
                             if (content !== $content[0]) {
                                 if (cancelScroll) {
