@@ -1,111 +1,112 @@
 const $ = require('jquery');
 
 (function () {
-    var zeroMomentum = {
+    const zeroMomentum = {
         dist: 0,
         time: 0
-    },
-        zeroSize = {
-            width: 0,
-            height: 0
-        },
-        zeroOrigin = {
-            percentX: 0,
-            percentY: 0,
-            offsetX: 0,
-            offsetY: 0
-        },
-        zeroOffset = {
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0
-        },
-        originKeyword = {
-            center: 0.5,
-            right: 1,
-            bottom: 1
-        },
-        pMargin = [
-            'marginTop',
-            'marginRight',
-            'marginBottom',
-            'marginLeft'
-        ],
-        pPadding = [
-            'paddingTop',
-            'paddingRight',
-            'paddingBottom',
-            'paddingLeft'
-        ],
-        pBorder = [
-            'borderTopWidth',
-            'borderRightWidth',
-            'borderBottomWidth',
-            'borderLeftWidth'
-        ],
-        pScrollPadding = [
-            'scrollPaddingTop',
-            'scrollPaddingRight',
-            'scrollPaddingBottom',
-            'scrollPaddingLeft'
-        ],
-        mround = function (r) {
-            return r >> 0;
-        },
-        array = Array.prototype,
-        m = Math,
+    };
+    const zeroSize = {
+        width: 0,
+        height: 0
+    };
+    const zeroOrigin = {
+        percentX: 0,
+        percentY: 0,
+        offsetX: 0,
+        offsetY: 0
+    };
+    const zeroOffset = {
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0
+    };
+    const originKeyword = {
+        center: 0.5,
+        right: 1,
+        bottom: 1
+    };
+    const pMargin = [
+        'marginTop',
+        'marginRight',
+        'marginBottom',
+        'marginLeft'
+    ];
+    const pPadding = [
+        'paddingTop',
+        'paddingRight',
+        'paddingBottom',
+        'paddingLeft'
+    ];
+    const pBorder = [
+        'borderTopWidth',
+        'borderRightWidth',
+        'borderBottomWidth',
+        'borderLeftWidth'
+    ];
+    const pScrollPadding = [
+        'scrollPaddingTop',
+        'scrollPaddingRight',
+        'scrollPaddingBottom',
+        'scrollPaddingLeft'
+    ];
+    const mround = function (r) {
+        return r >> 0;
+    };
+    const array = Array.prototype;
+    const m = Math;
 
-        vendor = /webkit/i.test(navigator.appVersion) ? 'webkit' : /firefox/i.test(navigator.userAgent) ? 'Moz' : /trident/i.test(navigator.userAgent) ? 'ms' : window.opera ? 'O' : '',
+    const vendor = /webkit/i.test(navigator.appVersion) ? 'webkit' : /firefox/i.test(navigator.userAgent) ? 'Moz' : /trident/i.test(navigator.userAgent) ? 'ms' : window.opera ? 'O' : '';
 
-        // browser capabilities
-        isAndroid = /android/gi.test(navigator.appVersion),
-        isTouchPad = /hp-tablet/gi.test(navigator.appVersion),
+    // browser capabilities
+    const isAndroid = /android/gi.test(navigator.appVersion);
+    const isTouchPad = /hp-tablet/gi.test(navigator.appVersion);
 
-        DOMMatrix = window.DOMMatrix || window.WebKitCSSMatrix || window.MSCSSMatrix,
-        root = document.documentElement,
-        hasTouch = window.ontouchstart !== undefined && !isTouchPad,
-        hasTransform = root.style[vendor + 'Transform'] !== undefined,
-        hasTransform3d = DOMMatrix && (new DOMMatrix()).m11 !== undefined,
+    const DOMMatrix = window.DOMMatrix || window.WebKitCSSMatrix || window.MSCSSMatrix;
+    const root = document.documentElement;
+    const hasTouch = window.ontouchstart !== undefined && !isTouchPad;
+    const hasTransform = root.style[vendor + 'Transform'] !== undefined;
+    const hasTransform3d = DOMMatrix && (new DOMMatrix()).m11 !== undefined;
 
-        // value helpers
-        trnOpen = 'translate' + (hasTransform3d ? '3d(' : '('),
-        trnClose = hasTransform3d ? ',0)' : ')',
-        translate = function (x, y) {
-            return trnOpen + x + ',' + y + trnClose;
-        },
-        pc = function (v) {
-            return (v || 0).toFixed(5) + '%';
-        },
-        px = function (v) {
-            return (v || 0) + 'px';
-        },
-        cssvar = isCSSVarSupported() ? function (varname, value) {
-            return 'var(--jqs-' + varname + ', ' + value + ')';
-        } : function (_, value) {
-            return value;
-        },
-        coalesce = function (v, def) {
-            return v === undefined ? def : v;
-        },
+    // value helpers
+    const trnOpen = 'translate' + (hasTransform3d ? '3d(' : '(');
+    const trnClose = hasTransform3d ? ',0)' : ')';
+    const translate = function (x, y) {
+        return trnOpen + x + ',' + y + trnClose;
+    };
+    const pc = function (v) {
+        return (v || 0).toFixed(5) + '%';
+    };
+    const px = function (v) {
+        return (v || 0) + 'px';
+    };
+    const cssvar = isCSSVarSupported() ? function (varname, value) {
+        return 'var(--jqs-' + varname + ', ' + value + ')';
+    } : function (_, value) {
+        return value;
+    };
+    const coalesce = function (v, def) {
+        return v === undefined ? def : v;
+    };
 
-        // events
-        EV_RESIZE = 'orientationchange resize',
-        EV_WHEEL = 'onwheel' in window ? 'wheel' : vendor === 'Moz' ? 'DOMMouseScroll' : 'mousewheel',
+    // events
+    const EV_RESIZE = 'orientationchange resize';
+    const EV_WHEEL = 'onwheel' in window ? 'wheel' : vendor === 'Moz' ? 'DOMMouseScroll' : 'mousewheel';
 
-        nextFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function (callback) {
-            return setTimeout(callback, 0);
-        },
+    const nextFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function (callback) {
+        return setTimeout(callback, 0);
+    };
 
-        cancelFrame = window.cancelAnimationFrame || window.webkitCancelAnimationFrame || window.webkitCancelRequestAnimationFrame || window.mozCancelRequestAnimationFrame || window.oCancelRequestAnimationFrame || window.msCancelRequestAnimationFrame || clearTimeout,
+    const cancelFrame = window.cancelAnimationFrame || window.webkitCancelAnimationFrame || window.webkitCancelRequestAnimationFrame || window.mozCancelRequestAnimationFrame || window.oCancelRequestAnimationFrame || window.msCancelRequestAnimationFrame || clearTimeout;
 
-        // blocking layer to prevent click event after scrolling
-        $blockLayer = $('<div style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:white;opacity:0;filter:alpha(opacity=0);"></div>'),
-        $originDiv = $('<div style="position:fixed;top:0;left:0;">')[0],
-        $activated = $(),
-        $current,
-        wheelLock,
-        DATA_ID = 'xScrollable';
+    // blocking layer to prevent click event after scrolling
+    const $blockLayer = $('<div style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:white;opacity:0;filter:alpha(opacity=0);"></div>');
+    const $originDiv = $('<div style="position:fixed;top:0;left:0;">')[0];
+    const $activated = $();
+    const DATA_ID = 'xScrollable';
+
+    var $current;
+    var wheelLock;
 
     function isCSSVarSupported() {
         return window.CSS && CSS.supports('color', 'var(--primary)');
@@ -124,8 +125,8 @@ const $ = require('jquery');
     }
 
     function createScrollbar($elm, dir, options) {
-        var $track = $('<div style="position:absolute;font-size:0;z-index:1;"><div style="position:absolute;"></div></div>').appendTo($elm),
-            $scrollbar = $track.children().eq(0);
+        var $track = $('<div style="position:absolute;font-size:0;z-index:1;"><div style="position:absolute;"></div></div>').appendTo($elm);
+        var $scrollbar = $track.children().eq(0);
 
         $track.css(options.scrollbarTrackStyle);
         $track.css(dir === 'x' ? 'left' : 'top', options.scrollbarTrackStyle[dir === 'x' ? 'right' : 'bottom']);
@@ -137,8 +138,8 @@ const $ = require('jquery');
     }
 
     function createGlow($elm, dir, options) {
-        var $track = $('<div style="position:absolute;pointer-events:none;font-size:0;z-index:1;"><div style="position:absolute;"></div></div>').appendTo($elm),
-            $scrollbar = $track.children().eq(0);
+        var $track = $('<div style="position:absolute;pointer-events:none;font-size:0;z-index:1;"><div style="position:absolute;"></div></div>').appendTo($elm);
+        var $scrollbar = $track.children().eq(0);
 
         $track.css(dir === 'x' ? 'height' : 'width', '100%');
         $track.css(options.glowStyle);
@@ -245,9 +246,9 @@ const $ = require('jquery');
     }
 
     function calculateMomentum(dist, time, maxDist, overshoot) {
-        var deceleration = 0.0006,
-            speed = m.abs(dist) / time,
-            newDist = (speed * speed) / (2 * deceleration);
+        var deceleration = 0.0006;
+        var speed = m.abs(dist) / time;
+        var newDist = (speed * speed) / (2 * deceleration);
 
         // Proportinally reduce speed if we are outside of the boundaries
         if (newDist > maxDist) {
@@ -366,11 +367,11 @@ const $ = require('jquery');
         $.extend(batchOptions, optionOverrides);
 
         // normalize options
-        var cssInset = optionOverrides.scrollbarInset !== undefined ? px(optionOverrides.scrollbarInset) : cssvar('scrollbar-inset', '3px'),
-            cssSize = optionOverrides.scrollbarSize !== undefined ? px(optionOverrides.scrollbarSize) : cssvar('scrollbar-size', '5px'),
-            cssInsetXY = 'calc(' + cssSize + ' + ' + cssInset + ' * 2)',
-            scrollbarStyle = batchOptions.scrollbarStyle,
-            scrollbarTrackStyle = batchOptions.scrollbarTrackStyle;
+        var cssInset = optionOverrides.scrollbarInset !== undefined ? px(optionOverrides.scrollbarInset) : cssvar('scrollbar-inset', '3px');
+        var cssSize = optionOverrides.scrollbarSize !== undefined ? px(optionOverrides.scrollbarSize) : cssvar('scrollbar-size', '5px');
+        var cssInsetXY = 'calc(' + cssSize + ' + ' + cssInset + ' * 2)';
+        var scrollbarStyle = batchOptions.scrollbarStyle;
+        var scrollbarTrackStyle = batchOptions.scrollbarTrackStyle;
 
         $.extend(scrollbarTrackStyle, {
             bottom: cssInset,
@@ -389,38 +390,38 @@ const $ = require('jquery');
         batchOptions.vBounce = batchOptions.bounce && batchOptions.vBounce;
 
         return this.each(function () {
-            var options = $.extend(true, {}, batchOptions),
-                $wrapper = $(this),
-                $content = $(),
-                $pageItems = $(),
-                $middle = $(),
-                $hScrollbar = options.scrollbar && options.hScroll && $(options.scrollbar($wrapper, 'x', options)),
-                $vScrollbar = options.scrollbar && options.vScroll && $(options.scrollbar($wrapper, 'y', options)),
-                $hGlow = options.glow && options.hGlow && $(options.glow($wrapper, 'x', options)).hide(),
-                $vGlow = options.glow && options.vGlow && $(options.glow($wrapper, 'y', options)).hide(),
-                enabled = true,
-                collectMutations,
-                muteMutations,
-                x = 0,
-                y = 0,
-                leadingX = 0,
-                leadingY = 0,
-                stopX = 0,
-                stopY = 0,
-                pendingX = 0,
-                pendingY = 0,
-                minX,
-                minY,
-                pageDirection,
-                contentSize = zeroSize,
-                wrapperSize = zeroSize,
-                scrollbarSize,
-                lastPoint,
-                stickyElements = new Map(),
-                stickyRect,
-                stickyTimeout,
-                cancelScroll,
-                cancelAnim;
+            var options = $.extend(true, {}, batchOptions);
+            var $wrapper = $(this);
+            var $content = $();
+            var $pageItems = $();
+            var $middle = $();
+            var $hScrollbar = options.scrollbar && options.hScroll && $(options.scrollbar($wrapper, 'x', options));
+            var $vScrollbar = options.scrollbar && options.vScroll && $(options.scrollbar($wrapper, 'y', options));
+            var $hGlow = options.glow && options.hGlow && $(options.glow($wrapper, 'x', options)).hide();
+            var $vGlow = options.glow && options.vGlow && $(options.glow($wrapper, 'y', options)).hide();
+            var enabled = true;
+            var collectMutations;
+            var muteMutations;
+            var x = 0;
+            var y = 0;
+            var leadingX = 0;
+            var leadingY = 0;
+            var stopX = 0;
+            var stopY = 0;
+            var pendingX = 0;
+            var pendingY = 0;
+            var minX;
+            var minY;
+            var pageDirection;
+            var contentSize = zeroSize;
+            var wrapperSize = zeroSize;
+            var scrollbarSize;
+            var lastPoint;
+            var stickyElements = new Map();
+            var stickyRect;
+            var stickyTimeout;
+            var cancelScroll;
+            var cancelAnim;
 
             // add selected elements to the collection
             if ($.inArray($activated, this) < 0) {
@@ -789,11 +790,11 @@ const $ = require('jquery');
                     eventStartY = y;
                 }
 
-                var startTime = +new Date(),
-                    startX = x,
-                    startY = y,
-                    frameId,
-                    resolve;
+                var startTime = +new Date();
+                var startX = x;
+                var startY = y;
+                var frameId;
+                var resolve;
 
                 var promise = new Promise(function (res) {
                     resolve = res;
@@ -818,10 +819,10 @@ const $ = require('jquery');
                         return;
                     }
 
-                    var f = elapsed / duration - 1,
-                        easeOut = m.sqrt(1 - f * f),
-                        stepX = (newX - startX) * easeOut + startX,
-                        stepY = (newY - startY) * easeOut + startY;
+                    var f = elapsed / duration - 1;
+                    var easeOut = m.sqrt(1 - f * f);
+                    var stepX = (newX - startX) * easeOut + startX;
+                    var stepY = (newY - startY) * easeOut + startY;
 
                     setPosition(stepX, stepY);
                     fireEvent('scrollMove', eventStartX, eventStartY, stepX, stepY, stepX - x, stepY - y);
@@ -869,8 +870,8 @@ const $ = require('jquery');
             }
 
             function fixNativeScroll(element) {
-                var scrollTop = element.scrollTop,
-                    scrollLeft = element.scrollLeft;
+                var scrollTop = element.scrollTop;
+                var scrollLeft = element.scrollLeft;
                 if (scrollTop || scrollLeft) {
                     if (enabled && !pendingX && !pendingY) {
                         nextFrame(function () {
@@ -988,12 +989,12 @@ const $ = require('jquery');
             }
 
             function startScroll(e) {
-                var touches = e.originalEvent.touches,
-                    hasTouch = touches && (touches[0].touchType || true),
-                    handle = options.handle,
-                    EV_MOVE = hasTouch ? 'touchmove' : 'mousemove',
-                    EV_END = hasTouch ? 'touchend' : 'mouseup',
-                    EV_CANCEL = hasTouch ? 'touchcancel' : 'mouseup';
+                var touches = e.originalEvent.touches;
+                var hasTouch = touches && (touches[0].touchType || true);
+                var handle = options.handle;
+                var EV_MOVE = hasTouch ? 'touchmove' : 'mousemove';
+                var EV_END = hasTouch ? 'touchend' : 'mouseup';
+                var EV_CANCEL = hasTouch ? 'touchcancel' : 'mouseup';
 
                 clearTimeout(wheelLock);
 
@@ -1012,23 +1013,23 @@ const $ = require('jquery');
                 }
                 refresh();
 
-                var point = getEventPosition(e),
-                    startTime = +new Date(),
-                    startX = x,
-                    startY = y,
-                    pressureX = 0,
-                    pressureY = 0,
-                    lastPointX = point.x,
-                    lastPointY = point.y,
-                    firstPointX = lastPointX,
-                    firstPointY = lastPointY,
-                    eventTarget = e.target,
-                    bindedHandler = {},
-                    contentScrolled = false,
-                    snappedToPage = false,
-                    scrollbarMode,
-                    factor = 1,
-                    isDirY;
+                var point = getEventPosition(e);
+                var startTime = +new Date();
+                var startX = x;
+                var startY = y;
+                var pressureX = 0;
+                var pressureY = 0;
+                var lastPointX = point.x;
+                var lastPointY = point.y;
+                var firstPointX = lastPointX;
+                var firstPointY = lastPointY;
+                var eventTarget = e.target;
+                var bindedHandler = {};
+                var contentScrolled = false;
+                var snappedToPage = false;
+                var scrollbarMode;
+                var factor = 1;
+                var isDirY;
 
                 if (handle === 'auto') {
                     handle = hasTouch ? 'content' : 'scrollbar';
@@ -1094,18 +1095,18 @@ const $ = require('jquery');
                     if ($current && $current !== $wrapper || snappedToPage) {
                         return;
                     }
-                    var point = getEventPosition(e),
-                        deltaX = point.x - lastPointX,
-                        deltaY = point.y - lastPointY,
-                        touchDeltaX = deltaX,
-                        touchDeltaY = deltaY,
-                        newX = startX + (point.x - firstPointX) * factor,
-                        newY = startY + (point.y - firstPointY) * factor,
-                        distX = m.abs(point.x - firstPointX),
-                        distY = m.abs(point.y - firstPointY),
-                        thisDirY = distX / distY < 1,
-                        hBounce = options.hBounce && !scrollbarMode,
-                        vBounce = options.vBounce && !scrollbarMode;
+                    var point = getEventPosition(e);
+                    var deltaX = point.x - lastPointX;
+                    var deltaY = point.y - lastPointY;
+                    var touchDeltaX = deltaX;
+                    var touchDeltaY = deltaY;
+                    var newX = startX + (point.x - firstPointX) * factor;
+                    var newY = startY + (point.y - firstPointY) * factor;
+                    var distX = m.abs(point.x - firstPointX);
+                    var distY = m.abs(point.y - firstPointY);
+                    var thisDirY = distX / distY < 1;
+                    var hBounce = options.hBounce && !scrollbarMode;
+                    var vBounce = options.vBounce && !scrollbarMode;
 
                     if ((!deltaX && !deltaY) || (!contentScrolled && hasTouch === 'stylus' && distX < 10 && distY < 10)) {
                         return;
@@ -1243,16 +1244,16 @@ const $ = require('jquery');
                             return;
                         }
 
-                        var duration = (+new Date()) - startTime,
-                            momentumX = zeroMomentum,
-                            momentumY = zeroMomentum;
+                        var duration = (+new Date()) - startTime;
+                        var momentumX = zeroMomentum;
+                        var momentumY = zeroMomentum;
 
                         if (options.momentum && duration < 300 && !scrollbarMode) {
                             momentumX = calculateMomentum(x - startX, duration, x > startX ? -x : x - minX, options.bounce && wrapperSize.width);
                             momentumY = calculateMomentum(y - startY, duration, y > startY ? -y : y - minY, options.bounce && wrapperSize.height);
                         }
-                        var newX = x + momentumX.dist,
-                            newY = y + momentumY.dist;
+                        var newX = x + momentumX.dist;
+                        var newY = y + momentumY.dist;
                         if (options.pageItem && options.snapToPage) {
                             var p = normalizePosition(newX, newY, true);
                             newX = p.x;
@@ -1383,12 +1384,12 @@ const $ = require('jquery');
                 $blockLayer.appendTo(document.body).css('cursor', defaultCursor);
             };
             handlers[EV_WHEEL] = function (e) {
-                var ev = e.originalEvent,
-                    wheelDeltaX = 0,
-                    wheelDeltaY = 0,
-                    canScrollX = options.hScroll && minX,
-                    canScrollY = options.vScroll && minY,
-                    isDirY;
+                var ev = e.originalEvent;
+                var wheelDeltaX = 0;
+                var wheelDeltaY = 0;
+                var canScrollX = options.hScroll && minX;
+                var canScrollY = options.vScroll && minY;
+                var isDirY;
 
                 if (!options.wheel || e.ctrlKey || e.altKey || e.shiftKey || e.metaKey || e.isDefaultPrevented() || (!canScrollX && !canScrollY)) {
                     return;
