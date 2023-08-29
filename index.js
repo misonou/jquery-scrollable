@@ -423,10 +423,10 @@ const $ = require('jquery');
             var cancelScroll;
             var cancelAnim;
 
-            // add selected elements to the collection
-            if ($.inArray($activated, this) < 0) {
-                $activated.splice(0, 0, this);
+            if ($.inArray(this, $activated) >= 0) {
+                throw new Error('Scrollable already activated');
             }
+            $activated.splice(0, 0, this);
 
             function getPageIndex(offset) {
                 var props = pageDirection === 'x' ? ['left', 'right', 'width'] : ['top', 'bottom', 'height'];
