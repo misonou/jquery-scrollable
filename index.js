@@ -15,6 +15,12 @@ const $ = require('jquery');
             offsetX: 0,
             offsetY: 0
         },
+        zeroOffset = {
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0
+        },
         originKeyword = {
             center: 0.5,
             right: 1,
@@ -56,10 +62,11 @@ const $ = require('jquery');
         isAndroid = /android/gi.test(navigator.appVersion),
         isTouchPad = /hp-tablet/gi.test(navigator.appVersion),
 
+        DOMMatrix = window.DOMMatrix || window.WebKitCSSMatrix || window.MSCSSMatrix,
         root = document.documentElement,
         hasTouch = window.ontouchstart !== undefined && !isTouchPad,
         hasTransform = root.style[vendor + 'Transform'] !== undefined,
-        hasTransform3d = window.WebKitCSSMatrix && (new window.WebKitCSSMatrix()).m11 !== undefined,
+        hasTransform3d = DOMMatrix && (new DOMMatrix()).m11 !== undefined,
 
         // value helpers
         trnOpen = 'translate' + (hasTransform3d ? '3d(' : '('),
@@ -98,8 +105,7 @@ const $ = require('jquery');
         $activated = $(),
         $current,
         wheelLock,
-        DATA_ID = 'xScrollable',
-        DATA_ID_STICKY = 'xScrollableSticky';
+        DATA_ID = 'xScrollable';
 
     function isCSSVarSupported() {
         return window.CSS && CSS.supports('color', 'var(--primary)');
@@ -192,6 +198,10 @@ const $ = require('jquery');
             rect = toPlainRect(elm.getBoundingClientRect());
         }
         return rect;
+    }
+
+    function rectIntersects(a, b) {
+        return !(b.right < a.left || b.left > a.right) && !(b.bottom < a.top || b.top > a.bottom);
     }
 
     function getDimension($elm) {
@@ -382,7 +392,6 @@ const $ = require('jquery');
             var options = $.extend(true, {}, batchOptions),
                 $wrapper = $(this),
                 $content = $(),
-                $sticky = $(),
                 $pageItems = $(),
                 $middle = $(),
                 $hScrollbar = options.scrollbar && options.hScroll && $(options.scrollbar($wrapper, 'x', options)),
@@ -407,6 +416,9 @@ const $ = require('jquery');
                 wrapperSize = zeroSize,
                 scrollbarSize,
                 lastPoint,
+                stickyElements = new Map(),
+                stickyRect,
+                stickyTimeout,
                 cancelScroll,
                 cancelAnim;
 
@@ -445,7 +457,7 @@ const $ = require('jquery');
                 return newIndex;
             }
 
-            function getScrollPadding() {
+            function getScrollPadding(target) {
                 var style = getComputedStyle($wrapper[0]);
                 var getValue = function (prop) {
                     return style[prop] === 'auto' || !style[prop] ? undefined : parseFloat(style[prop]);
@@ -454,11 +466,23 @@ const $ = require('jquery');
                 var left = getValue(pScrollPadding[3]);
                 var right = getValue(pScrollPadding[1]);
                 var bottom = getValue(pScrollPadding[2]);
+                var stickyPadding = $.extend({}, zeroOffset);
+                var targetRect = target && getRect(target);
+                stickyElements.forEach(function (state) {
+                    if (state.fixed || (targetRect && state.within && rectIntersects(targetRect, state.rect))) {
+                        if (state.dirX) {
+                            stickyPadding[state.dirX] = m.max(stickyPadding[state.dirX], state.padX);
+                        }
+                        if (state.dirY) {
+                            stickyPadding[state.dirY] = m.max(stickyPadding[state.dirY], state.padY);
+                        }
+                    }
+                });
                 return {
-                    top: getValue(pBorder[0]) + (top !== undefined ? top : leadingY + (leadingY && getValue(pPadding[0]))),
-                    left: getValue(pBorder[3]) + (left !== undefined ? left : leadingX + (leadingX && getValue(pPadding[3]))),
-                    right: getValue(pBorder[1]) + (right !== undefined ? right : $vScrollbar ? $vScrollbar.width() + parseFloat($vScrollbar.parent().css('right')) * 2 : 0),
-                    bottom: getValue(pBorder[2]) + (bottom !== undefined ? bottom : $hScrollbar ? $hScrollbar.height() + parseFloat($hScrollbar.parent().css('bottom')) * 2 : 0)
+                    top: getValue(pBorder[0]) + (top !== undefined ? top : stickyPadding.top + leadingY + (leadingY && getValue(pPadding[0]))),
+                    left: getValue(pBorder[3]) + (left !== undefined ? left : stickyPadding.left + leadingX + (leadingX && getValue(pPadding[3]))),
+                    right: getValue(pBorder[1]) + (right !== undefined ? right : m.max(stickyPadding.right, $vScrollbar && minY ? $vScrollbar.width() + parseFloat($vScrollbar.parent().css('right')) * 2 : 0)),
+                    bottom: getValue(pBorder[2]) + (bottom !== undefined ? bottom : m.max(stickyPadding.bottom, $hScrollbar && minX ? $hScrollbar.height() + parseFloat($hScrollbar.parent().css('bottom')) * 2 : 0))
                 };
             }
 
@@ -486,8 +510,17 @@ const $ = require('jquery');
                     args.type = type;
                     options[type].call($wrapper[0], args);
                 }
-                if (type === 'scrollMove') {
-                    fireEvent('scrollProgressChange', startX, startY, newX, newY, deltaX, deltaY);
+                switch (type) {
+                    case 'scrollStart':
+                        updateStickyPositions(true);
+                        break;
+                    case 'scrollMove':
+                        fireEvent('scrollProgressChange', startX, startY, newX, newY, deltaX, deltaY);
+                        break;
+                    case 'scrollEnd':
+                        stickyRect = null;
+                        updateStickyPositions();
+                        break;
                 }
             }
 
@@ -604,6 +637,57 @@ const $ = require('jquery');
                 }
             }
 
+            function updateStickyPositions(beforeScrollStart) {
+                stickyTimeout = null;
+                if (!stickyElements.size) {
+                    return;
+                }
+                var r0 = stickyRect, r1;
+                if (!stickyRect) {
+                    var style = getComputedStyle($wrapper[0]);
+                    r0 = getRect($wrapper[0]);
+                    r1 = getRect($content[0]);
+                    r0 = {
+                        top: r0.top + parseFloat(style[pBorder[0]]) + leadingY + (leadingY && parseFloat(style[pPadding[0]])),
+                        left: r0.left + parseFloat(style[pBorder[3]]) + leadingX + (leadingX && parseFloat(style[pPadding[3]])),
+                        right: r0.right - parseFloat(style[pBorder[1]]),
+                        bottom: r0.bottom - parseFloat(style[pBorder[2]]),
+                        startX: x,
+                        startY: y
+                    };
+                }
+                stickyElements.forEach(function (state, element) {
+                    var dirX = state.dirX || 0;
+                    var dirY = state.dirY || 0;
+                    var signX = dirX === 'right' ? -1 : 1;
+                    var signY = dirY === 'bottom' ? -1 : 1;
+                    if (!stickyRect) {
+                        var r2 = getRect(element);
+                        var r3 = state.within ? state.within() : r1;
+                        var tm = state.fixed ? 0 : new DOMMatrix(element.style.transform);
+                        var style = getComputedStyle(element);
+                        $.extend(state, {
+                            offsetX: dirX && r0[dirX] - r3[dirX],
+                            offsetY: dirY && r0[dirY] - r3[dirY],
+                            deltaX: dirX && tm && (r2[dirX] - r3[dirX] - tm.e),
+                            deltaY: dirY && tm && (r2[dirY] - r3[dirY] - tm.f),
+                            maxX: (r3.width - r2.width) * signX,
+                            maxY: (r3.height - r2.height) * signY,
+                            padX: dirX && (r2[dirX] * signX - r0[dirX] * signX + r2.width + parseFloat(style[pMargin[dirX > 0 ? 3 : 1]])),
+                            padY: dirY && (r2[dirY] * signY - r0[dirY] * signY + r2.height + parseFloat(style[pMargin[dirY > 0 ? 0 : 2]])),
+                            rect: r3
+                        });
+                    }
+                    var offsetX = dirX && m[signX < 0 ? 'max' : 'min'](state.offsetX - (x - r0.startX) - state.deltaX, state.maxX) | 0;
+                    var offsetY = dirY && m[signY < 0 ? 'max' : 'min'](state.offsetY - (y - r0.startY) - state.deltaY, state.maxY) | 0;
+                    var sticky = offsetX * signX > 0 || offsetY * signY > 0;
+                    $(element).toggleClass(options.stickyClass, sticky).css('transform', sticky ? translate(px(offsetX), px(offsetY)) : '');
+                });
+                if (beforeScrollStart) {
+                    stickyRect = r0;
+                }
+            }
+
             function setPosition(newX, newY) {
                 muteMutations = true;
                 x = mround(newX);
@@ -674,37 +758,7 @@ const $ = require('jquery');
                 $wrapper.toggleClass(options.scrollableXClass + '-r', x > minX);
                 $wrapper.toggleClass(options.scrollableYClass + '-u', y < 0);
                 $wrapper.toggleClass(options.scrollableYClass + '-d', y > minY);
-
-                var r0 = getRect($wrapper[0]);
-                var leadingYPad = leadingY + parseFloat($wrapper.css('padding-top'));
-                $sticky.each(function (i, v) {
-                    var target = $(v).data(DATA_ID_STICKY);
-                    if (document.body.contains(target) && document.body.contains(v)) {
-                        var r1 = getRect(target);
-                        var r2 = getRect(v);
-
-                        $(v).css('font-size', $(target).css('font-size'));
-                        if (options.stickyToBottom && (r1.top > r0.bottom - r2.height)) {
-                            $(v).css({
-                                position: 'absolute',
-                                visibility: 'visible',
-                                top: 'auto',
-                                bottom: 0
-                            });
-                        } else if (r1.top < r0.top + leadingYPad && r1.bottom > r0.top + leadingYPad) {
-                            $(v).css({
-                                position: 'absolute',
-                                visibility: 'visible',
-                                top: leadingYPad - Math.max(0, r0.top + leadingYPad + r2.height - r1.bottom),
-                                bottom: 'auto'
-                            });
-                        } else {
-                            $(v).css({
-                                visibility: 'hidden'
-                            });
-                        }
-                    }
-                });
+                updateStickyPositions();
 
                 collectMutations.takeRecords();
                 muteMutations = false;
@@ -795,7 +849,7 @@ const $ = require('jquery');
                 target = $(target, $content)[0];
                 if (target) {
                     refresh();
-                    var scrollPadding = getScrollPadding();
+                    var scrollPadding = getScrollPadding(target);
                     var oriE = parseOrigin(targetOrigin);
                     var oriW = parseOrigin(wrapperOrigin);
                     var posE = getRect(target);
@@ -808,11 +862,6 @@ const $ = require('jquery');
                     );
                     var newX = posE.left * (1 - oriE.percentX) + posE.right * oriE.percentX + oriE.offsetX - posW.left - posW.width * oriW.percentX - oriW.offsetX - x;
                     var newY = posE.top * (1 - oriE.percentY) + posE.bottom * oriE.percentY + oriE.offsetY - posW.top - posW.height * oriW.percentY - oriW.offsetY - y;
-                    $sticky.each(function (i, v) {
-                        if ($.contains($(v).data(DATA_ID_STICKY), target)) {
-                            newY -= getRect(v).height;
-                        }
-                    });
                     return scrollToPreNormalized(m.round(newX), m.round(newY), duration || wrapperOrigin, callback || duration);
                 } else {
                     return getResolvePromise();
@@ -841,14 +890,6 @@ const $ = require('jquery');
                 fixNativeScroll(e.currentTarget);
             }
 
-            function createStickyClone(v) {
-                var $clone = $(v.cloneNode(false)).append($(options.stickyHandle, v).clone()).addClass(options.stickyClass).data(DATA_ID_STICKY, v);
-                $clone.click(function () {
-                    scrollToElement(v, 'left top', 200);
-                });
-                return $clone[0];
-            }
-
             function refresh(updateContent) {
                 if ($wrapper.is(':visible')) {
                     if (updateContent) {
@@ -873,14 +914,15 @@ const $ = require('jquery');
                                 y = content.scrollableOffsetY || 0;
                                 $middle = $content.parentsUntil($wrapper).not($middle).on('scroll', fixNativeScrollHandler).end();
                             }
-                            var $curSticky = $($sticky);
-                            $sticky = $(options.sticky, content).map(function (i, v) {
-                                var data = $(v).data();
-                                var clone = data.stickyNote || (data.stickyNote = createStickyClone(v));
-                                return clone;
+                            $(options.sticky, content).each(function (i, v) {
+                                var handle = $(options.stickyHandle, v)[0];
+                                if (handle && !stickyElements.has(handle)) {
+                                    stickyElements.set(handle, {
+                                        dirY: options.stickyToBottom ? 'bottom' : 'top',
+                                        within: getRect.bind(0, v)
+                                    });
+                                };
                             });
-                            $curSticky.not($sticky).remove();
-                            $sticky.appendTo($wrapper);
                             $pageItems = options.pageItem ? $(options.pageItem, content) : $();
                         }
                     }
@@ -1487,6 +1529,11 @@ const $ = require('jquery');
             if (window.MutationObserver) {
                 collectMutations = new MutationObserver(function () {
                     if (!muteMutations && enabled) {
+                        stickyElements.forEach(function (v, i) {
+                            if (!i.isConnected) {
+                                stickyElements.delete(i);
+                            }
+                        });
                         refresh(true);
                     }
                 });
@@ -1543,6 +1590,7 @@ const $ = require('jquery');
                     $wrapper.data(DATA_ID, null);
                     $wrapper.splice(0, 1);
                     $content.splice(0, 1);
+                    stickyElements.clear();
                     if (collectMutations.disconnect) {
                         collectMutations.disconnect();
                     }
@@ -1570,11 +1618,35 @@ const $ = require('jquery');
                     $.extend(options, values);
                     refresh(true);
                 },
+                setStickyPosition: function (element, dir, within, fixed) {
+                    if ($wrapper[0]) {
+                        var dirX = /\b(left|right)\b/.test(dir) && RegExp.$1;
+                        var dirY = /\b(top|bottom)\b/.test(dir) && RegExp.$1;
+                        if (typeof within === 'boolean') {
+                            fixed = within;
+                            within = null;
+                        }
+                        $(element, $content).each(function (i, v) {
+                            if (dir === 'none') {
+                                stickyElements.delete(v);
+                                $(v).removeClass(options.stickyClass).css('transform', '');
+                            } else {
+                                stickyElements.set(v, {
+                                    within: typeof within === 'string' ? getRect.bind(0, $(v).closest(within)[0]) : within,
+                                    dirX: dirX,
+                                    dirY: dirY,
+                                    fixed: fixed
+                                });
+                            }
+                        });
+                        stickyTimeout = stickyTimeout || setTimeout(updateStickyPositions);
+                    }
+                },
                 refresh: function () {
                     refresh(true);
                 },
-                scrollPadding: function () {
-                    return getScrollPadding();
+                scrollPadding: function (target) {
+                    return getScrollPadding(target);
                 },
                 stop: function () {
                     if (cancelScroll) {

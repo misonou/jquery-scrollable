@@ -10,6 +10,8 @@ interface JQueryStatic {
     scrollable(element: Element, options: JQueryScrollableOptions): JQueryScrollable;
 }
 
+type JQueryScrollableStickyPosition = 'none' | 'left' | 'top' | 'right' | 'bottom' | 'left bottom' | 'left top' | 'right bottom' | 'right top';
+
 interface JQueryScrollable {
     readonly scrollTarget: Element | null;
     readonly scrollX: number;
@@ -23,8 +25,10 @@ interface JQueryScrollable {
     enable(): void;
     disable(): void;
     setOptions(options: Partial<JQueryScrollableOptions>): void;
+    setStickyPosition(element: Element | string, dir: JQueryScrollableStickyPosition, fixed?: boolean): void;
+    setStickyPosition(element: Element | string, dir: JQueryScrollableStickyPosition, within: (() => DOMRectReadOnly) | Element | string, fixed?: boolean): void;
     refresh(): void;
-    scrollPadding(): Readonly<{ top: number; left: number; right: number; bottom: number; }>;
+    scrollPadding(target?: Element): Readonly<{ top: number; left: number; right: number; bottom: number; }>;
     stop(): void;
     scrollLeft(): number;
     scrollTop(): number;
