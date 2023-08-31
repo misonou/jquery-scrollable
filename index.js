@@ -894,7 +894,9 @@ const $ = require('jquery');
             function refresh(updateContent) {
                 if ($wrapper.is(':visible')) {
                     if (updateContent) {
-                        var content = $(options.content, $wrapper).filter(':visible')[0];
+                        var content = $(options.content, $wrapper).get().find(function (v) {
+                            return $(v).closest($activated)[0] === $wrapper[0] && $(v).is(':visible');
+                        });
                         if (content) {
                             if (content !== $content[0]) {
                                 if (cancelScroll) {
