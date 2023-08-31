@@ -103,6 +103,7 @@ const $ = require('jquery');
     const $blockLayer = $('<div style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:white;opacity:0;filter:alpha(opacity=0);"></div>');
     const $originDiv = $('<div style="position:fixed;top:0;left:0;">')[0];
     const $activated = $();
+    const hooks = [];
     const DATA_ID = 'xScrollable';
 
     var $current;
@@ -506,11 +507,16 @@ const $ = require('jquery');
             }
 
             function fireEvent(type, startX, startY, newX, newY, deltaX, deltaY) {
+                var args = getScrollState(startX, startY, newX, newY, deltaX, deltaY);
+                args.type = type;
                 if (typeof options[type] === 'function') {
-                    var args = getScrollState(startX, startY, newX, newY, deltaX, deltaY);
-                    args.type = type;
                     options[type].call($wrapper[0], args);
                 }
+                hooks.forEach(function (v) {
+                    if (typeof v[type] === 'function') {
+                        v[type].call($wrapper[0], args);
+                    }
+                });
                 switch (type) {
                     case 'scrollStart':
                         updateStickyPositions(true);
@@ -1690,6 +1696,9 @@ const $ = require('jquery');
             $(element).scrollable(options);
         }
         return $.data(element, DATA_ID);
+    };
+    $.scrollable.hook = function (hook) {
+        hooks.push(hook);
     };
 
     var resizeTimeout;

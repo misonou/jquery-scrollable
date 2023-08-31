@@ -5,9 +5,14 @@ interface JQuery<TElement = HTMLElement> {
         JQueryScrollable[T];
 }
 
+interface JQueryScrollableStatic {
+    (element: Element): JQueryScrollable | undefined;
+    (element: Element, options: JQueryScrollableOptions): JQueryScrollable;
+    hook(hooks: JQueryScrollableEventHooks): void;
+}
+
 interface JQueryStatic {
-    scrollable(element: Element): JQueryScrollable | undefined;
-    scrollable(element: Element, options: JQueryScrollableOptions): JQueryScrollable;
+    scrollable: JQueryScrollableStatic;
 }
 
 type JQueryScrollableStickyPosition = 'none' | 'left' | 'top' | 'right' | 'bottom' | 'left bottom' | 'left top' | 'right bottom' | 'right top';
@@ -185,6 +190,35 @@ interface JQueryScrollableScrollbarOptions {
     scrollbarTrackStyle?: Partial<CSSStyleDeclaration>;
 }
 
+interface JQueryScrollableEventHooks {
+    /**
+     * Attach event listener that is invoked when touch has been moved within scrollable area.
+     */
+    touchMove?: (this: Element, e: JQueryScrollableEventProps) => void;
+    /**
+     * Attach event listener that is invoked when the scrolling of content has just started.
+     */
+    scrollStart?: (this: Element, e: JQueryScrollableEventProps) => void;
+    /**
+     * Attach event listener that is invoked when the content has scrolled to a different offset.
+     */
+    scrollMove?: (this: Element, e: JQueryScrollableEventProps) => void;
+    /**
+     * Attach event listener that is invoked when the content has just stopped being scrolled actively.
+     * The content might continue to be scrolled when momentum or bounch back effect is on.
+     */
+    scrollStop?: (this: Element, e: JQueryScrollableEventProps) => void;
+    /**
+     * Attach event listener that is invoked when the scrolling of content has stopped completely.
+     */
+    scrollEnd?: (this: Element, e: JQueryScrollableEventProps) => void;
+    /**
+     * Attach event listener that is invoked when the percentage of content scrolled has changed.
+     * The change can be either due to scrolling of content, or the change of size of the container or content.
+     */
+    scrollProgressChange?: (this: Element, e: JQueryScrollableEventProps) => void;
+}
+
 interface JQueryScrollableState {
     /**
      * Horizontal position when the scrolling is started.
@@ -240,7 +274,7 @@ interface JQueryScrollableEventProps extends JQueryScrollableState {
     readonly type: string;
 }
 
-interface JQueryScrollableOptions extends JQueryScrollableScrollbarOptions {
+interface JQueryScrollableOptions extends JQueryScrollableScrollbarOptions, JQueryScrollableEventHooks {
     /**
      * A valid CSS selector specifying which element to be scrolled
      * only the first visible element will be scrolled if multiple elements are matched.
@@ -375,30 +409,4 @@ interface JQueryScrollableOptions extends JQueryScrollableScrollbarOptions {
      * CSS class applied to elements that are currently sticking to boundaries of parent container.
      */
     stickyClass?: string;
-    /**
-     * Attach event listener that is invoked when touch has been moved within scrollable area.
-     */
-    touchMove?: (this: Element, e: JQueryScrollableEventProps) => void;
-    /**
-     * Attach event listener that is invoked when the scrolling of content has just started.
-     */
-    scrollStart?: (this: Element, e: JQueryScrollableEventProps) => void;
-    /**
-     * Attach event listener that is invoked when the content has scrolled to a different offset.
-     */
-    scrollMove?: (this: Element, e: JQueryScrollableEventProps) => void;
-    /**
-     * Attach event listener that is invoked when the content has just stopped being scrolled actively.
-     * The content might continue to be scrolled when momentum or bounch back effect is on.
-     */
-    scrollStop?: (this: Element, e: JQueryScrollableEventProps) => void;
-    /**
-     * Attach event listener that is invoked when the scrolling of content has stopped completely.
-     */
-    scrollEnd?: (this: Element, e: JQueryScrollableEventProps) => void;
-    /**
-     * Attach event listener that is invoked when the percentage of content scrolled has changed.
-     * The change can be either due to scrolling of content, or the change of size of the container or content.
-     */
-    scrollProgressChange?: (this: Element, e: JQueryScrollableEventProps) => void;
 }
