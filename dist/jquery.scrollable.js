@@ -1,141 +1,130 @@
-/*jshint regexp:true,browser:true,jquery:true,debug:true,-W083 */
+/*! jq-scrollable v1.12.0 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+(function webpackUniversalModuleDefinition(root, factory) {
+	if(typeof exports === 'object' && typeof module === 'object')
+		module.exports = factory(require("jQuery"));
+	else if(typeof define === 'function' && define.amd)
+		define("jq-scrollable", ["jQuery"], factory);
+	else if(typeof exports === 'object')
+		exports["jq-scrollable"] = factory(require("jQuery"));
+	else
+		root["jq-scrollable"] = factory(root["jQuery"]);
+})(self, function(__WEBPACK_EXTERNAL_MODULE__609__) {
+return /******/ (() => { // webpackBootstrap
+/******/ 	var __webpack_modules__ = ({
 
-/*!
- * jQuery Scrollable v1.11.4
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2016 misonou
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-(function (root, factory) {
-    if (typeof define === 'function' && define.amd) {
-        define('jquery-scrollable', ['jquery'], factory);
-    } else if (typeof module === 'object' && module.exports) {
-        module.exports = factory(require('jquery'));
-    } else {
-        factory(jQuery);
-    }
-}(this, /** @type {($: JQueryStatic) => void} */ function ($) {
-    'use strict';
+/***/ 10:
+/***/ ((__unused_webpack_module, __unused_webpack_exports, __webpack_require__) => {
 
-    var zeroMomentum = {
+const $ = __webpack_require__(609);
+
+(function () {
+    const zeroMomentum = {
         dist: 0,
         time: 0
-    },
-        zeroSize = {
-            width: 0,
-            height: 0
-        },
-        zeroOrigin = {
-            percentX: 0,
-            percentY: 0,
-            offsetX: 0,
-            offsetY: 0
-        },
-        originKeyword = {
-            center: 0.5,
-            right: 1,
-            bottom: 1
-        },
-        pMargin = [
-            'marginTop',
-            'marginRight',
-            'marginBottom',
-            'marginLeft'
-        ],
-        pPadding = [
-            'paddingTop',
-            'paddingRight',
-            'paddingBottom',
-            'paddingLeft'
-        ],
-        pBorder = [
-            'borderTopWidth',
-            'borderRightWidth',
-            'borderBottomWidth',
-            'borderLeftWidth'
-        ],
-        pScrollPadding = [
-            'scrollPaddingTop',
-            'scrollPaddingRight',
-            'scrollPaddingBottom',
-            'scrollPaddingLeft'
-        ],
-        mround = function (r) {
-            return r >> 0;
-        },
-        array = Array.prototype,
-        m = Math,
+    };
+    const zeroSize = {
+        width: 0,
+        height: 0
+    };
+    const zeroOrigin = {
+        percentX: 0,
+        percentY: 0,
+        offsetX: 0,
+        offsetY: 0
+    };
+    const zeroOffset = {
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0
+    };
+    const originKeyword = {
+        center: 0.5,
+        right: 1,
+        bottom: 1
+    };
+    const pMargin = [
+        'marginTop',
+        'marginRight',
+        'marginBottom',
+        'marginLeft'
+    ];
+    const pPadding = [
+        'paddingTop',
+        'paddingRight',
+        'paddingBottom',
+        'paddingLeft'
+    ];
+    const pBorder = [
+        'borderTopWidth',
+        'borderRightWidth',
+        'borderBottomWidth',
+        'borderLeftWidth'
+    ];
+    const pScrollPadding = [
+        'scrollPaddingTop',
+        'scrollPaddingRight',
+        'scrollPaddingBottom',
+        'scrollPaddingLeft'
+    ];
+    const mround = function (r) {
+        return r >> 0;
+    };
+    const array = Array.prototype;
+    const m = Math;
 
-        vendor = /webkit/i.test(navigator.appVersion) ? 'webkit' : /firefox/i.test(navigator.userAgent) ? 'Moz' : /trident/i.test(navigator.userAgent) ? 'ms' : window.opera ? 'O' : '',
+    const vendor = /webkit/i.test(navigator.appVersion) ? 'webkit' : /firefox/i.test(navigator.userAgent) ? 'Moz' : /trident/i.test(navigator.userAgent) ? 'ms' : window.opera ? 'O' : '';
 
-        // browser capabilities
-        isAndroid = /android/gi.test(navigator.appVersion),
-        isTouchPad = /hp-tablet/gi.test(navigator.appVersion),
+    // browser capabilities
+    const isAndroid = /android/gi.test(navigator.appVersion);
+    const isTouchPad = /hp-tablet/gi.test(navigator.appVersion);
 
-        root = document.documentElement,
-        hasTouch = window.ontouchstart !== undefined && !isTouchPad,
-        hasTransform = root.style[vendor + 'Transform'] !== undefined,
-        hasTransform3d = window.WebKitCSSMatrix && (new window.WebKitCSSMatrix()).m11 !== undefined,
-        hasWheelDeltaX = false,
+    const DOMMatrix = window.DOMMatrix || window.WebKitCSSMatrix || window.MSCSSMatrix;
+    const root = document.documentElement;
+    const hasTouch = window.ontouchstart !== undefined && !isTouchPad;
+    const hasTransform = root.style[vendor + 'Transform'] !== undefined;
+    const hasTransform3d = DOMMatrix && (new DOMMatrix()).m11 !== undefined;
 
-        // value helpers
-        trnOpen = 'translate' + (hasTransform3d ? '3d(' : '('),
-        trnClose = hasTransform3d ? ',0)' : ')',
-        translate = function (x, y) {
-            return trnOpen + x + ',' + y + trnClose;
-        },
-        pc = function (v) {
-            return (v || 0).toFixed(5) + '%';
-        },
-        px = function (v) {
-            return (v || 0) + 'px';
-        },
-        cssvar = isCSSVarSupported() ? function (varname, value) {
-            return 'var(--jqs-' + varname + ', ' + value + ')';
-        } : function (_, value) {
-            return value;
-        },
-        coalesce = function (v, def) {
-            return v === undefined ? def : v;
-        },
+    // value helpers
+    const trnOpen = 'translate' + (hasTransform3d ? '3d(' : '(');
+    const trnClose = hasTransform3d ? ',0)' : ')';
+    const translate = function (x, y) {
+        return trnOpen + x + ',' + y + trnClose;
+    };
+    const pc = function (v) {
+        return (v || 0).toFixed(5) + '%';
+    };
+    const px = function (v) {
+        return (v || 0) + 'px';
+    };
+    const cssvar = isCSSVarSupported() ? function (varname, value) {
+        return 'var(--jqs-' + varname + ', ' + value + ')';
+    } : function (_, value) {
+        return value;
+    };
+    const coalesce = function (v, def) {
+        return v === undefined ? def : v;
+    };
 
-        // events
-        EV_RESIZE = 'orientationchange resize',
-        EV_WHEEL = 'onwheel' in window ? 'wheel' : vendor === 'Moz' ? 'DOMMouseScroll' : 'mousewheel',
+    // events
+    const EV_RESIZE = 'orientationchange resize';
+    const EV_WHEEL = 'onwheel' in window ? 'wheel' : vendor === 'Moz' ? 'DOMMouseScroll' : 'mousewheel';
 
-        nextFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function (callback) {
-            return setTimeout(callback, 0);
-        },
+    const nextFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function (callback) {
+        return setTimeout(callback, 0);
+    };
 
-        cancelFrame = window.cancelAnimationFrame || window.webkitCancelAnimationFrame || window.webkitCancelRequestAnimationFrame || window.mozCancelRequestAnimationFrame || window.oCancelRequestAnimationFrame || window.msCancelRequestAnimationFrame || clearTimeout,
+    const cancelFrame = window.cancelAnimationFrame || window.webkitCancelAnimationFrame || window.webkitCancelRequestAnimationFrame || window.mozCancelRequestAnimationFrame || window.oCancelRequestAnimationFrame || window.msCancelRequestAnimationFrame || clearTimeout;
 
-        // blocking layer to prevent click event after scrolling
-        $blockLayer = $('<div style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:9999;background:white;opacity:0;filter:alpha(opacity=0);"></div>'),
-        $originDiv = $('<div style="position:fixed;top:0;left:0;">')[0],
-        $activated = $(),
-        $current,
-        wheelLock,
-        DATA_ID = 'xScrollable',
-        DATA_ID_STICKY = 'xScrollableSticky';
+    // blocking layer to prevent click event after scrolling
+    const $blockLayer = $('<div style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:white;opacity:0;filter:alpha(opacity=0);"></div>');
+    const $originDiv = $('<div style="position:fixed;top:0;left:0;">')[0];
+    const $activated = $();
+    const hooks = [];
+    const DATA_ID = 'xScrollable';
+
+    var $current;
+    var wheelLock;
 
     function isCSSVarSupported() {
         return window.CSS && CSS.supports('color', 'var(--primary)');
@@ -154,8 +143,8 @@
     }
 
     function createScrollbar($elm, dir, options) {
-        var $track = $('<div style="position:absolute;font-size:0;z-index:1;"><div style="position:absolute;"></div></div>').appendTo($elm),
-            $scrollbar = $track.children().eq(0);
+        var $track = $('<div style="position:absolute;font-size:0;z-index:1;"><div style="position:absolute;"></div></div>').appendTo($elm);
+        var $scrollbar = $track.children().eq(0);
 
         $track.css(options.scrollbarTrackStyle);
         $track.css(dir === 'x' ? 'left' : 'top', options.scrollbarTrackStyle[dir === 'x' ? 'right' : 'bottom']);
@@ -167,8 +156,8 @@
     }
 
     function createGlow($elm, dir, options) {
-        var $track = $('<div style="position:absolute;pointer-events:none;font-size:0;z-index:1;"><div style="position:absolute;"></div></div>').appendTo($elm),
-            $scrollbar = $track.children().eq(0);
+        var $track = $('<div style="position:absolute;pointer-events:none;font-size:0;z-index:1;"><div style="position:absolute;"></div></div>').appendTo($elm);
+        var $scrollbar = $track.children().eq(0);
 
         $track.css(dir === 'x' ? 'height' : 'width', '100%');
         $track.css(options.glowStyle);
@@ -230,6 +219,10 @@
         return rect;
     }
 
+    function rectIntersects(a, b) {
+        return !(b.right < a.left || b.left > a.right) && !(b.bottom < a.top || b.top > a.bottom);
+    }
+
     function getDimension($elm) {
         if ($elm[0]) {
             var style = getComputedStyle($elm[0]);
@@ -271,9 +264,9 @@
     }
 
     function calculateMomentum(dist, time, maxDist, overshoot) {
-        var deceleration = 0.0006,
-            speed = m.abs(dist) / time,
-            newDist = (speed * speed) / (2 * deceleration);
+        var deceleration = 0.0006;
+        var speed = m.abs(dist) / time;
+        var newDist = (speed * speed) / (2 * deceleration);
 
         // Proportinally reduce speed if we are outside of the boundaries
         if (newDist > maxDist) {
@@ -329,7 +322,10 @@
                             break;
                     }
                 } else {
-                    value = obj[optionOverrides].apply(null, [].slice.call(args, 1));
+                    value = obj[optionOverrides];
+                    if (typeof value === 'function') {
+                        value = value.apply(null, [].slice.call(args, 1));
+                    }
                 }
                 if (value !== undefined) {
                     returnValue = value;
@@ -343,7 +339,7 @@
         }
 
         var batchOptions = {
-            content: '>:visible:eq(0)',
+            content: '>*',
             cancel: '',
             getWrapperDimension: getDimension,
             getContentDimension: getOuterDimension,
@@ -389,11 +385,11 @@
         $.extend(batchOptions, optionOverrides);
 
         // normalize options
-        var cssInset = optionOverrides.scrollbarInset !== undefined ? px(optionOverrides.scrollbarInset) : cssvar('scrollbar-inset', '3px'),
-            cssSize = optionOverrides.scrollbarSize !== undefined ? px(optionOverrides.scrollbarSize) : cssvar('scrollbar-size', '5px'),
-            cssInsetXY = 'calc(' + cssSize + ' + ' + cssInset + ' * 2)',
-            scrollbarStyle = batchOptions.scrollbarStyle,
-            scrollbarTrackStyle = batchOptions.scrollbarTrackStyle;
+        var cssInset = optionOverrides.scrollbarInset !== undefined ? px(optionOverrides.scrollbarInset) : cssvar('scrollbar-inset', '3px');
+        var cssSize = optionOverrides.scrollbarSize !== undefined ? px(optionOverrides.scrollbarSize) : cssvar('scrollbar-size', '5px');
+        var cssInsetXY = 'calc(' + cssSize + ' + ' + cssInset + ' * 2)';
+        var scrollbarStyle = batchOptions.scrollbarStyle;
+        var scrollbarTrackStyle = batchOptions.scrollbarTrackStyle;
 
         $.extend(scrollbarTrackStyle, {
             bottom: cssInset,
@@ -412,41 +408,43 @@
         batchOptions.vBounce = batchOptions.bounce && batchOptions.vBounce;
 
         return this.each(function () {
-            var options = $.extend(true, {}, batchOptions),
-                $wrapper = $(this),
-                $content = $(),
-                $sticky = $(),
-                $pageItems = $(),
-                $middle = $(),
-                $hScrollbar = options.scrollbar && options.hScroll && $(options.scrollbar($wrapper, 'x', options)),
-                $vScrollbar = options.scrollbar && options.vScroll && $(options.scrollbar($wrapper, 'y', options)),
-                $hGlow = options.glow && options.hGlow && $(options.glow($wrapper, 'x', options)).hide(),
-                $vGlow = options.glow && options.vGlow && $(options.glow($wrapper, 'y', options)).hide(),
-                enabled = true,
-                collectMutations,
-                muteMutations,
-                x = 0,
-                y = 0,
-                leadingX = 0,
-                leadingY = 0,
-                stopX = 0,
-                stopY = 0,
-                pendingX = 0,
-                pendingY = 0,
-                minX,
-                minY,
-                pageDirection,
-                contentSize = zeroSize,
-                wrapperSize = zeroSize,
-                scrollbarSize,
-                lastPoint,
-                cancelScroll,
-                cancelAnim;
+            var options = $.extend(true, {}, batchOptions);
+            var $wrapper = $(this);
+            var $content = $();
+            var $pageItems = $();
+            var $middle = $();
+            var $hScrollbar = options.scrollbar && options.hScroll && $(options.scrollbar($wrapper, 'x', options));
+            var $vScrollbar = options.scrollbar && options.vScroll && $(options.scrollbar($wrapper, 'y', options));
+            var $hGlow = options.glow && options.hGlow && $(options.glow($wrapper, 'x', options)).hide();
+            var $vGlow = options.glow && options.vGlow && $(options.glow($wrapper, 'y', options)).hide();
+            var enabled = true;
+            var collectMutations;
+            var muteMutations;
+            var x = 0;
+            var y = 0;
+            var leadingX = 0;
+            var leadingY = 0;
+            var stopX = 0;
+            var stopY = 0;
+            var pendingX = 0;
+            var pendingY = 0;
+            var minX;
+            var minY;
+            var pageDirection;
+            var contentSize = zeroSize;
+            var wrapperSize = zeroSize;
+            var scrollbarSize;
+            var lastPoint;
+            var stickyElements = new Map();
+            var stickyRect;
+            var stickyTimeout;
+            var cancelScroll;
+            var cancelAnim;
 
-            // add selected elements to the collection
-            if ($.inArray($activated, this) < 0) {
-                $activated.splice(0, 0, this);
+            if ($.inArray(this, $activated) >= 0) {
+                throw new Error('Scrollable already activated');
             }
+            $activated.splice(0, 0, this);
 
             function getPageIndex(offset) {
                 var props = pageDirection === 'x' ? ['left', 'right', 'width'] : ['top', 'bottom', 'height'];
@@ -478,7 +476,7 @@
                 return newIndex;
             }
 
-            function getScrollPadding() {
+            function getScrollPadding(target) {
                 var style = getComputedStyle($wrapper[0]);
                 var getValue = function (prop) {
                     return style[prop] === 'auto' || !style[prop] ? undefined : parseFloat(style[prop]);
@@ -487,36 +485,66 @@
                 var left = getValue(pScrollPadding[3]);
                 var right = getValue(pScrollPadding[1]);
                 var bottom = getValue(pScrollPadding[2]);
+                var stickyPadding = $.extend({}, zeroOffset);
+                var targetRect = target && getRect(target);
+                stickyElements.forEach(function (state) {
+                    if (state.fixed || (targetRect && state.within && rectIntersects(targetRect, state.rect))) {
+                        if (state.dirX) {
+                            stickyPadding[state.dirX] = m.max(stickyPadding[state.dirX], state.padX);
+                        }
+                        if (state.dirY) {
+                            stickyPadding[state.dirY] = m.max(stickyPadding[state.dirY], state.padY);
+                        }
+                    }
+                });
                 return {
-                    top: top !== undefined ? top : leadingY,
-                    left: left !== undefined ? left : leadingX,
-                    right: right !== undefined ? right : $vScrollbar ? $vScrollbar.width() + parseFloat($vScrollbar.parent().css('right')) * 2 : 0,
-                    bottom: bottom !== undefined ? bottom : $hScrollbar ? $hScrollbar.height() + parseFloat($hScrollbar.parent().css('bottom')) * 2 : 0
+                    top: getValue(pBorder[0]) + (top !== undefined ? top : stickyPadding.top + leadingY + (leadingY && getValue(pPadding[0]))),
+                    left: getValue(pBorder[3]) + (left !== undefined ? left : stickyPadding.left + leadingX + (leadingX && getValue(pPadding[3]))),
+                    right: getValue(pBorder[1]) + (right !== undefined ? right : m.max(stickyPadding.right, $vScrollbar && minY ? $vScrollbar.width() + parseFloat($vScrollbar.parent().css('right')) * 2 : 0)),
+                    bottom: getValue(pBorder[2]) + (bottom !== undefined ? bottom : m.max(stickyPadding.bottom, $hScrollbar && minX ? $hScrollbar.height() + parseFloat($hScrollbar.parent().css('bottom')) * 2 : 0))
+                };
+            }
+
+            function getScrollState(startX, startY, newX, newY, deltaX, deltaY) {
+                var pageIndex = options.pageItem ? getPageIndex() : -1;
+                var curX = newX === undefined ? x : newX;
+                var curY = newY === undefined ? y : newY;
+                return {
+                    startX: -startX,
+                    startY: -startY,
+                    offsetX: -curX,
+                    offsetY: -curY,
+                    deltaX: -deltaX || 0,
+                    deltaY: -deltaY || 0,
+                    percentX: minX ? (curX / minX) * 100 : 100,
+                    percentY: minY ? (curY / minY) * 100 : 100,
+                    pageIndex: pageIndex,
+                    pageItem: $pageItems[pageIndex] || null
                 };
             }
 
             function fireEvent(type, startX, startY, newX, newY, deltaX, deltaY) {
+                var args = getScrollState(startX, startY, newX, newY, deltaX, deltaY);
+                args.type = type;
                 if (typeof options[type] === 'function') {
-                    var pageIndex = options.pageItem ? getPageIndex() : -1;
-                    var curX = newX === undefined ? x : newX;
-                    var curY = newY === undefined ? y : newY;
-                    var args = {
-                        type: type,
-                        startX: -startX,
-                        startY: -startY,
-                        offsetX: -curX,
-                        offsetY: -curY,
-                        deltaX: -deltaX || 0,
-                        deltaY: -deltaY || 0,
-                        percentX: minX ? (curX / minX) * 100 : 100,
-                        percentY: minY ? (curY / minY) * 100 : 100,
-                        pageIndex: pageIndex,
-                        pageItem: $pageItems[pageIndex] || null
-                    };
                     options[type].call($wrapper[0], args);
                 }
-                if (type === 'scrollMove') {
-                    fireEvent('scrollProgressChange', startX, startY, newX, newY, deltaX, deltaY);
+                hooks.forEach(function (v) {
+                    if (typeof v[type] === 'function') {
+                        v[type].call($wrapper[0], args);
+                    }
+                });
+                switch (type) {
+                    case 'scrollStart':
+                        updateStickyPositions(true);
+                        break;
+                    case 'scrollMove':
+                        fireEvent('scrollProgressChange', startX, startY, newX, newY, deltaX, deltaY);
+                        break;
+                    case 'scrollEnd':
+                        stickyRect = null;
+                        updateStickyPositions();
+                        break;
                 }
             }
 
@@ -633,6 +661,57 @@
                 }
             }
 
+            function updateStickyPositions(beforeScrollStart) {
+                stickyTimeout = null;
+                if (!stickyElements.size) {
+                    return;
+                }
+                var r0 = stickyRect, r1;
+                if (!stickyRect) {
+                    var style = getComputedStyle($wrapper[0]);
+                    r0 = getRect($wrapper[0]);
+                    r1 = getRect($content[0]);
+                    r0 = {
+                        top: r0.top + parseFloat(style[pBorder[0]]) + leadingY + (leadingY && parseFloat(style[pPadding[0]])),
+                        left: r0.left + parseFloat(style[pBorder[3]]) + leadingX + (leadingX && parseFloat(style[pPadding[3]])),
+                        right: r0.right - parseFloat(style[pBorder[1]]),
+                        bottom: r0.bottom - parseFloat(style[pBorder[2]]),
+                        startX: x,
+                        startY: y
+                    };
+                }
+                stickyElements.forEach(function (state, element) {
+                    var dirX = state.dirX || 0;
+                    var dirY = state.dirY || 0;
+                    var signX = dirX === 'right' ? -1 : 1;
+                    var signY = dirY === 'bottom' ? -1 : 1;
+                    if (!stickyRect) {
+                        var r2 = getRect(element);
+                        var r3 = state.within ? state.within() : r1;
+                        var tm = state.fixed ? 0 : new DOMMatrix(element.style.transform);
+                        var style = getComputedStyle(element);
+                        $.extend(state, {
+                            offsetX: dirX && r0[dirX] - r3[dirX],
+                            offsetY: dirY && r0[dirY] - r3[dirY],
+                            deltaX: dirX && tm && (r2[dirX] - r3[dirX] - tm.e),
+                            deltaY: dirY && tm && (r2[dirY] - r3[dirY] - tm.f),
+                            maxX: (r3.width - r2.width) * signX,
+                            maxY: (r3.height - r2.height) * signY,
+                            padX: dirX && (r2[dirX] * signX - r0[dirX] * signX + r2.width + parseFloat(style[pMargin[dirX > 0 ? 3 : 1]])),
+                            padY: dirY && (r2[dirY] * signY - r0[dirY] * signY + r2.height + parseFloat(style[pMargin[dirY > 0 ? 0 : 2]])),
+                            rect: r3
+                        });
+                    }
+                    var offsetX = dirX && m[signX < 0 ? 'max' : 'min'](state.offsetX - (x - r0.startX) - state.deltaX, state.maxX) | 0;
+                    var offsetY = dirY && m[signY < 0 ? 'max' : 'min'](state.offsetY - (y - r0.startY) - state.deltaY, state.maxY) | 0;
+                    var sticky = offsetX * signX > 0 || offsetY * signY > 0;
+                    $(element).toggleClass(options.stickyClass, sticky).css('transform', sticky ? translate(px(offsetX), px(offsetY)) : '');
+                });
+                if (beforeScrollStart) {
+                    stickyRect = r0;
+                }
+            }
+
             function setPosition(newX, newY) {
                 muteMutations = true;
                 x = mround(newX);
@@ -703,40 +782,14 @@
                 $wrapper.toggleClass(options.scrollableXClass + '-r', x > minX);
                 $wrapper.toggleClass(options.scrollableYClass + '-u', y < 0);
                 $wrapper.toggleClass(options.scrollableYClass + '-d', y > minY);
-
-                var r0 = getRect($wrapper[0]);
-                var leadingYPad = leadingY + parseFloat($wrapper.css('padding-top'));
-                $sticky.each(function (i, v) {
-                    var target = $(v).data(DATA_ID_STICKY);
-                    if (document.body.contains(target) && document.body.contains(v)) {
-                        var r1 = getRect(target);
-                        var r2 = getRect(v);
-
-                        $(v).css('font-size', $(target).css('font-size'));
-                        if (options.stickyToBottom && (r1.top > r0.bottom - r2.height)) {
-                            $(v).css({
-                                position: 'absolute',
-                                visibility: 'visible',
-                                top: 'auto',
-                                bottom: 0
-                            });
-                        } else if (r1.top < r0.top + leadingYPad && r1.bottom > r0.top + leadingYPad) {
-                            $(v).css({
-                                position: 'absolute',
-                                visibility: 'visible',
-                                top: leadingYPad - Math.max(0, r0.top + leadingYPad + r2.height - r1.bottom),
-                                bottom: 'auto'
-                            });
-                        } else {
-                            $(v).css({
-                                visibility: 'hidden'
-                            });
-                        }
-                    }
-                });
+                updateStickyPositions();
 
                 collectMutations.takeRecords();
                 muteMutations = false;
+            }
+
+            function getResolvePromise() {
+                return $.extend(Promise.resolve(), getScrollState(x, y));
             }
 
             function scrollTo(newX, newY, duration, callback, eventStartX, eventStartY) {
@@ -751,7 +804,7 @@
                     if (typeof callback === 'function') {
                         callback();
                     }
-                    return Promise.resolve();
+                    return getResolvePromise();
                 }
 
                 var fireStart = eventStartX === undefined;
@@ -760,11 +813,11 @@
                     eventStartY = y;
                 }
 
-                var startTime = +new Date(),
-                    startX = x,
-                    startY = y,
-                    frameId,
-                    resolve;
+                var startTime = +new Date();
+                var startX = x;
+                var startY = y;
+                var frameId;
+                var resolve;
 
                 var promise = new Promise(function (res) {
                     resolve = res;
@@ -789,10 +842,10 @@
                         return;
                     }
 
-                    var f = elapsed / duration - 1,
-                        easeOut = m.sqrt(1 - f * f),
-                        stepX = (newX - startX) * easeOut + startX,
-                        stepY = (newY - startY) * easeOut + startY;
+                    var f = elapsed / duration - 1;
+                    var easeOut = m.sqrt(1 - f * f);
+                    var stepX = (newX - startX) * easeOut + startX;
+                    var stepY = (newY - startY) * easeOut + startY;
 
                     setPosition(stepX, stepY);
                     fireEvent('scrollMove', eventStartX, eventStartY, stepX, stepY, stepX - x, stepY - y);
@@ -803,7 +856,7 @@
                     fireEvent('scrollStart', eventStartX, eventStartY);
                 }
                 animate();
-                return promise;
+                return $.extend(promise, getScrollState(startX, startY, newX, newY, newX - startX, newY - startY));
             }
 
             function scrollToPreNormalized(x, y, duration, callback, forcePageChange) {
@@ -820,7 +873,7 @@
                 target = $(target, $content)[0];
                 if (target) {
                     refresh();
-                    var scrollPadding = getScrollPadding();
+                    var scrollPadding = getScrollPadding(target);
                     var oriE = parseOrigin(targetOrigin);
                     var oriW = parseOrigin(wrapperOrigin);
                     var posE = getRect(target);
@@ -833,20 +886,15 @@
                     );
                     var newX = posE.left * (1 - oriE.percentX) + posE.right * oriE.percentX + oriE.offsetX - posW.left - posW.width * oriW.percentX - oriW.offsetX - x;
                     var newY = posE.top * (1 - oriE.percentY) + posE.bottom * oriE.percentY + oriE.offsetY - posW.top - posW.height * oriW.percentY - oriW.offsetY - y;
-                    $sticky.each(function (i, v) {
-                        if ($.contains($(v).data(DATA_ID_STICKY), target)) {
-                            newY -= getRect(v).height;
-                        }
-                    });
                     return scrollToPreNormalized(m.round(newX), m.round(newY), duration || wrapperOrigin, callback || duration);
                 } else {
-                    return Promise.resolve();
+                    return getResolvePromise();
                 }
             }
 
             function fixNativeScroll(element) {
-                var scrollTop = element.scrollTop,
-                    scrollLeft = element.scrollLeft;
+                var scrollTop = element.scrollTop;
+                var scrollLeft = element.scrollLeft;
                 if (scrollTop || scrollLeft) {
                     if (enabled && !pendingX && !pendingY) {
                         nextFrame(function () {
@@ -866,18 +914,12 @@
                 fixNativeScroll(e.currentTarget);
             }
 
-            function createStickyClone(v) {
-                var $clone = $(v.cloneNode(false)).append($(options.stickyHandle, v).clone()).addClass(options.stickyClass).data(DATA_ID_STICKY, v);
-                $clone.click(function () {
-                    scrollToElement(v, 'left top', 200);
-                });
-                return $clone[0];
-            }
-
             function refresh(updateContent) {
                 if ($wrapper.is(':visible')) {
                     if (updateContent) {
-                        var content = $(options.content, $wrapper)[0];
+                        var content = $(options.content, $wrapper).get().find(function (v) {
+                            return $(v).closest($activated)[0] === $wrapper[0] && $(v).is(':visible');
+                        });
                         if (content) {
                             if (content !== $content[0]) {
                                 if (cancelScroll) {
@@ -898,14 +940,15 @@
                                 y = content.scrollableOffsetY || 0;
                                 $middle = $content.parentsUntil($wrapper).not($middle).on('scroll', fixNativeScrollHandler).end();
                             }
-                            var $curSticky = $($sticky);
-                            $sticky = $(options.sticky, content).map(function (i, v) {
-                                var data = $(v).data();
-                                var clone = data.stickyNote || (data.stickyNote = createStickyClone(v));
-                                return clone;
+                            $(options.sticky, content).each(function (i, v) {
+                                var handle = $(options.stickyHandle, v)[0];
+                                if (handle && !stickyElements.has(handle)) {
+                                    stickyElements.set(handle, {
+                                        dirY: options.stickyToBottom ? 'bottom' : 'top',
+                                        within: getRect.bind(0, v)
+                                    });
+                                };
                             });
-                            $curSticky.not($sticky).remove();
-                            $sticky.appendTo($wrapper);
                             $pageItems = options.pageItem ? $(options.pageItem, content) : $();
                         }
                     }
@@ -946,6 +989,7 @@
                     } else {
                         pageDirection = minY ? 'y' : 'x';
                     }
+                    $wrapper.css('touch-action', (['none', 'pan-x', 'pan-y', 'auto'])[!minY * 2 + !minX]);
 
                     if (($current && $current !== $wrapper) || x < minX || y < minY) {
                         if (cancelScroll) {
@@ -970,12 +1014,12 @@
             }
 
             function startScroll(e) {
-                var touches = e.originalEvent.touches,
-                    hasTouch = touches && (touches[0].touchType || true),
-                    handle = options.handle,
-                    EV_MOVE = hasTouch ? 'touchmove' : 'mousemove',
-                    EV_END = hasTouch ? 'touchend' : 'mouseup',
-                    EV_CANCEL = hasTouch ? 'touchcancel' : 'mouseup';
+                var touches = e.originalEvent.touches;
+                var hasTouch = touches && (touches[0].touchType || true);
+                var handle = options.handle;
+                var EV_MOVE = hasTouch ? 'touchmove' : 'mousemove';
+                var EV_END = hasTouch ? 'touchend' : 'mouseup';
+                var EV_CANCEL = hasTouch ? 'touchcancel' : 'mouseup';
 
                 clearTimeout(wheelLock);
 
@@ -994,23 +1038,23 @@
                 }
                 refresh();
 
-                var point = getEventPosition(e),
-                    startTime = +new Date(),
-                    startX = x,
-                    startY = y,
-                    pressureX = 0,
-                    pressureY = 0,
-                    lastPointX = point.x,
-                    lastPointY = point.y,
-                    firstPointX = lastPointX,
-                    firstPointY = lastPointY,
-                    eventTarget = e.target,
-                    bindedHandler = {},
-                    contentScrolled = false,
-                    snappedToPage = false,
-                    scrollbarMode,
-                    factor = 1,
-                    isDirY;
+                var point = getEventPosition(e);
+                var startTime = +new Date();
+                var startX = x;
+                var startY = y;
+                var pressureX = 0;
+                var pressureY = 0;
+                var lastPointX = point.x;
+                var lastPointY = point.y;
+                var firstPointX = lastPointX;
+                var firstPointY = lastPointY;
+                var eventTarget = e.target;
+                var bindedHandler = {};
+                var contentScrolled = false;
+                var snappedToPage = false;
+                var scrollbarMode;
+                var factor = 1;
+                var isDirY;
 
                 if (handle === 'auto') {
                     handle = hasTouch ? 'content' : 'scrollbar';
@@ -1076,18 +1120,18 @@
                     if ($current && $current !== $wrapper || snappedToPage) {
                         return;
                     }
-                    var point = getEventPosition(e),
-                        deltaX = point.x - lastPointX,
-                        deltaY = point.y - lastPointY,
-                        touchDeltaX = deltaX,
-                        touchDeltaY = deltaY,
-                        newX = startX + (point.x - firstPointX) * factor,
-                        newY = startY + (point.y - firstPointY) * factor,
-                        distX = m.abs(point.x - firstPointX),
-                        distY = m.abs(point.y - firstPointY),
-                        thisDirY = distX / distY < 1,
-                        hBounce = options.hBounce && !scrollbarMode,
-                        vBounce = options.vBounce && !scrollbarMode;
+                    var point = getEventPosition(e);
+                    var deltaX = point.x - lastPointX;
+                    var deltaY = point.y - lastPointY;
+                    var touchDeltaX = deltaX;
+                    var touchDeltaY = deltaY;
+                    var newX = startX + (point.x - firstPointX) * factor;
+                    var newY = startY + (point.y - firstPointY) * factor;
+                    var distX = m.abs(point.x - firstPointX);
+                    var distY = m.abs(point.y - firstPointY);
+                    var thisDirY = distX / distY < 1;
+                    var hBounce = options.hBounce && !scrollbarMode;
+                    var vBounce = options.vBounce && !scrollbarMode;
 
                     if ((!deltaX && !deltaY) || (!contentScrolled && hasTouch === 'stylus' && distX < 10 && distY < 10)) {
                         return;
@@ -1128,7 +1172,7 @@
                     if (!contentScrolled) {
                         contentScrolled = true;
                         if (!hasTouch) {
-                            $blockLayer.appendTo($wrapper);
+                            $blockLayer.appendTo(document.body);
                         }
                         fireEvent('scrollStart', startX, startY);
                     }
@@ -1225,16 +1269,16 @@
                             return;
                         }
 
-                        var duration = (+new Date()) - startTime,
-                            momentumX = zeroMomentum,
-                            momentumY = zeroMomentum;
+                        var duration = (+new Date()) - startTime;
+                        var momentumX = zeroMomentum;
+                        var momentumY = zeroMomentum;
 
                         if (options.momentum && duration < 300 && !scrollbarMode) {
                             momentumX = calculateMomentum(x - startX, duration, x > startX ? -x : x - minX, options.bounce && wrapperSize.width);
                             momentumY = calculateMomentum(y - startY, duration, y > startY ? -y : y - minY, options.bounce && wrapperSize.height);
                         }
-                        var newX = x + momentumX.dist,
-                            newY = y + momentumY.dist;
+                        var newX = x + momentumX.dist;
+                        var newY = y + momentumY.dist;
                         if (options.pageItem && options.snapToPage) {
                             var p = normalizePosition(newX, newY, true);
                             newX = p.x;
@@ -1285,13 +1329,92 @@
             handlers.scroll = fixNativeScrollHandler;
             handlers.touchstart = startScroll;
             handlers.mousedown = startScroll;
+            handlers.auxclick = function (e) {
+                var ev = e.originalEvent;
+                var canScrollX = options.hScroll && minX;
+                var canScrollY = options.vScroll && minY;
+                var defaultCursor = 'all-scroll';
+                var contentScrolled;
+                var timeout;
+                var startX;
+                var startY;
+
+                if ((!canScrollX && !canScrollY) || e.which !== 2) {
+                    return;
+                }
+
+                function handleStop() {
+                    clearInterval(timeout);
+                    if (contentScrolled) {
+                        fireEvent('scrollEnd', startX, startY);
+                        fireEvent('scrollStop', startX, startY);
+                        $wrapper.removeClass(options.scrollingClass);
+                    }
+                    $(document).off(bindedHandler);
+                    $blockLayer.detach().css('cursor', 'default');
+                    cancelScroll = null;
+                }
+
+                function handleScroll(e) {
+                    var deltaX = e.clientX - ev.clientX;
+                    var deltaY = e.clientY - ev.clientY;
+                    var shouldScrollX = canScrollX && m.abs(deltaX) >= 20;
+                    var shouldScrollY = canScrollY && m.abs(deltaY) >= 20;
+
+                    function scroll() {
+                        var newPos = normalizePosition(x - deltaX * 0.1, y - deltaY * 0.1, true);
+                        var newX = newPos.x;
+                        var newY = newPos.y;
+                        if (newX !== x || newY !== y) {
+                            if (!contentScrolled) {
+                                startX = x;
+                                startY = y;
+                                contentScrolled = true;
+                                $wrapper.addClass(options.scrollingClass);
+                                fireEvent('scrollStart', startX, startY);
+                            }
+                            fireEvent('scrollMove', startX, startY, newX, newY, deltaX, deltaY);
+                            setPosition(newX, newY);
+                        }
+                    }
+
+                    clearInterval(timeout);
+                    if (shouldScrollX || shouldScrollY) {
+                        scroll();
+                        timeout = setInterval(scroll, 20);
+                        $blockLayer.css('cursor', (!shouldScrollY ? '' : deltaY < 0 ? 'n' : 's') + (!shouldScrollX ? '' : deltaX < 0 ? 'w' : 'e') + '-resize');
+                    } else {
+                        $blockLayer.css('cursor', defaultCursor);
+                    }
+                }
+
+                // stop any running animation
+                if (cancelAnim) {
+                    cancelAnim();
+                }
+                e.stopPropagation();
+
+                var bindedHandler = {
+                    mousemove: handleScroll,
+                    mousedown: handleStop
+                };
+                $(document).on(bindedHandler);
+                cancelScroll = function () {
+                    cancelScroll = null;
+                    if (cancelAnim) {
+                        cancelAnim();
+                    }
+                    handleStop();
+                };
+                $blockLayer.appendTo(document.body).css('cursor', defaultCursor);
+            };
             handlers[EV_WHEEL] = function (e) {
-                var ev = e.originalEvent,
-                    wheelDeltaX = 0,
-                    wheelDeltaY = 0,
-                    canScrollX = options.hScroll && minX,
-                    canScrollY = options.vScroll && minY,
-                    isDirY;
+                var ev = e.originalEvent;
+                var wheelDeltaX = 0;
+                var wheelDeltaY = 0;
+                var canScrollX = options.hScroll && minX;
+                var canScrollY = options.vScroll && minY;
+                var isDirY;
 
                 if (!options.wheel || e.ctrlKey || e.altKey || e.shiftKey || e.metaKey || e.isDefaultPrevented() || (!canScrollX && !canScrollY)) {
                     return;
@@ -1307,8 +1430,7 @@
                 } else if (ev.detail !== undefined) {
                     wheelDeltaY = -ev.detail;
                 }
-                hasWheelDeltaX = hasWheelDeltaX || wheelDeltaX !== 0;
-                isDirY = !hasWheelDeltaX || m.abs(wheelDeltaY) > m.abs(wheelDeltaX);
+                isDirY = m.abs(wheelDeltaY) > m.abs(wheelDeltaX);
                 if (!wheelDeltaX && !wheelDeltaY) {
                     return;
                 }
@@ -1319,12 +1441,8 @@
                 if (scrollInner && (isDirY ? scrollInner.y : scrollInner.x)) {
                     return;
                 }
-                if (hasWheelDeltaX) {
-                    if ((!canScrollX && !isDirY) || (!canScrollY && isDirY)) {
-                        return;
-                    }
-                } else if (!canScrollY && !wheelDeltaX) {
-                    wheelDeltaX = wheelDeltaY;
+                if ((!canScrollX && !isDirY) || (!canScrollY && isDirY)) {
+                    return;
                 }
                 wheelDeltaX *= options.hScroll;
                 wheelDeltaY *= options.vScroll;
@@ -1433,13 +1551,15 @@
             if ($wrapper.css('overflow') !== 'hidden' && $wrapper.css('overflow') !== 'visible') {
                 $wrapper.css('overflow', 'hidden');
             }
-            if (hasTouch) {
-                $wrapper.css('touch-action', 'none');
-            }
 
             if (window.MutationObserver) {
                 collectMutations = new MutationObserver(function () {
                     if (!muteMutations && enabled) {
+                        stickyElements.forEach(function (v, i) {
+                            if (!i.isConnected) {
+                                stickyElements.delete(i);
+                            }
+                        });
                         refresh(true);
                     }
                 });
@@ -1457,6 +1577,27 @@
 
             // plugin interface
             $wrapper.data(DATA_ID, {
+                get scrollTarget() {
+                    return $content[0] || null;
+                },
+                get scrollX() {
+                    return -x;
+                },
+                get scrollY() {
+                    return -y;
+                },
+                get scrollPercentX() {
+                    return minX ? (x / minX) * 100 : 100;
+                },
+                get scrollPercentY() {
+                    return minY ? (y / minY) * 100 : 100;
+                },
+                get scrollMaxX() {
+                    return -minX;
+                },
+                get scrollMaxY() {
+                    return -minY;
+                },
                 destroy: function () {
                     setPosition(0, 0);
                     $activated.splice($.inArray($wrapper[0], $activated), 1);
@@ -1475,6 +1616,7 @@
                     $wrapper.data(DATA_ID, null);
                     $wrapper.splice(0, 1);
                     $content.splice(0, 1);
+                    stickyElements.clear();
                     if (collectMutations.disconnect) {
                         collectMutations.disconnect();
                     }
@@ -1502,11 +1644,35 @@
                     $.extend(options, values);
                     refresh(true);
                 },
+                setStickyPosition: function (element, dir, within, fixed) {
+                    if ($wrapper[0]) {
+                        var dirX = /\b(left|right)\b/.test(dir) && RegExp.$1;
+                        var dirY = /\b(top|bottom)\b/.test(dir) && RegExp.$1;
+                        if (typeof within === 'boolean') {
+                            fixed = within;
+                            within = null;
+                        }
+                        $(element, $content).each(function (i, v) {
+                            if (dir === 'none') {
+                                stickyElements.delete(v);
+                                $(v).removeClass(options.stickyClass).css('transform', '');
+                            } else {
+                                stickyElements.set(v, {
+                                    within: typeof within === 'string' ? getRect.bind(0, $(v).closest(within)[0]) : within,
+                                    dirX: dirX,
+                                    dirY: dirY,
+                                    fixed: fixed
+                                });
+                            }
+                        });
+                        stickyTimeout = stickyTimeout || setTimeout(updateStickyPositions);
+                    }
+                },
                 refresh: function () {
                     refresh(true);
                 },
-                scrollPadding: function () {
-                    return getScrollPadding();
+                scrollPadding: function (target) {
+                    return getScrollPadding(target);
                 },
                 stop: function () {
                     if (cancelScroll) {
@@ -1548,6 +1714,9 @@
         }
         return $.data(element, DATA_ID);
     };
+    $.scrollable.hook = function (hook) {
+        hooks.push(hook);
+    };
 
     var resizeTimeout;
     $(window).on(EV_RESIZE, function () {
@@ -1555,13 +1724,6 @@
         resizeTimeout = setTimeout(function () {
             $activated.scrollable('refresh');
         }, isAndroid ? 200 : 0);
-    });
-
-    $(window).on(EV_WHEEL, function detectWheelDeltaX(e) {
-        if (e.originalEvent.deltaX !== 0) {
-            hasWheelDeltaX = true;
-            $(window).off(EV_WHEEL, detectWheelDeltaX);
-        }
     });
 
     $(window).on('keydown', function (e) {
@@ -1599,4 +1761,50 @@
         }
     } catch (e) { }
 
-}));
+})();
+
+
+/***/ }),
+
+/***/ 609:
+/***/ ((module) => {
+
+"use strict";
+module.exports = __WEBPACK_EXTERNAL_MODULE__609__;
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		if(__webpack_module_cache__[moduleId]) {
+/******/ 			return __webpack_module_cache__[moduleId].exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	// module exports must be returned from runtime so entry inlining is disabled
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	return __webpack_require__(10);
+/******/ })()
+;
+});
+//# sourceMappingURL=jquery.scrollable.js.map

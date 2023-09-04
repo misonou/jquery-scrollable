@@ -318,6 +318,16 @@ For `touchMove` and `scrollMove` event, the following properties are available o
 - `pageIndex`: current index if paging is turned on by `pageItem` option
 - `pageItem`: current element if paging is turned on by `pageItem` option
 
+Starting from `v1.12.0`, events can be listened by global hooks via
+
+```javascript
+$.scrollable.hook({
+    scrollStart: function (e) {
+    },
+    // ...
+});
+```
+
 ### touchMove
 
 Fired when a mouse or touch move event is triggered on the content element but not necessarily starts a scrolling action.

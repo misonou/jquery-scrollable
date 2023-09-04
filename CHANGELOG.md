@@ -1,3 +1,23 @@
+## v1.12.0 / 2023-08-30
+
+- Add the following properties:
+  - `scrollTarget`
+  - `scrollX`
+  - `scrollY`
+  - `scrollPercentX`
+  - `scrollPercentY`
+  - `scrollMaxX`
+  - `scrollMaxY`
+- Expose scroll information from `scrollBy*` and `scrollTo*` methods
+- Allow scroll by clicking mouse wheel
+- Allow hooking event through `$.scrollable.hook`
+- Rewrite sticky position feature, add `setStickyPosition` method
+- Fix: unable to scroll natively outer container by touches
+- Fix: remove inferring horizontal scroll with mouse wheel, aligns with native behavior
+- Fix: scroll padding calculation
+- Fix: should not activate twice on same element
+- Fix: ensure matched content element is not nested in another scrollable
+
 ## v1.11.4 / 2023-08-24
 
 - Fix: treat area as unscrollable by wheel when content is underflow
