@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.12.0 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.12.1 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jQuery"));
@@ -1744,8 +1744,9 @@ const $ = __webpack_require__(609);
     });
 
     $(window).on('hashchange', function () {
-        if (location.hash.slice(1)) {
-            $(location.hash).parents().each(function (i, v) {
+        var element = document.getElementById(location.hash.slice(1));
+        if (element) {
+            $(element).parents().each(function (i, v) {
                 if ($.inArray(v, $activated) >= 0) {
                     v.scrollTop = 0;
                 }

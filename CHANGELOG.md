@@ -1,4 +1,8 @@
-## v1.12.0 / 2023-08-30
+## v1.12.1 / 2023-09-07
+
+- Fix: possible error in `hashchange` event
+
+## v1.12.0 / 2023-09-04
 
 - Add the following properties:
   - `scrollTarget`
