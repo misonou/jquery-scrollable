@@ -903,16 +903,17 @@ const $ = require('jquery');
                         var content = $(options.content, $wrapper).get().find(function (v) {
                             return $(v).closest($activated)[0] === $wrapper[0] && $(v).is(':visible');
                         });
-                        if (content) {
-                            if (content !== $content[0]) {
-                                if (cancelScroll) {
-                                    cancelScroll();
-                                }
-                                if ($content[0]) {
-                                    $content[0].scrollableOffsetX = x;
-                                    $content[0].scrollableOffsetY = y;
-                                }
-                                array.splice.call($content, 0, 1, content);
+                        if (content !== $content[0]) {
+                            if (cancelScroll) {
+                                cancelScroll();
+                            }
+                            if ($content[0]) {
+                                $content[0].scrollableOffsetX = x;
+                                $content[0].scrollableOffsetY = y;
+                            }
+                            array.splice.call($content, 0, 1);
+                            if (content) {
+                                array.push.call($content, content);
                                 if ($content.css('position') === 'static') {
                                     $content.css('position', 'relative');
                                 }
@@ -923,6 +924,8 @@ const $ = require('jquery');
                                 y = content.scrollableOffsetY || 0;
                                 $middle = $content.parentsUntil($wrapper).not($middle).on('scroll', fixNativeScrollHandler).end();
                             }
+                        }
+                        if (content) {
                             $(options.sticky, content).each(function (i, v) {
                                 var handle = $(options.stickyHandle, v)[0];
                                 if (handle && !stickyElements.has(handle)) {
@@ -932,8 +935,8 @@ const $ = require('jquery');
                                     });
                                 };
                             });
-                            $pageItems = options.pageItem ? $(options.pageItem, content) : $();
                         }
+                        $pageItems = content && options.pageItem ? $(options.pageItem, content) : $();
                     }
                     var oMinX = minX, oMinY = minY;
                     var style = getComputedStyle($wrapper[0]);
