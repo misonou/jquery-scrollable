@@ -1,3 +1,8 @@
+## v1.12.2 / 2023-09-27
+
+- Fix: possible infinite loop if no content element is matched
+- Fix: error in `canScrollInnerElement`
+
 ## v1.12.1 / 2023-09-07
 
 - Fix: possible error in `hashchange` event

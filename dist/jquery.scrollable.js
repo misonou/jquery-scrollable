@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.12.1 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.12.2 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jQuery"));
@@ -283,12 +283,14 @@ const $ = __webpack_require__(609);
         };
     }
 
-    function canScrollInnerElement(cur, parent, deltaX, deltaY) {
+    function canScrollInnerElement(cur, parent) {
         var clampX, clampY;
-        for (; cur !== parent; cur = cur.parentNode) {
-            var style = getComputedStyle(cur);
-            clampY = clampY || (cur.scrollHeight > cur.offsetHeight && (style.overflowY === 'auto' || style.overflowY === 'scroll'));
-            clampX = clampX || (cur.scrollWidth > cur.offsetWidth && (style.overflowX === 'auto' || style.overflowX === 'scroll'));
+        if ($.contains(parent, cur)) {
+            for (; cur !== parent; cur = cur.parentNode) {
+                var style = getComputedStyle(cur);
+                clampY = clampY || (cur.scrollHeight > cur.offsetHeight && (style.overflowY === 'auto' || style.overflowY === 'scroll'));
+                clampX = clampX || (cur.scrollWidth > cur.offsetWidth && (style.overflowX === 'auto' || style.overflowX === 'scroll'));
+            }
         }
         return (clampX || clampY) && {
             x: clampX,
@@ -920,16 +922,17 @@ const $ = __webpack_require__(609);
                         var content = $(options.content, $wrapper).get().find(function (v) {
                             return $(v).closest($activated)[0] === $wrapper[0] && $(v).is(':visible');
                         });
-                        if (content) {
-                            if (content !== $content[0]) {
-                                if (cancelScroll) {
-                                    cancelScroll();
-                                }
-                                if ($content[0]) {
-                                    $content[0].scrollableOffsetX = x;
-                                    $content[0].scrollableOffsetY = y;
-                                }
-                                array.splice.call($content, 0, 1, content);
+                        if (content !== $content[0]) {
+                            if (cancelScroll) {
+                                cancelScroll();
+                            }
+                            if ($content[0]) {
+                                $content[0].scrollableOffsetX = x;
+                                $content[0].scrollableOffsetY = y;
+                            }
+                            array.splice.call($content, 0, 1);
+                            if (content) {
+                                array.push.call($content, content);
                                 if ($content.css('position') === 'static') {
                                     $content.css('position', 'relative');
                                 }
@@ -940,6 +943,8 @@ const $ = __webpack_require__(609);
                                 y = content.scrollableOffsetY || 0;
                                 $middle = $content.parentsUntil($wrapper).not($middle).on('scroll', fixNativeScrollHandler).end();
                             }
+                        }
+                        if (content) {
                             $(options.sticky, content).each(function (i, v) {
                                 var handle = $(options.stickyHandle, v)[0];
                                 if (handle && !stickyElements.has(handle)) {
@@ -949,8 +954,8 @@ const $ = __webpack_require__(609);
                                     });
                                 };
                             });
-                            $pageItems = options.pageItem ? $(options.pageItem, content) : $();
                         }
+                        $pageItems = content && options.pageItem ? $(options.pageItem, content) : $();
                     }
                     var oMinX = minX, oMinY = minY;
                     var style = getComputedStyle($wrapper[0]);
@@ -1147,7 +1152,7 @@ const $ = __webpack_require__(609);
                                 return;
                             }
                             // check if user is scrolling inner content
-                            var scrollInner = canScrollInnerElement(e.target, $wrapper[0], deltaX, deltaY);
+                            var scrollInner = canScrollInnerElement(e.target, $wrapper[0]);
                             if (scrollInner && scrollInner.x && scrollInner.y) {
                                 handleStop(e);
                                 return;
@@ -1320,12 +1325,6 @@ const $ = __webpack_require__(609);
 
             var wheelState;
             var handlers = {};
-            handlers.focusin = function () {
-                fixNativeScroll($wrapper[0]);
-                $middle.each(function (i, v) {
-                    fixNativeScroll(v);
-                });
-            };
             handlers.scroll = fixNativeScrollHandler;
             handlers.touchstart = startScroll;
             handlers.mousedown = startScroll;
@@ -1437,7 +1436,7 @@ const $ = __webpack_require__(609);
                 if ($current && $current !== $wrapper && ($wrapper.find($current)[0] || $current.find($wrapper)[0])) {
                     return;
                 }
-                var scrollInner = canScrollInnerElement(e.target, $wrapper[0], wheelDeltaX, wheelDeltaY);
+                var scrollInner = canScrollInnerElement(e.target, $wrapper[0]);
                 if (scrollInner && (isDirY ? scrollInner.y : scrollInner.x)) {
                     return;
                 }
@@ -1740,17 +1739,6 @@ const $ = __webpack_require__(609);
                         $($.uniqueSort($activated)).filter(':visible').eq(0).triggerHandler(e);
                     }
             }
-        }
-    });
-
-    $(window).on('hashchange', function () {
-        var element = document.getElementById(location.hash.slice(1));
-        if (element) {
-            $(element).parents().each(function (i, v) {
-                if ($.inArray(v, $activated) >= 0) {
-                    v.scrollTop = 0;
-                }
-            });
         }
     });
 
