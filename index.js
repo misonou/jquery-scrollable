@@ -266,12 +266,14 @@ const $ = require('jquery');
         };
     }
 
-    function canScrollInnerElement(cur, parent, deltaX, deltaY) {
+    function canScrollInnerElement(cur, parent) {
         var clampX, clampY;
-        for (; cur !== parent; cur = cur.parentNode) {
-            var style = getComputedStyle(cur);
-            clampY = clampY || (cur.scrollHeight > cur.offsetHeight && (style.overflowY === 'auto' || style.overflowY === 'scroll'));
-            clampX = clampX || (cur.scrollWidth > cur.offsetWidth && (style.overflowX === 'auto' || style.overflowX === 'scroll'));
+        if ($.contains(parent, cur)) {
+            for (; cur !== parent; cur = cur.parentNode) {
+                var style = getComputedStyle(cur);
+                clampY = clampY || (cur.scrollHeight > cur.offsetHeight && (style.overflowY === 'auto' || style.overflowY === 'scroll'));
+                clampX = clampX || (cur.scrollWidth > cur.offsetWidth && (style.overflowX === 'auto' || style.overflowX === 'scroll'));
+            }
         }
         return (clampX || clampY) && {
             x: clampX,
@@ -1133,7 +1135,7 @@ const $ = require('jquery');
                                 return;
                             }
                             // check if user is scrolling inner content
-                            var scrollInner = canScrollInnerElement(e.target, $wrapper[0], deltaX, deltaY);
+                            var scrollInner = canScrollInnerElement(e.target, $wrapper[0]);
                             if (scrollInner && scrollInner.x && scrollInner.y) {
                                 handleStop(e);
                                 return;
@@ -1423,7 +1425,7 @@ const $ = require('jquery');
                 if ($current && $current !== $wrapper && ($wrapper.find($current)[0] || $current.find($wrapper)[0])) {
                     return;
                 }
-                var scrollInner = canScrollInnerElement(e.target, $wrapper[0], wheelDeltaX, wheelDeltaY);
+                var scrollInner = canScrollInnerElement(e.target, $wrapper[0]);
                 if (scrollInner && (isDirY ? scrollInner.y : scrollInner.x)) {
                     return;
                 }
