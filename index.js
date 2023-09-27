@@ -1308,12 +1308,6 @@ const $ = require('jquery');
 
             var wheelState;
             var handlers = {};
-            handlers.focusin = function () {
-                fixNativeScroll($wrapper[0]);
-                $middle.each(function (i, v) {
-                    fixNativeScroll(v);
-                });
-            };
             handlers.scroll = fixNativeScrollHandler;
             handlers.touchstart = startScroll;
             handlers.mousedown = startScroll;
@@ -1728,17 +1722,6 @@ const $ = require('jquery');
                         $($.uniqueSort($activated)).filter(':visible').eq(0).triggerHandler(e);
                     }
             }
-        }
-    });
-
-    $(window).on('hashchange', function () {
-        var element = document.getElementById(location.hash.slice(1));
-        if (element) {
-            $(element).parents().each(function (i, v) {
-                if ($.inArray(v, $activated) >= 0) {
-                    v.scrollTop = 0;
-                }
-            });
         }
     });
 
