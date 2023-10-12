@@ -423,6 +423,7 @@ const $ = require('jquery');
             var stickyElements = new Map();
             var stickyRect;
             var stickyTimeout;
+            var refreshTimeout;
             var cancelScroll;
             var cancelAnim;
 
@@ -430,6 +431,12 @@ const $ = require('jquery');
                 throw new Error('Scrollable already activated');
             }
             $activated.splice(0, 0, this);
+
+            function flushChanges() {
+                muteMutations = true;
+                collectMutations.takeRecords();
+                muteMutations = false;
+            }
 
             function getPageIndex(offset) {
                 var props = pageDirection === 'x' ? ['left', 'right', 'width'] : ['top', 'bottom', 'height'];
@@ -698,7 +705,6 @@ const $ = require('jquery');
             }
 
             function setPosition(newX, newY) {
-                muteMutations = true;
                 x = mround(newX);
                 y = mround(newY);
                 pendingX = 0;
@@ -768,9 +774,7 @@ const $ = require('jquery');
                 $wrapper.toggleClass(options.scrollableYClass + '-u', y < 0);
                 $wrapper.toggleClass(options.scrollableYClass + '-d', y > minY);
                 updateStickyPositions();
-
-                collectMutations.takeRecords();
-                muteMutations = false;
+                flushChanges();
             }
 
             function getResolvePromise() {
@@ -900,6 +904,7 @@ const $ = require('jquery');
             }
 
             function refresh(updateContent) {
+                clearTimeout(refreshTimeout);
                 if ($wrapper.is(':visible')) {
                     if (updateContent) {
                         var content = $(options.content, $wrapper).get().find(function (v) {
@@ -992,13 +997,18 @@ const $ = require('jquery');
                         stopY = y;
                         fireEvent('scrollMove', startX, startY);
                         fireEvent('scrollEnd', startX, startY);
-                    } else {
+                    } else if (oMinX !== minX || oMinY !== minY) {
                         setPosition(x, y);
-                        if (oMinX !== minX || oMinY !== minY) {
-                            fireEvent('scrollProgressChange', x, y);
-                        }
+                        fireEvent('scrollProgressChange', x, y);
+                    } else {
+                        // prevent infinite loop
+                        flushChanges();
                     }
                 }
+            }
+
+            function refreshNext() {
+                refreshTimeout = refreshTimeout || setTimeout(refresh);
             }
 
             function startScroll(e) {
@@ -1494,12 +1504,8 @@ const $ = require('jquery');
                     }, 250);
                 }
             };
-            handlers.transitionend = function () {
-                refresh();
-            };
-            handlers.animationend = function () {
-                refresh();
-            };
+            handlers.transitionend = refreshNext;
+            handlers.animationend = refreshNext;
             handlers.keydown = function (e) {
                 var key = e.keyCode;
                 if (e.isDefaultPrevented() || ($(document.activeElement).is('select,button,input,textarea') && key !== 33 && key !== 34)) {
