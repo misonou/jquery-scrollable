@@ -1,3 +1,7 @@
+## v1.12.3 / 2023-10-13
+
+- Fix: reduce unnecessary refresh and style update
+
 ## v1.12.2 / 2023-09-27
 
 - Fix: possible infinite loop if no content element is matched

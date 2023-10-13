@@ -1,6 +1,6 @@
 {
   "name": "jq-scrollable",
-  "version": "1.12.2",
+  "version": "1.12.3",
   "main": "index.js",
   "dependencies": {
     "jquery": "^3.5.1"
@@ -16,7 +16,7 @@
   },
   "homepage": "https://github.com/misonou/jquery-scrollable",
   "scripts": {
-    "build": "cross-env NODE_OPTIONS=--openssl-legacy-provider webpack",
+    "build": "cross-env webpack",
     "version": "npm run build && git add -A dist"
   }
 }
