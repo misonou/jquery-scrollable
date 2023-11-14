@@ -1226,8 +1226,8 @@ const $ = require('jquery');
 
                     fireEvent('touchMove', startX, startY, newX, newY, touchDeltaX, touchDeltaY);
                     if (newX !== x || newY !== y) {
-                        fireEvent('scrollMove', startX, startY, newX, newY, deltaX, deltaY);
                         setPosition(newX, newY);
+                        fireEvent('scrollMove', startX, startY, newX, newY, deltaX, deltaY);
                     }
                     setGlow(pressureX, pressureY);
                 }
@@ -1365,8 +1365,8 @@ const $ = require('jquery');
                                 $wrapper.addClass(options.scrollingClass);
                                 fireEvent('scrollStart', startX, startY);
                             }
-                            fireEvent('scrollMove', startX, startY, newX, newY, deltaX, deltaY);
                             setPosition(newX, newY);
+                            fireEvent('scrollMove', startX, startY, newX, newY, deltaX, deltaY);
                         }
                     }
 
@@ -1487,8 +1487,8 @@ const $ = require('jquery');
                     } else {
                         clearTimeout(wheelState.timeout);
                         wheelState.timeout = setTimeout(handleEnd, 200);
-                        fireEvent('scrollMove', startX, startY, newX, newY, wheelDeltaX, wheelDeltaY);
                         setPosition(newX, newY);
+                        fireEvent('scrollMove', startX, startY, newX, newY, wheelDeltaX, wheelDeltaY);
                         stopX = newX;
                         stopY = newY;
                     }
