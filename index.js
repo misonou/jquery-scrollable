@@ -781,6 +781,13 @@ const $ = require('jquery');
                 return $.extend(Promise.resolve(), getScrollState(x, y));
             }
 
+            function setScrollMove(newX, newY, startX, startY) {
+                var prevX = x;
+                var prevY = y;
+                setPosition(newX, newY);
+                fireEvent('scrollMove', startX, startY, newX, newY, x - prevX, y - prevY);
+            }
+
             function scrollTo(newX, newY, duration, callback, eventStartX, eventStartY) {
                 // stop any running animation
                 if (cancelAnim) {
@@ -825,8 +832,7 @@ const $ = require('jquery');
                 var animate = function () {
                     var elapsed = (+new Date()) - startTime;
                     if (elapsed >= duration) {
-                        setPosition(newX, newY);
-                        fireEvent('scrollMove', eventStartX, eventStartY, newX, newY, newX - x, newY - y);
+                        setScrollMove(newX, newY, eventStartX, eventStartY);
                         finish();
                         return;
                     }
@@ -836,8 +842,7 @@ const $ = require('jquery');
                     var stepX = (newX - startX) * easeOut + startX;
                     var stepY = (newY - startY) * easeOut + startY;
 
-                    setPosition(stepX, stepY);
-                    fireEvent('scrollMove', eventStartX, eventStartY, stepX, stepY, stepX - x, stepY - y);
+                    setScrollMove(stepX, stepY, eventStartX, eventStartY);
                     frameId = nextFrame(animate);
                 };
                 cancelAnim = finish;
@@ -992,10 +997,9 @@ const $ = require('jquery');
                         var startY = y;
                         var newPos = normalizePosition(x, y);
                         fireEvent('scrollStart', startX, startY);
-                        setPosition(newPos.x, newPos.y);
                         stopX = x;
                         stopY = y;
-                        fireEvent('scrollMove', startX, startY);
+                        setScrollMove(newPos.x, newPos.y, startX, startY);
                         fireEvent('scrollEnd', startX, startY);
                     } else if (oMinX !== minX || oMinY !== minY) {
                         setPosition(x, y);
@@ -1226,8 +1230,7 @@ const $ = require('jquery');
 
                     fireEvent('touchMove', startX, startY, newX, newY, touchDeltaX, touchDeltaY);
                     if (newX !== x || newY !== y) {
-                        setPosition(newX, newY);
-                        fireEvent('scrollMove', startX, startY, newX, newY, deltaX, deltaY);
+                        setScrollMove(newX, newY, startX, startY);
                     }
                     setGlow(pressureX, pressureY);
                 }
@@ -1365,8 +1368,7 @@ const $ = require('jquery');
                                 $wrapper.addClass(options.scrollingClass);
                                 fireEvent('scrollStart', startX, startY);
                             }
-                            setPosition(newX, newY);
-                            fireEvent('scrollMove', startX, startY, newX, newY, deltaX, deltaY);
+                            setScrollMove(newX, newY, startX, startY);
                         }
                     }
 
@@ -1487,8 +1489,7 @@ const $ = require('jquery');
                     } else {
                         clearTimeout(wheelState.timeout);
                         wheelState.timeout = setTimeout(handleEnd, 200);
-                        setPosition(newX, newY);
-                        fireEvent('scrollMove', startX, startY, newX, newY, wheelDeltaX, wheelDeltaY);
+                        setScrollMove(newX, newY, startX, startY);
                         stopX = newX;
                         stopY = newY;
                     }
