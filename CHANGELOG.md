@@ -1,3 +1,8 @@
+## v1.12.4 / 2023-11-16
+
+- Fix: `scrollMove` should be fired after scroll position updated
+- Fix: incorrect or missing `deltaX/Y` reported in `scrollMove` event
+
 ## v1.12.3 / 2023-10-13
 
 - Fix: reduce unnecessary refresh and style update

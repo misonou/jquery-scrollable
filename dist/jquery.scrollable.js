@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.12.3 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.12.4 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jQuery"));
@@ -798,6 +798,13 @@ const $ = __webpack_require__(609);
                 return $.extend(Promise.resolve(), getScrollState(x, y));
             }
 
+            function setScrollMove(newX, newY, startX, startY) {
+                var prevX = x;
+                var prevY = y;
+                setPosition(newX, newY);
+                fireEvent('scrollMove', startX, startY, newX, newY, x - prevX, y - prevY);
+            }
+
             function scrollTo(newX, newY, duration, callback, eventStartX, eventStartY) {
                 // stop any running animation
                 if (cancelAnim) {
@@ -842,8 +849,7 @@ const $ = __webpack_require__(609);
                 var animate = function () {
                     var elapsed = (+new Date()) - startTime;
                     if (elapsed >= duration) {
-                        setPosition(newX, newY);
-                        fireEvent('scrollMove', eventStartX, eventStartY, newX, newY, newX - x, newY - y);
+                        setScrollMove(newX, newY, eventStartX, eventStartY);
                         finish();
                         return;
                     }
@@ -853,8 +859,7 @@ const $ = __webpack_require__(609);
                     var stepX = (newX - startX) * easeOut + startX;
                     var stepY = (newY - startY) * easeOut + startY;
 
-                    setPosition(stepX, stepY);
-                    fireEvent('scrollMove', eventStartX, eventStartY, stepX, stepY, stepX - x, stepY - y);
+                    setScrollMove(stepX, stepY, eventStartX, eventStartY);
                     frameId = nextFrame(animate);
                 };
                 cancelAnim = finish;
@@ -1009,10 +1014,9 @@ const $ = __webpack_require__(609);
                         var startY = y;
                         var newPos = normalizePosition(x, y);
                         fireEvent('scrollStart', startX, startY);
-                        setPosition(newPos.x, newPos.y);
                         stopX = x;
                         stopY = y;
-                        fireEvent('scrollMove', startX, startY);
+                        setScrollMove(newPos.x, newPos.y, startX, startY);
                         fireEvent('scrollEnd', startX, startY);
                     } else if (oMinX !== minX || oMinY !== minY) {
                         setPosition(x, y);
@@ -1243,8 +1247,7 @@ const $ = __webpack_require__(609);
 
                     fireEvent('touchMove', startX, startY, newX, newY, touchDeltaX, touchDeltaY);
                     if (newX !== x || newY !== y) {
-                        fireEvent('scrollMove', startX, startY, newX, newY, deltaX, deltaY);
-                        setPosition(newX, newY);
+                        setScrollMove(newX, newY, startX, startY);
                     }
                     setGlow(pressureX, pressureY);
                 }
@@ -1382,8 +1385,7 @@ const $ = __webpack_require__(609);
                                 $wrapper.addClass(options.scrollingClass);
                                 fireEvent('scrollStart', startX, startY);
                             }
-                            fireEvent('scrollMove', startX, startY, newX, newY, deltaX, deltaY);
-                            setPosition(newX, newY);
+                            setScrollMove(newX, newY, startX, startY);
                         }
                     }
 
@@ -1504,8 +1506,7 @@ const $ = __webpack_require__(609);
                     } else {
                         clearTimeout(wheelState.timeout);
                         wheelState.timeout = setTimeout(handleEnd, 200);
-                        fireEvent('scrollMove', startX, startY, newX, newY, wheelDeltaX, wheelDeltaY);
-                        setPosition(newX, newY);
+                        setScrollMove(newX, newY, startX, startY);
                         stopX = newX;
                         stopY = newY;
                     }
