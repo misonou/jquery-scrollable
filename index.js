@@ -313,8 +313,8 @@ const $ = require('jquery');
                     }
                 }
                 if (value !== undefined) {
-                    returnValue = value;
-                    return false;
+                    returnValue = returnValue || value;
+                    return value instanceof Promise;
                 }
             });
             if (returnValue !== undefined) {
