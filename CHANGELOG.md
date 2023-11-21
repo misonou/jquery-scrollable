@@ -1,3 +1,7 @@
+## v1.12.5 / 2023-11-21
+
+- Fix: `scrollBy*` and `scrollTo*` methods should apply to all elements in the jQuery instance
+
 ## v1.12.4 / 2023-11-16
 
 - Fix: `scrollMove` should be fired after scroll position updated

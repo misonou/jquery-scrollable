@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.12.4 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.12.5 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jQuery"));
@@ -330,8 +330,8 @@ const $ = __webpack_require__(609);
                     }
                 }
                 if (value !== undefined) {
-                    returnValue = value;
-                    return false;
+                    returnValue = returnValue || value;
+                    return value instanceof Promise;
                 }
             });
             if (returnValue !== undefined) {
