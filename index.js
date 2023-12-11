@@ -60,13 +60,11 @@ const $ = require('jquery');
 
     // browser capabilities
     const isAndroid = /android/gi.test(navigator.appVersion);
-    const isTouchPad = /hp-tablet/gi.test(navigator.appVersion);
 
     const DOMMatrix = window.DOMMatrix || window.WebKitCSSMatrix || window.MSCSSMatrix;
     const root = document.documentElement;
-    const hasTouch = window.ontouchstart !== undefined && !isTouchPad;
-    const hasTransform = root.style[vendor + 'Transform'] !== undefined;
     const hasTransform3d = DOMMatrix && (new DOMMatrix()).m11 !== undefined;
+    const hasTransform = hasTransform3d || root.style[vendor + 'Transform'] !== undefined;
 
     // value helpers
     const trnOpen = 'translate' + (hasTransform3d ? '3d(' : '(');
@@ -711,7 +709,7 @@ const $ = require('jquery');
                 pendingY = 0;
 
                 if (hasTransform) {
-                    $content.css(vendor + 'Transform', translate(px(x), px(y)));
+                    $content.css('transform', translate(px(x), px(y)));
                 } else {
                     $content.css({
                         left: px(x),
