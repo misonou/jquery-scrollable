@@ -1,3 +1,8 @@
+## v1.12.6 / 2024-01-14
+
+- Fix: update detection for CSS transform for JSDom
+- Fix: reattach scrollbars and grows in case being detached
+
 ## v1.12.5 / 2023-11-21
 
 - Fix: `scrollBy*` and `scrollTo*` methods should apply to all elements in the jQuery instance

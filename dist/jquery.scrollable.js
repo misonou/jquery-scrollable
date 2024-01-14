@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.12.5 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.12.6 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jQuery"));
@@ -77,13 +77,11 @@ const $ = __webpack_require__(609);
 
     // browser capabilities
     const isAndroid = /android/gi.test(navigator.appVersion);
-    const isTouchPad = /hp-tablet/gi.test(navigator.appVersion);
 
     const DOMMatrix = window.DOMMatrix || window.WebKitCSSMatrix || window.MSCSSMatrix;
     const root = document.documentElement;
-    const hasTouch = window.ontouchstart !== undefined && !isTouchPad;
-    const hasTransform = root.style[vendor + 'Transform'] !== undefined;
     const hasTransform3d = DOMMatrix && (new DOMMatrix()).m11 !== undefined;
+    const hasTransform = hasTransform3d || root.style[vendor + 'Transform'] !== undefined;
 
     // value helpers
     const trnOpen = 'translate' + (hasTransform3d ? '3d(' : '(');
@@ -415,10 +413,11 @@ const $ = __webpack_require__(609);
             var $content = $();
             var $pageItems = $();
             var $middle = $();
-            var $hScrollbar = options.scrollbar && options.hScroll && $(options.scrollbar($wrapper, 'x', options));
-            var $vScrollbar = options.scrollbar && options.vScroll && $(options.scrollbar($wrapper, 'y', options));
-            var $hGlow = options.glow && options.hGlow && $(options.glow($wrapper, 'x', options)).hide();
-            var $vGlow = options.glow && options.vGlow && $(options.glow($wrapper, 'y', options)).hide();
+            var $hScrollbar = !!(options.scrollbar && options.hScroll) && $(options.scrollbar($wrapper, 'x', options));
+            var $vScrollbar = !!(options.scrollbar && options.vScroll) && $(options.scrollbar($wrapper, 'y', options));
+            var $hGlow = !!(options.glow && options.hGlow) && $(options.glow($wrapper, 'x', options)).hide();
+            var $vGlow = !!(options.glow && options.vGlow) && $(options.glow($wrapper, 'y', options)).hide();
+            var $scrollbars = $wrapper.find([$hScrollbar[0], $vScrollbar[0], $hGlow[0], $vGlow[0]]).parent();
             var enabled = true;
             var collectMutations;
             var muteMutations;
@@ -728,7 +727,7 @@ const $ = __webpack_require__(609);
                 pendingY = 0;
 
                 if (hasTransform) {
-                    $content.css(vendor + 'Transform', translate(px(x), px(y)));
+                    $content.css('transform', translate(px(x), px(y)));
                 } else {
                     $content.css({
                         left: px(x),
@@ -1006,6 +1005,11 @@ const $ = __webpack_require__(609);
                     }
                     $wrapper.css('touch-action', (['none', 'pan-x', 'pan-y', 'auto'])[!minY * 2 + !minX]);
 
+                    $scrollbars.each(function (i, v) {
+                        if (!v.isConnected) {
+                            $wrapper.append(v);
+                        }
+                    });
                     if (($current && $current !== $wrapper) || x < minX || y < minY) {
                         if (cancelScroll) {
                             cancelScroll();
