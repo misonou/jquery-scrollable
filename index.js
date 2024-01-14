@@ -396,10 +396,11 @@ const $ = require('jquery');
             var $content = $();
             var $pageItems = $();
             var $middle = $();
-            var $hScrollbar = options.scrollbar && options.hScroll && $(options.scrollbar($wrapper, 'x', options));
-            var $vScrollbar = options.scrollbar && options.vScroll && $(options.scrollbar($wrapper, 'y', options));
-            var $hGlow = options.glow && options.hGlow && $(options.glow($wrapper, 'x', options)).hide();
-            var $vGlow = options.glow && options.vGlow && $(options.glow($wrapper, 'y', options)).hide();
+            var $hScrollbar = !!(options.scrollbar && options.hScroll) && $(options.scrollbar($wrapper, 'x', options));
+            var $vScrollbar = !!(options.scrollbar && options.vScroll) && $(options.scrollbar($wrapper, 'y', options));
+            var $hGlow = !!(options.glow && options.hGlow) && $(options.glow($wrapper, 'x', options)).hide();
+            var $vGlow = !!(options.glow && options.vGlow) && $(options.glow($wrapper, 'y', options)).hide();
+            var $scrollbars = $wrapper.find([$hScrollbar[0], $vScrollbar[0], $hGlow[0], $vGlow[0]]).parent();
             var enabled = true;
             var collectMutations;
             var muteMutations;
@@ -987,6 +988,11 @@ const $ = require('jquery');
                     }
                     $wrapper.css('touch-action', (['none', 'pan-x', 'pan-y', 'auto'])[!minY * 2 + !minX]);
 
+                    $scrollbars.each(function (i, v) {
+                        if (!v.isConnected) {
+                            $wrapper.append(v);
+                        }
+                    });
                     if (($current && $current !== $wrapper) || x < minX || y < minY) {
                         if (cancelScroll) {
                             cancelScroll();
