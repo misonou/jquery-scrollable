@@ -3,7 +3,7 @@
   "version": "1.12.6",
   "main": "index.js",
   "dependencies": {
-    "jquery": "^3.5.1"
+    "jquery": "^3.5.1 || ^4.0.0-0"
   },
   "devDependencies": {
     "webpack": "^5.88.2"

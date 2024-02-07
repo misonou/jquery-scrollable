@@ -429,7 +429,7 @@ const $ = require('jquery');
             if ($.inArray(this, $activated) >= 0) {
                 throw new Error('Scrollable already activated');
             }
-            $activated.splice(0, 0, this);
+            array.splice.call($activated, 0, 0, this);
 
             function flushChanges() {
                 muteMutations = true;
@@ -1593,7 +1593,7 @@ const $ = require('jquery');
                 },
                 destroy: function () {
                     setPosition(0, 0);
-                    $activated.splice($.inArray($wrapper[0], $activated), 1);
+                    array.splice.call($activated, $.inArray($wrapper[0], $activated), 1);
                     $wrapper.off(handlers);
                     $middle.off('scroll', fixNativeScrollHandler);
                     if ($hScrollbar) {
@@ -1607,8 +1607,8 @@ const $ = require('jquery');
                     options = {};
                     enabled = false;
                     $wrapper.data(DATA_ID, null);
-                    $wrapper.splice(0, 1);
-                    $content.splice(0, 1);
+                    array.splice.call($wrapper, 0, 1);
+                    array.splice.call($content, 0, 1);
                     stickyElements.clear();
                     if (collectMutations.disconnect) {
                         collectMutations.disconnect();
