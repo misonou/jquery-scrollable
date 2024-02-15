@@ -2,11 +2,13 @@
   "name": "jq-scrollable",
   "version": "1.12.6",
   "main": "index.js",
+  "unpkg": "dist/jquery.scrollable.min.js",
   "dependencies": {
     "jquery": "^3.5.1 || ^4.0.0-0"
   },
   "devDependencies": {
-    "webpack": "^5.88.2"
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4"
   },
   "author": "misonou",
   "license": "MIT",
@@ -16,7 +18,7 @@
   },
   "homepage": "https://github.com/misonou/jquery-scrollable",
   "scripts": {
-    "build": "cross-env webpack",
+    "build": "webpack",
     "version": "npm run build && git add -A dist"
   }
 }
