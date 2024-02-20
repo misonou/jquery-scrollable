@@ -313,6 +313,11 @@ interface JQueryScrollableOptions extends JQueryScrollableScrollbarOptions, JQue
      */
     wheel?: boolean;
     /**
+     * Whether vertical wheel scroll can infer horizontal scroll when appropriate.
+     * Default is `false`.
+     */
+    inferWheelX?: boolean;
+    /**
      * Whether scrolling in horizontal direction is enabled.
      * Default is `true`.
      */

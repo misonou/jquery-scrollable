@@ -328,6 +328,7 @@ const $ = require('jquery');
             getContentDimension: getOuterDimension,
             handle: 'auto',
             wheel: true,
+            inferWheelX: false,
             hScroll: true,
             vScroll: true,
             hGlow: false,
@@ -1412,7 +1413,6 @@ const $ = require('jquery');
                 var wheelDeltaY = 0;
                 var canScrollX = options.hScroll && minX;
                 var canScrollY = options.vScroll && minY;
-                var isDirY;
 
                 if (!options.wheel || e.ctrlKey || e.altKey || e.shiftKey || e.metaKey || e.isDefaultPrevented() || (!canScrollX && !canScrollY)) {
                     return;
@@ -1428,13 +1428,16 @@ const $ = require('jquery');
                 } else if (ev.detail !== undefined) {
                     wheelDeltaY = -ev.detail;
                 }
-                isDirY = m.abs(wheelDeltaY) > m.abs(wheelDeltaX);
                 if (!wheelDeltaX && !wheelDeltaY) {
                     return;
                 }
                 if ($current && $current !== $wrapper && ($wrapper.find($current)[0] || $current.find($wrapper)[0])) {
                     return;
                 }
+                if (!canScrollY && !wheelDeltaX && options.inferWheelX) {
+                    wheelDeltaX = wheelDeltaY;
+                }
+                var isDirY = m.abs(wheelDeltaY) > m.abs(wheelDeltaX);
                 var scrollInner = canScrollInnerElement(e.target, $wrapper[0]);
                 if (scrollInner && (isDirY ? scrollInner.y : scrollInner.x)) {
                     return;
