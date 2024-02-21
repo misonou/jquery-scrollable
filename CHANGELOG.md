@@ -1,3 +1,10 @@
+## v1.13.0 / 2024-02-21
+
+- Support jQuery 4
+- Add `inferWheelX` option to infer horizontal scroll in wheel event
+- Fix: scrollbar should be hidden in initial state
+- Miscellaneous: expose correct file for unpkg
+
 ## v1.12.6 / 2024-01-14
 
 - Fix: update detection for CSS transform for JSDom

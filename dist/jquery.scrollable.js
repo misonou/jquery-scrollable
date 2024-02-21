@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.12.6 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.13.0 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jQuery"));
@@ -8,14 +8,49 @@
 		exports["jq-scrollable"] = factory(require("jQuery"));
 	else
 		root["jq-scrollable"] = factory(root["jQuery"]);
-})(self, function(__WEBPACK_EXTERNAL_MODULE__609__) {
+})(self, (__WEBPACK_EXTERNAL_MODULE__145__) => {
 return /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 10:
-/***/ ((__unused_webpack_module, __unused_webpack_exports, __webpack_require__) => {
+/***/ 145:
+/***/ ((module) => {
 
-const $ = __webpack_require__(609);
+"use strict";
+module.exports = __WEBPACK_EXTERNAL_MODULE__145__;
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+var __webpack_exports__ = {};
+// This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
+(() => {
+const $ = __webpack_require__(145);
 
 (function () {
     const zeroMomentum = {
@@ -345,6 +380,7 @@ const $ = __webpack_require__(609);
             getContentDimension: getOuterDimension,
             handle: 'auto',
             wheel: true,
+            inferWheelX: false,
             hScroll: true,
             vScroll: true,
             hGlow: false,
@@ -413,8 +449,8 @@ const $ = __webpack_require__(609);
             var $content = $();
             var $pageItems = $();
             var $middle = $();
-            var $hScrollbar = !!(options.scrollbar && options.hScroll) && $(options.scrollbar($wrapper, 'x', options));
-            var $vScrollbar = !!(options.scrollbar && options.vScroll) && $(options.scrollbar($wrapper, 'y', options));
+            var $hScrollbar = !!(options.scrollbar && options.hScroll) && $(options.scrollbar($wrapper, 'x', options)).hide();
+            var $vScrollbar = !!(options.scrollbar && options.vScroll) && $(options.scrollbar($wrapper, 'y', options)).hide();
             var $hGlow = !!(options.glow && options.hGlow) && $(options.glow($wrapper, 'x', options)).hide();
             var $vGlow = !!(options.glow && options.vGlow) && $(options.glow($wrapper, 'y', options)).hide();
             var $scrollbars = $wrapper.find([$hScrollbar[0], $vScrollbar[0], $hGlow[0], $vGlow[0]]).parent();
@@ -446,7 +482,7 @@ const $ = __webpack_require__(609);
             if ($.inArray(this, $activated) >= 0) {
                 throw new Error('Scrollable already activated');
             }
-            $activated.splice(0, 0, this);
+            array.splice.call($activated, 0, 0, this);
 
             function flushChanges() {
                 muteMutations = true;
@@ -1429,7 +1465,6 @@ const $ = __webpack_require__(609);
                 var wheelDeltaY = 0;
                 var canScrollX = options.hScroll && minX;
                 var canScrollY = options.vScroll && minY;
-                var isDirY;
 
                 if (!options.wheel || e.ctrlKey || e.altKey || e.shiftKey || e.metaKey || e.isDefaultPrevented() || (!canScrollX && !canScrollY)) {
                     return;
@@ -1445,13 +1480,16 @@ const $ = __webpack_require__(609);
                 } else if (ev.detail !== undefined) {
                     wheelDeltaY = -ev.detail;
                 }
-                isDirY = m.abs(wheelDeltaY) > m.abs(wheelDeltaX);
                 if (!wheelDeltaX && !wheelDeltaY) {
                     return;
                 }
                 if ($current && $current !== $wrapper && ($wrapper.find($current)[0] || $current.find($wrapper)[0])) {
                     return;
                 }
+                if (!canScrollY && !wheelDeltaX && options.inferWheelX) {
+                    wheelDeltaX = wheelDeltaY;
+                }
+                var isDirY = m.abs(wheelDeltaY) > m.abs(wheelDeltaX);
                 var scrollInner = canScrollInnerElement(e.target, $wrapper[0]);
                 if (scrollInner && (isDirY ? scrollInner.y : scrollInner.x)) {
                     return;
@@ -1610,7 +1648,7 @@ const $ = __webpack_require__(609);
                 },
                 destroy: function () {
                     setPosition(0, 0);
-                    $activated.splice($.inArray($wrapper[0], $activated), 1);
+                    array.splice.call($activated, $.inArray($wrapper[0], $activated), 1);
                     $wrapper.off(handlers);
                     $middle.off('scroll', fixNativeScrollHandler);
                     if ($hScrollbar) {
@@ -1624,8 +1662,8 @@ const $ = __webpack_require__(609);
                     options = {};
                     enabled = false;
                     $wrapper.data(DATA_ID, null);
-                    $wrapper.splice(0, 1);
-                    $content.splice(0, 1);
+                    array.splice.call($wrapper, 0, 1);
+                    array.splice.call($content, 0, 1);
                     stickyElements.clear();
                     if (collectMutations.disconnect) {
                         collectMutations.disconnect();
@@ -1763,47 +1801,9 @@ const $ = __webpack_require__(609);
 
 })();
 
+})();
 
-/***/ }),
-
-/***/ 609:
-/***/ ((module) => {
-
-"use strict";
-module.exports = __WEBPACK_EXTERNAL_MODULE__609__;
-
-/***/ })
-
-/******/ 	});
-/************************************************************************/
-/******/ 	// The module cache
-/******/ 	var __webpack_module_cache__ = {};
-/******/ 	
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/ 		// Check if module is in cache
-/******/ 		if(__webpack_module_cache__[moduleId]) {
-/******/ 			return __webpack_module_cache__[moduleId].exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			// no module.id needed
-/******/ 			// no module.loaded needed
-/******/ 			exports: {}
-/******/ 		};
-/******/ 	
-/******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
-/******/ 	
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/ 	
-/************************************************************************/
-/******/ 	// module exports must be returned from runtime so entry inlining is disabled
-/******/ 	// startup
-/******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(10);
+/******/ 	return __webpack_exports__;
 /******/ })()
 ;
 });
