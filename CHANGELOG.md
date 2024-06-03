@@ -1,3 +1,7 @@
+## v1.13.1 / 2024-06-03
+
+- Fix: scrollbars was not shown after re-enabling (issue introduced in v1.12.3)
+
 ## v1.13.0 / 2024-02-21
 
 - Support jQuery 4

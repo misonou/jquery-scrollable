@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.13.0 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.13.1 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jQuery"));
@@ -756,6 +756,15 @@ const $ = __webpack_require__(145);
                 }
             }
 
+            function toggleScrollbars() {
+                if ($hScrollbar) {
+                    $hScrollbar.toggle(enabled && minX < 0);
+                }
+                if ($vScrollbar) {
+                    $vScrollbar.toggle(enabled && minY < 0);
+                }
+            }
+
             function setPosition(newX, newY) {
                 x = mround(newX);
                 y = mround(newY);
@@ -791,7 +800,6 @@ const $ = __webpack_require__(145);
                             right: 0
                         });
                     }
-                    $hScrollbar.toggle(enabled && minX < 0);
                     $hScrollbar.parent().css('right', $vScrollbar && minY ? cssInsetXY : cssInset);
                 }
                 if ($vScrollbar) {
@@ -815,7 +823,6 @@ const $ = __webpack_require__(145);
                             bottom: 0
                         });
                     }
-                    $vScrollbar.toggle(enabled && minY < 0);
                     $vScrollbar.parent().css('bottom', $hScrollbar && minX ? cssInsetXY : cssInset);
                 }
 
@@ -825,6 +832,7 @@ const $ = __webpack_require__(145);
                 $wrapper.toggleClass(options.scrollableXClass + '-r', x > minX);
                 $wrapper.toggleClass(options.scrollableYClass + '-u', y < 0);
                 $wrapper.toggleClass(options.scrollableYClass + '-d', y > minY);
+                toggleScrollbars();
                 updateStickyPositions();
                 flushChanges();
             }
@@ -1671,21 +1679,17 @@ const $ = __webpack_require__(145);
                 },
                 enable: function () {
                     if (!enabled) {
-                        $wrapper.on(handlers);
                         enabled = true;
+                        $wrapper.on(handlers);
                         refresh();
+                        toggleScrollbars();
                     }
                 },
                 disable: function () {
                     if (enabled) {
-                        $wrapper.off(handlers);
-                        if ($hScrollbar) {
-                            $hScrollbar.hide();
-                        }
-                        if ($vScrollbar) {
-                            $vScrollbar.hide();
-                        }
                         enabled = false;
+                        $wrapper.off(handlers);
+                        toggleScrollbars();
                     }
                 },
                 setOptions: function (values) {
