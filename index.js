@@ -424,6 +424,8 @@ const $ = require('jquery');
             var stickyRect;
             var stickyTimeout;
             var refreshTimeout;
+            var resizeObserver;
+            var mediaElements;
             var cancelScroll;
             var cancelAnim;
 
@@ -1571,6 +1573,23 @@ const $ = require('jquery');
                                 stickyElements.delete(i);
                             }
                         });
+                        if (resizeObserver) {
+                            mediaElements.forEach(function (v) {
+                                if (!v.isConnected) {
+                                    mediaElements.delete(v);
+                                    resizeObserver.unobserve(v);
+                                }
+                            });
+                            if ($content[0]) {
+                                // use querySelectorAll to avoid infinite mutation loop due to sizzle engine
+                                $.each($content[0].querySelectorAll('img, video'), function (i, v) {
+                                    if (!mediaElements.has(v)) {
+                                        mediaElements.add(v);
+                                        resizeObserver.observe(v);
+                                    }
+                                });
+                            }
+                        }
                         refresh(true);
                     }
                 });
@@ -1584,6 +1603,13 @@ const $ = require('jquery');
                 collectMutations = {
                     takeRecords: function () { }
                 };
+            }
+            if (window.ResizeObserver) {
+                mediaElements = new Set();
+                resizeObserver = new ResizeObserver(function () {
+                    refresh();
+                });
+                resizeObserver.observe($wrapper[0]);
             }
 
             // plugin interface
@@ -1630,6 +1656,9 @@ const $ = require('jquery');
                     stickyElements.clear();
                     if (collectMutations.disconnect) {
                         collectMutations.disconnect();
+                    }
+                    if (resizeObserver) {
+                        resizeObserver.disconnect();
                     }
                 },
                 enable: function () {
