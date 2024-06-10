@@ -420,14 +420,15 @@ const $ = require('jquery');
             var wrapperSize = zeroSize;
             var scrollbarSize;
             var lastPoint;
+            var stickyConfig = new Map();
             var stickyElements = new Map();
             var stickyRect;
-            var stickyTimeout;
             var refreshTimeout;
             var resizeObserver;
             var mediaElements;
             var cancelScroll;
             var cancelAnim;
+            var updateContentOnRefresh;
 
             if ($.inArray(this, $activated) >= 0) {
                 throw new Error('Scrollable already activated');
@@ -655,8 +656,20 @@ const $ = require('jquery');
                 }
             }
 
+            function setStickyElement(element, config) {
+                if (!config.dirX && !config.dirY) {
+                    stickyElements.delete(element);
+                    $(element).removeClass(options.stickyClass).css('transform', '');
+                } else {
+                    if (typeof config.within === 'string') {
+                        config = $.extend({}, config);
+                        config.within = getRect.bind(0, $(element).closest(config.within)[0]);
+                    }
+                    stickyElements.set(element, config);
+                }
+            }
+
             function updateStickyPositions(beforeScrollStart) {
-                stickyTimeout = null;
                 if (!stickyElements.size) {
                     return;
                 }
@@ -923,10 +936,10 @@ const $ = require('jquery');
             }
 
             function refresh(updateContent) {
-                clearTimeout(refreshTimeout);
+                cancelFrame(refreshTimeout);
                 refreshTimeout = null;
                 if ($wrapper.is(':visible')) {
-                    if (updateContent) {
+                    if (updateContent || updateContentOnRefresh) {
                         var content = $(options.content, $wrapper).get().find(function (v) {
                             return $(v).closest($activated)[0] === $wrapper[0] && $(v).is(':visible');
                         });
@@ -956,15 +969,21 @@ const $ = require('jquery');
                             $(options.sticky, content).each(function (i, v) {
                                 var handle = $(options.stickyHandle, v)[0];
                                 if (handle && !stickyElements.has(handle)) {
-                                    stickyElements.set(handle, {
+                                    setStickyElement(handle, {
                                         dirY: options.stickyToBottom ? 'bottom' : 'top',
                                         within: getRect.bind(0, v)
                                     });
                                 };
                             });
+                            stickyConfig.forEach(function (config, selector) {
+                                $(selector, content).each(function (i, v) {
+                                    setStickyElement(v, config);
+                                });
+                            });
                         }
                         $pageItems = content && options.pageItem ? $(options.pageItem, content) : $();
                         stickyRect = null;
+                        updateContentOnRefresh = false;
                     }
                     var oMinX = minX, oMinY = minY;
                     var style = getComputedStyle($wrapper[0]);
@@ -1033,8 +1052,9 @@ const $ = require('jquery');
                 }
             }
 
-            function refreshNext() {
-                refreshTimeout = refreshTimeout || setTimeout(refresh);
+            function refreshNext(updateContent) {
+                updateContentOnRefresh = updateContentOnRefresh || updateContent === true;
+                refreshTimeout = refreshTimeout || nextFrame(refresh);
             }
 
             function startScroll(e) {
@@ -1681,28 +1701,22 @@ const $ = require('jquery');
                     refresh(true);
                 },
                 setStickyPosition: function (element, dir, within, fixed) {
-                    if ($wrapper[0]) {
-                        var dirX = /\b(left|right)\b/.test(dir) && RegExp.$1;
-                        var dirY = /\b(top|bottom)\b/.test(dir) && RegExp.$1;
-                        if (typeof within === 'boolean') {
-                            fixed = within;
-                            within = null;
-                        }
-                        $(element, $content).each(function (i, v) {
-                            if (dir === 'none') {
-                                stickyElements.delete(v);
-                                $(v).removeClass(options.stickyClass).css('transform', '');
-                            } else {
-                                stickyElements.set(v, {
-                                    within: typeof within === 'string' ? getRect.bind(0, $(v).closest(within)[0]) : within,
-                                    dirX: dirX,
-                                    dirY: dirY,
-                                    fixed: fixed
-                                });
-                            }
-                        });
-                        stickyTimeout = stickyTimeout || setTimeout(updateStickyPositions);
+                    if (typeof within === 'boolean') {
+                        fixed = within;
+                        within = null;
                     }
+                    var config = {
+                        dirX: /\b(left|right)\b/.test(dir) && RegExp.$1,
+                        dirY: /\b(top|bottom)\b/.test(dir) && RegExp.$1,
+                        within,
+                        fixed
+                    };
+                    if (typeof element === 'string') {
+                        stickyConfig.set(element, config);
+                    } else {
+                        setStickyElement(element, config);
+                    }
+                    refreshNext(true);
                 },
                 refresh: function () {
                     refresh(true);
