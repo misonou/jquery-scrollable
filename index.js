@@ -957,6 +957,7 @@ const $ = require('jquery');
                             });
                         }
                         $pageItems = content && options.pageItem ? $(options.pageItem, content) : $();
+                        stickyRect = null;
                     }
                     var oMinX = minX, oMinY = minY;
                     var style = getComputedStyle($wrapper[0]);
