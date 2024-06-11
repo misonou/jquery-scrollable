@@ -918,6 +918,7 @@ const $ = require('jquery');
 
             function refresh(updateContent) {
                 clearTimeout(refreshTimeout);
+                refreshTimeout = null;
                 if ($wrapper.is(':visible')) {
                     if (updateContent) {
                         var content = $(options.content, $wrapper).get().find(function (v) {
