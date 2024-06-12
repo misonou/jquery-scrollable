@@ -1,3 +1,8 @@
+## v1.13.2 / 2024-06-12
+
+- Fix: incorrect sticky position when content updated during scrolling
+- Fix: unable to refresh in subsequent `transitionend` or `animationend` events
+
 ## v1.13.1 / 2024-06-03
 
 - Fix: scrollbars was not shown after re-enabling (issue introduced in v1.12.3)

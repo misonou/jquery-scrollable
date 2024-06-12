@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.13.1 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.13.2 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jQuery"));
@@ -970,6 +970,7 @@ const $ = __webpack_require__(145);
 
             function refresh(updateContent) {
                 clearTimeout(refreshTimeout);
+                refreshTimeout = null;
                 if ($wrapper.is(':visible')) {
                     if (updateContent) {
                         var content = $(options.content, $wrapper).get().find(function (v) {
@@ -1009,6 +1010,7 @@ const $ = __webpack_require__(145);
                             });
                         }
                         $pageItems = content && options.pageItem ? $(options.pageItem, content) : $();
+                        stickyRect = null;
                     }
                     var oMinX = minX, oMinY = minY;
                     var style = getComputedStyle($wrapper[0]);
