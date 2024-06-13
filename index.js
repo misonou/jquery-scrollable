@@ -1383,8 +1383,8 @@ const $ = require('jquery');
                 function handleStop() {
                     clearInterval(timeout);
                     if (contentScrolled) {
-                        fireEvent('scrollEnd', startX, startY);
                         fireEvent('scrollStop', startX, startY);
+                        fireEvent('scrollEnd', startX, startY);
                         $wrapper.removeClass(options.scrollingClass);
                     }
                     $(document).off(bindedHandler);
@@ -1489,23 +1489,31 @@ const $ = require('jquery');
                 var timestamp = e.timeStamp;
                 var startX = x;
                 var startY = y;
+                var handleEnd = function () {
+                    cancelScroll = null;
+                    if (wheelState && !wheelState.cancelled) {
+                        wheelState = null;
+                    }
+                    fireEvent('scrollStop', startX, startY);
+                    fireEvent('scrollEnd', startX, startY);
+                    $wrapper.removeClass(options.scrollingClass);
+                };
                 if (!wheelState || timestamp - wheelState.timestamp > 100) {
                     wheelState = {
                         startX: startX,
                         startY: startY
                     };
                     if (!cancelScroll) {
+                        $wrapper.addClass(options.scrollingClass);
                         fireEvent('scrollStart', startX, startY);
                     }
                     cancelScroll = function () {
                         clearTimeout(wheelState.timeout);
                         wheelState.cancelled = true;
-                        cancelScroll = null;
                         if (cancelAnim) {
                             cancelAnim();
                         }
-                        fireEvent('scrollStop', startX, startY);
-                        fireEvent('scrollEnd', startX, startY);
+                        handleEnd();
                     };
                 } else {
                     startX = wheelState.startX;
@@ -1519,15 +1527,7 @@ const $ = require('jquery');
                 var newX = newPos.x;
                 var newY = newPos.y;
                 if (newX !== x || newY !== y) {
-                    var handleEnd = function () {
-                        $wrapper.removeClass(options.scrollingClass);
-                        fireEvent('scrollStop', startX, startY);
-                        fireEvent('scrollEnd', startX, startY);
-                        wheelState = null;
-                        cancelScroll = null;
-                    };
                     $current = $wrapper;
-                    $wrapper.addClass(options.scrollingClass);
                     if (newPos.pageChanged) {
                         scrollTo(newX, newY, options.bounceDuration, handleEnd, startX, startY);
                     } else {
