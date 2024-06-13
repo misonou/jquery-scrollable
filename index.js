@@ -696,7 +696,11 @@ const $ = require('jquery');
                     }
                     var offsetX = dirX && m[signX < 0 ? 'max' : 'min'](state.offsetX - (x - r0.startX) - state.deltaX, state.maxX) | 0;
                     var offsetY = dirY && m[signY < 0 ? 'max' : 'min'](state.offsetY - (y - r0.startY) - state.deltaY, state.maxY) | 0;
-                    var sticky = offsetX * signX > 0 || offsetY * signY > 0;
+                    if (state.fixed || state.within) {
+                        offsetX = offsetX * signX < 0 ? 0 : offsetX;
+                        offsetY = offsetY * signY < 0 ? 0 : offsetY;
+                    }
+                    var sticky = !!offsetX || !!offsetY;
                     $(element).toggleClass(options.stickyClass, sticky).css('transform', sticky ? translate(px(offsetX), px(offsetY)) : '');
                 });
                 if (beforeScrollStart) {
@@ -1020,6 +1024,7 @@ const $ = require('jquery');
                         setPosition(x, y);
                         fireEvent('scrollProgressChange', x, y);
                     } else {
+                        updateStickyPositions();
                         // prevent infinite loop
                         flushChanges();
                     }
