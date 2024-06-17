@@ -100,12 +100,13 @@ const $ = require('jquery');
     // blocking layer to prevent click event after scrolling
     const $blockLayer = $('<div style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:white;opacity:0;filter:alpha(opacity=0);"></div>');
     const $originDiv = $('<div style="position:fixed;top:0;left:0;">')[0];
-    const $activated = $();
+    const activated = new Map();
     const hooks = [];
     const DATA_ID = 'xScrollable';
 
     var $current;
     var wheelLock;
+    var muteMutations;
 
     function isCSSVarSupported() {
         return window.CSS && CSS.supports('color', 'var(--primary)');
@@ -279,6 +280,22 @@ const $ = require('jquery');
         };
     }
 
+    function getActivatedWrappers() {
+        var elements = [];
+        activated.forEach(function (v, i) {
+            elements.push(i);
+        });
+        return elements;
+    }
+
+    function flushChanges(mute) {
+        muteMutations = mute;
+        activated.forEach(function (v) {
+            v();
+        });
+        muteMutations = false;
+    }
+
     $.fn.scrollable = function (optionOverrides) {
         if (typeof optionOverrides === 'string') {
             var args = arguments;
@@ -403,8 +420,6 @@ const $ = require('jquery');
             var $vGlow = !!(options.glow && options.vGlow) && $(options.glow($wrapper, 'y', options)).hide();
             var $scrollbars = $wrapper.find([$hScrollbar[0], $vScrollbar[0], $hGlow[0], $vGlow[0]]).parent();
             var enabled = true;
-            var collectMutations;
-            var muteMutations;
             var x = 0;
             var y = 0;
             var leadingX = 0;
@@ -424,22 +439,19 @@ const $ = require('jquery');
             var stickyElements = new Map();
             var stickyRect;
             var refreshTimeout;
+            var mutationObserver;
             var resizeObserver;
             var mediaElements;
             var cancelScroll;
             var cancelAnim;
             var updateContentOnRefresh;
 
-            if ($.inArray(this, $activated) >= 0) {
+            if (activated.has(this)) {
                 throw new Error('Scrollable already activated');
             }
-            array.splice.call($activated, 0, 0, this);
-
-            function flushChanges() {
-                muteMutations = true;
-                collectMutations.takeRecords();
-                muteMutations = false;
-            }
+            activated.set(this, function () {
+                return mutationObserver && mutationObserver.takeRecords();
+            });
 
             function getPageIndex(offset) {
                 var props = pageDirection === 'x' ? ['left', 'right', 'width'] : ['top', 'bottom', 'height'];
@@ -792,6 +804,9 @@ const $ = require('jquery');
                     }
                     $vScrollbar.parent().css('bottom', $hScrollbar && minX ? cssInsetXY : cssInset);
                 }
+                toggleScrollbars();
+                updateStickyPositions();
+                flushChanges(true);
 
                 $wrapper.toggleClass(options.scrollableXClass, minX < 0);
                 $wrapper.toggleClass(options.scrollableYClass, minY < 0);
@@ -799,9 +814,6 @@ const $ = require('jquery');
                 $wrapper.toggleClass(options.scrollableXClass + '-r', x > minX);
                 $wrapper.toggleClass(options.scrollableYClass + '-u', y < 0);
                 $wrapper.toggleClass(options.scrollableYClass + '-d', y > minY);
-                toggleScrollbars();
-                updateStickyPositions();
-                flushChanges();
             }
 
             function getResolvePromise() {
@@ -936,12 +948,15 @@ const $ = require('jquery');
             }
 
             function refresh(updateContent) {
+                // prevent changes missed in other containers
+                flushChanges(false);
                 cancelFrame(refreshTimeout);
                 refreshTimeout = null;
                 if ($wrapper.is(':visible')) {
                     if (updateContent || updateContentOnRefresh) {
+                        var wrappers = getActivatedWrappers();
                         var content = $(options.content, $wrapper).get().find(function (v) {
-                            return $(v).closest($activated)[0] === $wrapper[0] && $(v).is(':visible');
+                            return $(v).closest(wrappers)[0] === $wrapper[0] && $(v).is(':visible');
                         });
                         if (content !== $content[0]) {
                             if (cancelScroll) {
@@ -1047,7 +1062,7 @@ const $ = require('jquery');
                     } else {
                         updateStickyPositions();
                         // prevent infinite loop
-                        flushChanges();
+                        flushChanges(true);
                     }
                 }
             }
@@ -1197,7 +1212,7 @@ const $ = require('jquery');
                                 return;
                             }
                             // check if user is scrolling outer content when content of this container is underflow
-                            if (((thisDirY && !minY) || (!thisDirY && !minX)) && ($wrapper.parents().filter(function (i, v) { return $.inArray(v, $activated) >= 0; })[0] || canScrollInnerElement($wrapper[0], document.body, deltaX, deltaY))) {
+                            if (((thisDirY && !minY) || (!thisDirY && !minX)) && ($wrapper.parents().filter(function (i, v) { return activated.has(v) })[0] || canScrollInnerElement($wrapper[0], document.body, deltaX, deltaY))) {
                                 handleStop(e);
                                 return;
                             }
@@ -1586,7 +1601,7 @@ const $ = require('jquery');
             }
 
             if (window.MutationObserver) {
-                collectMutations = new MutationObserver(function () {
+                mutationObserver = new MutationObserver(function () {
                     if (!muteMutations && enabled) {
                         stickyElements.forEach(function (v, i) {
                             if (!i.isConnected) {
@@ -1610,19 +1625,15 @@ const $ = require('jquery');
                                 });
                             }
                         }
-                        refresh(true);
+                        refreshNext(true);
                     }
                 });
-                collectMutations.observe($wrapper[0], {
+                mutationObserver.observe($wrapper[0], {
                     subtree: true,
                     childList: true,
                     attributes: true,
                     characterData: true
                 });
-            } else {
-                collectMutations = {
-                    takeRecords: function () { }
-                };
             }
             if (window.ResizeObserver) {
                 mediaElements = new Set();
@@ -1657,7 +1668,7 @@ const $ = require('jquery');
                 },
                 destroy: function () {
                     setPosition(0, 0);
-                    array.splice.call($activated, $.inArray($wrapper[0], $activated), 1);
+                    activated.delete($wrapper[0]);
                     $wrapper.off(handlers);
                     $middle.off('scroll', fixNativeScrollHandler);
                     if ($hScrollbar) {
@@ -1674,8 +1685,8 @@ const $ = require('jquery');
                     array.splice.call($wrapper, 0, 1);
                     array.splice.call($content, 0, 1);
                     stickyElements.clear();
-                    if (collectMutations.disconnect) {
-                        collectMutations.disconnect();
+                    if (mutationObserver) {
+                        mutationObserver.disconnect();
                     }
                     if (resizeObserver) {
                         resizeObserver.disconnect();
@@ -1772,7 +1783,7 @@ const $ = require('jquery');
     $(window).on(EV_RESIZE, function () {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(function () {
-            $activated.scrollable('refresh');
+            $(getActivatedWrappers()).scrollable('refresh');
         }, isAndroid ? 200 : 0);
     });
 
@@ -1786,8 +1797,8 @@ const $ = require('jquery');
                 case 38: // upArrow
                 case 39: // rightArrow
                 case 40: // downArrow
-                    if ($activated.length) {
-                        $($.uniqueSort($activated)).filter(':visible').eq(0).triggerHandler(e);
+                    if (activated.size) {
+                        $($.uniqueSort(getActivatedWrappers())).filter(':visible').eq(0).triggerHandler(e);
                     }
             }
         }
