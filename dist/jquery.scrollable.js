@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.13.2 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.14.0 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jQuery"));
@@ -152,12 +152,13 @@ const $ = __webpack_require__(145);
     // blocking layer to prevent click event after scrolling
     const $blockLayer = $('<div style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:white;opacity:0;filter:alpha(opacity=0);"></div>');
     const $originDiv = $('<div style="position:fixed;top:0;left:0;">')[0];
-    const $activated = $();
+    const activated = new Map();
     const hooks = [];
     const DATA_ID = 'xScrollable';
 
     var $current;
     var wheelLock;
+    var muteMutations;
 
     function isCSSVarSupported() {
         return window.CSS && CSS.supports('color', 'var(--primary)');
@@ -331,6 +332,22 @@ const $ = __webpack_require__(145);
         };
     }
 
+    function getActivatedWrappers() {
+        var elements = [];
+        activated.forEach(function (v, i) {
+            elements.push(i);
+        });
+        return elements;
+    }
+
+    function flushChanges(mute) {
+        muteMutations = mute;
+        activated.forEach(function (v) {
+            v();
+        });
+        muteMutations = false;
+    }
+
     $.fn.scrollable = function (optionOverrides) {
         if (typeof optionOverrides === 'string') {
             var args = arguments;
@@ -455,8 +472,6 @@ const $ = __webpack_require__(145);
             var $vGlow = !!(options.glow && options.vGlow) && $(options.glow($wrapper, 'y', options)).hide();
             var $scrollbars = $wrapper.find([$hScrollbar[0], $vScrollbar[0], $hGlow[0], $vGlow[0]]).parent();
             var enabled = true;
-            var collectMutations;
-            var muteMutations;
             var x = 0;
             var y = 0;
             var leadingX = 0;
@@ -472,23 +487,23 @@ const $ = __webpack_require__(145);
             var wrapperSize = zeroSize;
             var scrollbarSize;
             var lastPoint;
+            var stickyConfig = new Map();
             var stickyElements = new Map();
             var stickyRect;
-            var stickyTimeout;
             var refreshTimeout;
+            var mutationObserver;
+            var resizeObserver;
+            var mediaElements;
             var cancelScroll;
             var cancelAnim;
+            var updateContentOnRefresh;
 
-            if ($.inArray(this, $activated) >= 0) {
+            if (activated.has(this)) {
                 throw new Error('Scrollable already activated');
             }
-            array.splice.call($activated, 0, 0, this);
-
-            function flushChanges() {
-                muteMutations = true;
-                collectMutations.takeRecords();
-                muteMutations = false;
-            }
+            activated.set(this, function () {
+                return mutationObserver && mutationObserver.takeRecords();
+            });
 
             function getPageIndex(offset) {
                 var props = pageDirection === 'x' ? ['left', 'right', 'width'] : ['top', 'bottom', 'height'];
@@ -705,8 +720,20 @@ const $ = __webpack_require__(145);
                 }
             }
 
+            function setStickyElement(element, config) {
+                if (!config.dirX && !config.dirY) {
+                    stickyElements.delete(element);
+                    $(element).removeClass(options.stickyClass).css('transform', '');
+                } else {
+                    if (typeof config.within === 'string') {
+                        config = $.extend({}, config);
+                        config.within = getRect.bind(0, $(element).closest(config.within)[0]);
+                    }
+                    stickyElements.set(element, config);
+                }
+            }
+
             function updateStickyPositions(beforeScrollStart) {
-                stickyTimeout = null;
                 if (!stickyElements.size) {
                     return;
                 }
@@ -748,7 +775,11 @@ const $ = __webpack_require__(145);
                     }
                     var offsetX = dirX && m[signX < 0 ? 'max' : 'min'](state.offsetX - (x - r0.startX) - state.deltaX, state.maxX) | 0;
                     var offsetY = dirY && m[signY < 0 ? 'max' : 'min'](state.offsetY - (y - r0.startY) - state.deltaY, state.maxY) | 0;
-                    var sticky = offsetX * signX > 0 || offsetY * signY > 0;
+                    if (state.fixed || state.within) {
+                        offsetX = offsetX * signX < 0 ? 0 : offsetX;
+                        offsetY = offsetY * signY < 0 ? 0 : offsetY;
+                    }
+                    var sticky = !!offsetX || !!offsetY;
                     $(element).toggleClass(options.stickyClass, sticky).css('transform', sticky ? translate(px(offsetX), px(offsetY)) : '');
                 });
                 if (beforeScrollStart) {
@@ -825,6 +856,9 @@ const $ = __webpack_require__(145);
                     }
                     $vScrollbar.parent().css('bottom', $hScrollbar && minX ? cssInsetXY : cssInset);
                 }
+                toggleScrollbars();
+                updateStickyPositions();
+                flushChanges(true);
 
                 $wrapper.toggleClass(options.scrollableXClass, minX < 0);
                 $wrapper.toggleClass(options.scrollableYClass, minY < 0);
@@ -832,9 +866,6 @@ const $ = __webpack_require__(145);
                 $wrapper.toggleClass(options.scrollableXClass + '-r', x > minX);
                 $wrapper.toggleClass(options.scrollableYClass + '-u', y < 0);
                 $wrapper.toggleClass(options.scrollableYClass + '-d', y > minY);
-                toggleScrollbars();
-                updateStickyPositions();
-                flushChanges();
             }
 
             function getResolvePromise() {
@@ -969,12 +1000,15 @@ const $ = __webpack_require__(145);
             }
 
             function refresh(updateContent) {
-                clearTimeout(refreshTimeout);
+                // prevent changes missed in other containers
+                flushChanges(false);
+                cancelFrame(refreshTimeout);
                 refreshTimeout = null;
                 if ($wrapper.is(':visible')) {
-                    if (updateContent) {
+                    if (updateContent || updateContentOnRefresh) {
+                        var wrappers = getActivatedWrappers();
                         var content = $(options.content, $wrapper).get().find(function (v) {
-                            return $(v).closest($activated)[0] === $wrapper[0] && $(v).is(':visible');
+                            return $(v).closest(wrappers)[0] === $wrapper[0] && $(v).is(':visible');
                         });
                         if (content !== $content[0]) {
                             if (cancelScroll) {
@@ -1002,15 +1036,21 @@ const $ = __webpack_require__(145);
                             $(options.sticky, content).each(function (i, v) {
                                 var handle = $(options.stickyHandle, v)[0];
                                 if (handle && !stickyElements.has(handle)) {
-                                    stickyElements.set(handle, {
+                                    setStickyElement(handle, {
                                         dirY: options.stickyToBottom ? 'bottom' : 'top',
                                         within: getRect.bind(0, v)
                                     });
                                 };
                             });
+                            stickyConfig.forEach(function (config, selector) {
+                                $(selector, content).each(function (i, v) {
+                                    setStickyElement(v, config);
+                                });
+                            });
                         }
                         $pageItems = content && options.pageItem ? $(options.pageItem, content) : $();
                         stickyRect = null;
+                        updateContentOnRefresh = false;
                     }
                     var oMinX = minX, oMinY = minY;
                     var style = getComputedStyle($wrapper[0]);
@@ -1072,14 +1112,16 @@ const $ = __webpack_require__(145);
                         setPosition(x, y);
                         fireEvent('scrollProgressChange', x, y);
                     } else {
+                        updateStickyPositions();
                         // prevent infinite loop
-                        flushChanges();
+                        flushChanges(true);
                     }
                 }
             }
 
-            function refreshNext() {
-                refreshTimeout = refreshTimeout || setTimeout(refresh);
+            function refreshNext(updateContent) {
+                updateContentOnRefresh = updateContentOnRefresh || updateContent === true;
+                refreshTimeout = refreshTimeout || nextFrame(refresh);
             }
 
             function startScroll(e) {
@@ -1222,7 +1264,7 @@ const $ = __webpack_require__(145);
                                 return;
                             }
                             // check if user is scrolling outer content when content of this container is underflow
-                            if (((thisDirY && !minY) || (!thisDirY && !minX)) && ($wrapper.parents().filter(function (i, v) { return $.inArray(v, $activated) >= 0; })[0] || canScrollInnerElement($wrapper[0], document.body, deltaX, deltaY))) {
+                            if (((thisDirY && !minY) || (!thisDirY && !minX)) && ($wrapper.parents().filter(function (i, v) { return activated.has(v) })[0] || canScrollInnerElement($wrapper[0], document.body, deltaX, deltaY))) {
                                 handleStop(e);
                                 return;
                             }
@@ -1408,8 +1450,8 @@ const $ = __webpack_require__(145);
                 function handleStop() {
                     clearInterval(timeout);
                     if (contentScrolled) {
-                        fireEvent('scrollEnd', startX, startY);
                         fireEvent('scrollStop', startX, startY);
+                        fireEvent('scrollEnd', startX, startY);
                         $wrapper.removeClass(options.scrollingClass);
                     }
                     $(document).off(bindedHandler);
@@ -1514,23 +1556,31 @@ const $ = __webpack_require__(145);
                 var timestamp = e.timeStamp;
                 var startX = x;
                 var startY = y;
+                var handleEnd = function () {
+                    cancelScroll = null;
+                    if (wheelState && !wheelState.cancelled) {
+                        wheelState = null;
+                    }
+                    fireEvent('scrollStop', startX, startY);
+                    fireEvent('scrollEnd', startX, startY);
+                    $wrapper.removeClass(options.scrollingClass);
+                };
                 if (!wheelState || timestamp - wheelState.timestamp > 100) {
                     wheelState = {
                         startX: startX,
                         startY: startY
                     };
                     if (!cancelScroll) {
+                        $wrapper.addClass(options.scrollingClass);
                         fireEvent('scrollStart', startX, startY);
                     }
                     cancelScroll = function () {
                         clearTimeout(wheelState.timeout);
                         wheelState.cancelled = true;
-                        cancelScroll = null;
                         if (cancelAnim) {
                             cancelAnim();
                         }
-                        fireEvent('scrollStop', startX, startY);
-                        fireEvent('scrollEnd', startX, startY);
+                        handleEnd();
                     };
                 } else {
                     startX = wheelState.startX;
@@ -1544,15 +1594,7 @@ const $ = __webpack_require__(145);
                 var newX = newPos.x;
                 var newY = newPos.y;
                 if (newX !== x || newY !== y) {
-                    var handleEnd = function () {
-                        $wrapper.removeClass(options.scrollingClass);
-                        fireEvent('scrollStop', startX, startY);
-                        fireEvent('scrollEnd', startX, startY);
-                        wheelState = null;
-                        cancelScroll = null;
-                    };
                     $current = $wrapper;
-                    $wrapper.addClass(options.scrollingClass);
                     if (newPos.pageChanged) {
                         scrollTo(newX, newY, options.bounceDuration, handleEnd, startX, startY);
                     } else {
@@ -1611,26 +1653,46 @@ const $ = __webpack_require__(145);
             }
 
             if (window.MutationObserver) {
-                collectMutations = new MutationObserver(function () {
+                mutationObserver = new MutationObserver(function () {
                     if (!muteMutations && enabled) {
                         stickyElements.forEach(function (v, i) {
                             if (!i.isConnected) {
                                 stickyElements.delete(i);
                             }
                         });
-                        refresh(true);
+                        if (resizeObserver) {
+                            mediaElements.forEach(function (v) {
+                                if (!v.isConnected) {
+                                    mediaElements.delete(v);
+                                    resizeObserver.unobserve(v);
+                                }
+                            });
+                            if ($content[0]) {
+                                // use querySelectorAll to avoid infinite mutation loop due to sizzle engine
+                                $.each($content[0].querySelectorAll('img, video'), function (i, v) {
+                                    if (!mediaElements.has(v)) {
+                                        mediaElements.add(v);
+                                        resizeObserver.observe(v);
+                                    }
+                                });
+                            }
+                        }
+                        refreshNext(true);
                     }
                 });
-                collectMutations.observe($wrapper[0], {
+                mutationObserver.observe($wrapper[0], {
                     subtree: true,
                     childList: true,
                     attributes: true,
                     characterData: true
                 });
-            } else {
-                collectMutations = {
-                    takeRecords: function () { }
-                };
+            }
+            if (window.ResizeObserver) {
+                mediaElements = new Set();
+                resizeObserver = new ResizeObserver(function () {
+                    refresh();
+                });
+                resizeObserver.observe($wrapper[0]);
             }
 
             // plugin interface
@@ -1658,7 +1720,7 @@ const $ = __webpack_require__(145);
                 },
                 destroy: function () {
                     setPosition(0, 0);
-                    array.splice.call($activated, $.inArray($wrapper[0], $activated), 1);
+                    activated.delete($wrapper[0]);
                     $wrapper.off(handlers);
                     $middle.off('scroll', fixNativeScrollHandler);
                     if ($hScrollbar) {
@@ -1675,8 +1737,11 @@ const $ = __webpack_require__(145);
                     array.splice.call($wrapper, 0, 1);
                     array.splice.call($content, 0, 1);
                     stickyElements.clear();
-                    if (collectMutations.disconnect) {
-                        collectMutations.disconnect();
+                    if (mutationObserver) {
+                        mutationObserver.disconnect();
+                    }
+                    if (resizeObserver) {
+                        resizeObserver.disconnect();
                     }
                 },
                 enable: function () {
@@ -1699,28 +1764,22 @@ const $ = __webpack_require__(145);
                     refresh(true);
                 },
                 setStickyPosition: function (element, dir, within, fixed) {
-                    if ($wrapper[0]) {
-                        var dirX = /\b(left|right)\b/.test(dir) && RegExp.$1;
-                        var dirY = /\b(top|bottom)\b/.test(dir) && RegExp.$1;
-                        if (typeof within === 'boolean') {
-                            fixed = within;
-                            within = null;
-                        }
-                        $(element, $content).each(function (i, v) {
-                            if (dir === 'none') {
-                                stickyElements.delete(v);
-                                $(v).removeClass(options.stickyClass).css('transform', '');
-                            } else {
-                                stickyElements.set(v, {
-                                    within: typeof within === 'string' ? getRect.bind(0, $(v).closest(within)[0]) : within,
-                                    dirX: dirX,
-                                    dirY: dirY,
-                                    fixed: fixed
-                                });
-                            }
-                        });
-                        stickyTimeout = stickyTimeout || setTimeout(updateStickyPositions);
+                    if (typeof within === 'boolean') {
+                        fixed = within;
+                        within = null;
                     }
+                    var config = {
+                        dirX: /\b(left|right)\b/.test(dir) && RegExp.$1,
+                        dirY: /\b(top|bottom)\b/.test(dir) && RegExp.$1,
+                        within,
+                        fixed
+                    };
+                    if (typeof element === 'string') {
+                        stickyConfig.set(element, config);
+                    } else {
+                        setStickyElement(element, config);
+                    }
+                    refreshNext(true);
                 },
                 refresh: function () {
                     refresh(true);
@@ -1776,7 +1835,7 @@ const $ = __webpack_require__(145);
     $(window).on(EV_RESIZE, function () {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(function () {
-            $activated.scrollable('refresh');
+            $(getActivatedWrappers()).scrollable('refresh');
         }, isAndroid ? 200 : 0);
     });
 
@@ -1790,8 +1849,8 @@ const $ = __webpack_require__(145);
                 case 38: // upArrow
                 case 39: // rightArrow
                 case 40: // downArrow
-                    if ($activated.length) {
-                        $($.uniqueSort($activated)).filter(':visible').eq(0).triggerHandler(e);
+                    if (activated.size) {
+                        $($.uniqueSort(getActivatedWrappers())).filter(':visible').eq(0).triggerHandler(e);
                     }
             }
         }

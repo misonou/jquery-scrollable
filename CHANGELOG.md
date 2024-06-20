@@ -1,3 +1,11 @@
+## v1.14.0 / 2024-06-20
+
+- Auto detect sticky elements when selector is given
+- Monitor reflow using `ResizeObserver`
+- Fix: reduce updates triggered from nested instances
+- Fix: incorrect event sequences in `auxclick` and `wheel` handler
+- Fix: element should stick to container's right or bottom edge when content is underflow and `within` is not specified
+
 ## v1.13.2 / 2024-06-12
 
 - Fix: incorrect sticky position when content updated during scrolling
