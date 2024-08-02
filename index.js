@@ -280,6 +280,11 @@ const $ = require('jquery');
         };
     }
 
+    function getParentWrapper(cur) {
+        for (; (cur = cur.parentNode) && !activated.has(cur););
+        return cur;
+    }
+
     function getActivatedWrappers() {
         var elements = [];
         activated.forEach(function (v, i) {
@@ -982,7 +987,7 @@ const $ = require('jquery');
                         }
                         if (content) {
                             $(options.sticky, content).each(function (i, v) {
-                                var handle = $(options.stickyHandle, v)[0];
+                                var handle = getParentWrapper(v) === $wrapper[0] && $(options.stickyHandle, v)[0];
                                 if (handle && !stickyElements.has(handle)) {
                                     setStickyElement(handle, {
                                         dirY: options.stickyToBottom ? 'bottom' : 'top',
@@ -992,7 +997,9 @@ const $ = require('jquery');
                             });
                             stickyConfig.forEach(function (config, selector) {
                                 $(selector, content).each(function (i, v) {
-                                    setStickyElement(v, config);
+                                    if (getParentWrapper(v) === $wrapper[0]) {
+                                        setStickyElement(v, config);
+                                    }
                                 });
                             });
                         }
@@ -1212,7 +1219,7 @@ const $ = require('jquery');
                                 return;
                             }
                             // check if user is scrolling outer content when content of this container is underflow
-                            if (((thisDirY && !minY) || (!thisDirY && !minX)) && ($wrapper.parents().filter(function (i, v) { return activated.has(v) })[0] || canScrollInnerElement($wrapper[0], document.body, deltaX, deltaY))) {
+                            if (((thisDirY && !minY) || (!thisDirY && !minX)) && (getParentWrapper($wrapper[0]) || canScrollInnerElement($wrapper[0], document.body, deltaX, deltaY))) {
                                 handleStop(e);
                                 return;
                             }
@@ -1604,7 +1611,7 @@ const $ = require('jquery');
                 mutationObserver = new MutationObserver(function () {
                     if (!muteMutations && enabled) {
                         stickyElements.forEach(function (v, i) {
-                            if (!i.isConnected) {
+                            if (!i.isConnected || getParentWrapper(i) !== $wrapper[0]) {
                                 stickyElements.delete(i);
                             }
                         });
