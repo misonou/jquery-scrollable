@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.14.0 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.14.1 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jQuery"));
@@ -330,6 +330,11 @@ const $ = __webpack_require__(145);
             x: clampX,
             y: clampY
         };
+    }
+
+    function getParentWrapper(cur) {
+        for (; (cur = cur.parentNode) && !activated.has(cur););
+        return cur;
     }
 
     function getActivatedWrappers() {
@@ -1034,7 +1039,7 @@ const $ = __webpack_require__(145);
                         }
                         if (content) {
                             $(options.sticky, content).each(function (i, v) {
-                                var handle = $(options.stickyHandle, v)[0];
+                                var handle = getParentWrapper(v) === $wrapper[0] && $(options.stickyHandle, v)[0];
                                 if (handle && !stickyElements.has(handle)) {
                                     setStickyElement(handle, {
                                         dirY: options.stickyToBottom ? 'bottom' : 'top',
@@ -1044,7 +1049,9 @@ const $ = __webpack_require__(145);
                             });
                             stickyConfig.forEach(function (config, selector) {
                                 $(selector, content).each(function (i, v) {
-                                    setStickyElement(v, config);
+                                    if (getParentWrapper(v) === $wrapper[0]) {
+                                        setStickyElement(v, config);
+                                    }
                                 });
                             });
                         }
@@ -1264,7 +1271,7 @@ const $ = __webpack_require__(145);
                                 return;
                             }
                             // check if user is scrolling outer content when content of this container is underflow
-                            if (((thisDirY && !minY) || (!thisDirY && !minX)) && ($wrapper.parents().filter(function (i, v) { return activated.has(v) })[0] || canScrollInnerElement($wrapper[0], document.body, deltaX, deltaY))) {
+                            if (((thisDirY && !minY) || (!thisDirY && !minX)) && (getParentWrapper($wrapper[0]) || canScrollInnerElement($wrapper[0], document.body, deltaX, deltaY))) {
                                 handleStop(e);
                                 return;
                             }
@@ -1656,7 +1663,7 @@ const $ = __webpack_require__(145);
                 mutationObserver = new MutationObserver(function () {
                     if (!muteMutations && enabled) {
                         stickyElements.forEach(function (v, i) {
-                            if (!i.isConnected) {
+                            if (!i.isConnected || getParentWrapper(i) !== $wrapper[0]) {
                                 stickyElements.delete(i);
                             }
                         });

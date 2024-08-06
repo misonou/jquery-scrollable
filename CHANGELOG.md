@@ -1,3 +1,7 @@
+## v1.14.1 / 2024-08-06
+
+- Fix: ignore sticky element found in nested instances
+
 ## v1.14.0 / 2024-06-20
 
 - Auto detect sticky elements when selector is given
