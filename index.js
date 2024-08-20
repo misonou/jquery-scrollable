@@ -101,6 +101,7 @@ const $ = require('jquery');
     const $blockLayer = $('<div style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:white;opacity:0;filter:alpha(opacity=0);"></div>');
     const $originDiv = $('<div style="position:fixed;top:0;left:0;">')[0];
     const activated = new Map();
+    const stickyParents = new WeakMap();
     const hooks = [];
     const DATA_ID = 'xScrollable';
 
@@ -673,38 +674,49 @@ const $ = require('jquery');
                 }
             }
 
+            function removeStickyElement(element) {
+                if (stickyParents.get(element) === $wrapper[0]) {
+                    stickyParents.delete(element);
+                    $(element).removeClass(options.stickyClass).css('transform', '');
+                }
+                stickyElements.delete(element);
+            }
+
             function setStickyElement(element, config) {
                 if (!config.dirX && !config.dirY) {
-                    stickyElements.delete(element);
-                    $(element).removeClass(options.stickyClass).css('transform', '');
+                    removeStickyElement(element);
                 } else {
                     if (typeof config.within === 'string') {
                         config = $.extend({}, config);
                         config.within = getRect.bind(0, $(element).closest(config.within)[0]);
+                    }
+                    var parent = stickyParents.get(element);
+                    if (!parent || parent === $wrapper[0] || $.contains(parent, $wrapper[0])) {
+                        stickyParents.set(element, $wrapper[0]);
                     }
                     stickyElements.set(element, config);
                 }
             }
 
             function updateStickyPositions(beforeScrollStart) {
-                if (!stickyElements.size) {
-                    return;
-                }
                 var r0 = stickyRect, r1;
-                if (!stickyRect) {
-                    var style = getComputedStyle($wrapper[0]);
-                    r0 = getRect($wrapper[0]);
-                    r1 = getRect($content[0]);
-                    r0 = {
-                        top: r0.top + parseFloat(style[pBorder[0]]) + leadingY + (leadingY && parseFloat(style[pPadding[0]])),
-                        left: r0.left + parseFloat(style[pBorder[3]]) + leadingX + (leadingX && parseFloat(style[pPadding[3]])),
-                        right: r0.right - parseFloat(style[pBorder[1]]),
-                        bottom: r0.bottom - parseFloat(style[pBorder[2]]),
-                        startX: x,
-                        startY: y
-                    };
-                }
                 stickyElements.forEach(function (state, element) {
+                    if (stickyParents.get(element) !== $wrapper[0]) {
+                        return;
+                    }
+                    if (!r0) {
+                        var style = getComputedStyle($wrapper[0]);
+                        r0 = getRect($wrapper[0]);
+                        r1 = getRect($content[0]);
+                        r0 = {
+                            top: r0.top + parseFloat(style[pBorder[0]]) + leadingY + (leadingY && parseFloat(style[pPadding[0]])),
+                            left: r0.left + parseFloat(style[pBorder[3]]) + leadingX + (leadingX && parseFloat(style[pPadding[3]])),
+                            right: r0.right - parseFloat(style[pBorder[1]]),
+                            bottom: r0.bottom - parseFloat(style[pBorder[2]]),
+                            startX: x,
+                            startY: y
+                        };
+                    }
                     var dirX = state.dirX || 0;
                     var dirY = state.dirY || 0;
                     var signX = dirX === 'right' ? -1 : 1;
@@ -987,7 +999,7 @@ const $ = require('jquery');
                         }
                         if (content) {
                             $(options.sticky, content).each(function (i, v) {
-                                var handle = getParentWrapper(v) === $wrapper[0] && $(options.stickyHandle, v)[0];
+                                var handle = $(options.stickyHandle, v)[0];
                                 if (handle && !stickyElements.has(handle)) {
                                     setStickyElement(handle, {
                                         dirY: options.stickyToBottom ? 'bottom' : 'top',
@@ -997,9 +1009,7 @@ const $ = require('jquery');
                             });
                             stickyConfig.forEach(function (config, selector) {
                                 $(selector, content).each(function (i, v) {
-                                    if (getParentWrapper(v) === $wrapper[0]) {
-                                        setStickyElement(v, config);
-                                    }
+                                    setStickyElement(v, config);
                                 });
                             });
                         }
@@ -1611,8 +1621,8 @@ const $ = require('jquery');
                 mutationObserver = new MutationObserver(function () {
                     if (!muteMutations && enabled) {
                         stickyElements.forEach(function (v, i) {
-                            if (!i.isConnected || getParentWrapper(i) !== $wrapper[0]) {
-                                stickyElements.delete(i);
+                            if (!i.isConnected) {
+                                removeStickyElement(i);
                             }
                         });
                         if (resizeObserver) {
@@ -1691,7 +1701,9 @@ const $ = require('jquery');
                     $wrapper.data(DATA_ID, null);
                     array.splice.call($wrapper, 0, 1);
                     array.splice.call($content, 0, 1);
-                    stickyElements.clear();
+                    stickyElements.forEach(function (v, i) {
+                        removeStickyElement(i);
+                    });
                     if (mutationObserver) {
                         mutationObserver.disconnect();
                     }
