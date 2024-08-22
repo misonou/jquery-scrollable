@@ -1,6 +1,10 @@
+## v1.14.2 / 2024-08-22
+
+- Fix: stick to closest matched parent when the same element is set to be sticky in multiple nested instances
+
 ## v1.14.1 / 2024-08-06
 
-- Fix: ignore sticky element found in nested instances
+- ~~Fix: ignore sticky element found in nested instances~~ (further fixed in v1.14.2)
 
 ## v1.14.0 / 2024-06-20
 
