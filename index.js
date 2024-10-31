@@ -1519,6 +1519,7 @@ const $ = require('jquery');
                 refresh();
 
                 var timestamp = e.timeStamp;
+                var shouldResume = wheelState && timestamp - wheelState.timestamp <= 100;
                 var startX = x;
                 var startY = y;
                 var handleEnd = function () {
@@ -1530,7 +1531,27 @@ const $ = require('jquery');
                     fireEvent('scrollEnd', startX, startY);
                     $wrapper.removeClass(options.scrollingClass);
                 };
-                if (!wheelState || timestamp - wheelState.timestamp > 100) {
+                if (shouldResume && wheelState.cancelled) {
+                    return;
+                }
+                var newPos = normalizePosition(x + wheelDeltaX, y + wheelDeltaY, true);
+                var newX = newPos.x;
+                var newY = newPos.y;
+                if (newX !== x || newY !== y || ($current !== $wrapper && $wrapper.css('overscroll-behavior') !== 'auto')) {
+                    $current = $wrapper;
+                }
+                if ($current === $wrapper) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    clearTimeout(wheelLock);
+                    wheelLock = setTimeout(function () {
+                        $current = null;
+                    }, 250);
+                }
+                if (newX === x && newY === y) {
+                    return;
+                }
+                if (!shouldResume) {
                     wheelState = {
                         startX: startX,
                         startY: startY
@@ -1552,33 +1573,14 @@ const $ = require('jquery');
                     startY = wheelState.startY;
                 }
                 wheelState.timestamp = timestamp;
-                if (wheelState.cancelled) {
-                    return;
-                }
-                var newPos = normalizePosition(x + wheelDeltaX, y + wheelDeltaY, true);
-                var newX = newPos.x;
-                var newY = newPos.y;
-                if (newX !== x || newY !== y) {
-                    $current = $wrapper;
-                    if (newPos.pageChanged) {
-                        scrollTo(newX, newY, options.bounceDuration, handleEnd, startX, startY);
-                    } else {
-                        clearTimeout(wheelState.timeout);
-                        wheelState.timeout = setTimeout(handleEnd, 200);
-                        setScrollMove(newX, newY, startX, startY);
-                        stopX = newX;
-                        stopY = newY;
-                    }
-                } else if ($current !== $wrapper && $wrapper.css('overscroll-behavior') !== 'auto') {
-                    $current = $wrapper;
-                }
-                if ($current === $wrapper) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    clearTimeout(wheelLock);
-                    wheelLock = setTimeout(function () {
-                        $current = null;
-                    }, 250);
+                if (newPos.pageChanged) {
+                    scrollTo(newX, newY, options.bounceDuration, handleEnd, startX, startY);
+                } else {
+                    clearTimeout(wheelState.timeout);
+                    wheelState.timeout = setTimeout(handleEnd, 200);
+                    setScrollMove(newX, newY, startX, startY);
+                    stopX = newX;
+                    stopY = newY;
                 }
             };
             handlers.transitionend = refreshNext;
