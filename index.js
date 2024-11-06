@@ -266,6 +266,28 @@ const $ = require('jquery');
         };
     }
 
+    function isPageScrollable() {
+        if (getComputedStyle(root).overflow === 'hidden') {
+            return false;
+        }
+        if (window.scrollX || window.scrollY) {
+            return true;
+        }
+        window.scrollTo(1, 1);
+        var result = mround(window.scrollX) || mround(window.scrollY);
+        window.scrollTo(0, 0);
+        return result;
+    }
+
+    function getAnchorElement() {
+        if (document.activeElement !== document.body) {
+            return document.activeElement;
+        }
+        var selection = window.getSelection();
+        var range = selection && selection.type === 'Range' && selection.getRangeAt(0);
+        return range && range.commonAncestorContainer;
+    }
+
     function canScrollInnerElement(cur, parent) {
         var clampX, clampY;
         if ($.contains(parent, cur)) {
@@ -1588,25 +1610,42 @@ const $ = require('jquery');
             }
 
             function startScrollByKey(e) {
-                var key = e.keyCode;
-                if (e.isDefaultPrevented() || ($(document.activeElement).is('select,button,input,textarea') && key !== 33 && key !== 34)) {
+                if (e.isDefaultPrevented()) {
                     return;
                 }
+                var key = e.keyCode;
+                var dx = 0;
+                var dy = 0;
                 switch (key) {
                     case 32: // space
+                        if ($(document.activeElement).is('select,button,input,textarea')) {
+                            return;
+                        }
                     case 33: // pageUp
                     case 34: // pageDown
-                        scrollToPreNormalized(-x, (wrapperSize.height * (key === 33 ? -0.8 : 0.8)) - y, 50);
-                        e.preventDefault();
+                        dx = 0;
+                        dy = wrapperSize.height * (key === 33 ? -0.8 : 0.8);
                         break;
                     case 37: // leftArrow
                     case 38: // upArrow
                     case 39: // rightArrow
                     case 40: // downArrow
-                        scrollToPreNormalized((key === 37 ? -50 : key === 39 ? 50 : 0) - x, (key === 38 ? -50 : key === 40 ? 50 : 0) - y, 50);
-                        e.preventDefault();
+                        if ($(document.activeElement).is(':text')) {
+                            return;
+                        }
+                        dx = key === 37 ? -50 : key === 39 ? 50 : 0;
+                        dy = key === 38 ? -50 : key === 40 ? 50 : 0;
                         break;
+                    default:
+                        return;
                 }
+                refresh();
+                var newPos = normalizePosition(x - dx, y - dy, true);
+                if (newPos.x === x && newPos.y === y) {
+                    return;
+                }
+                e.preventDefault();
+                scrollTo(newPos.x, newPos.y, 50);
             }
 
             // setup event handlers
@@ -1698,6 +1737,9 @@ const $ = require('jquery');
                 },
                 get scrollMaxY() {
                     return -minY;
+                },
+                get enabled() {
+                    return enabled;
                 },
                 destroy: function () {
                     setPosition(0, 0);
@@ -1823,7 +1865,7 @@ const $ = require('jquery');
     });
 
     $(window).on('keydown', function (e) {
-        if (!e.isDefaultPrevented()) {
+        if (!e.isDefaultPrevented() && activated.size) {
             switch (e.keyCode) {
                 case 32: // space
                 case 33: // pageUp
@@ -1832,9 +1874,35 @@ const $ = require('jquery');
                 case 38: // upArrow
                 case 39: // rightArrow
                 case 40: // downArrow
-                    if (activated.size) {
-                        $($.uniqueSort(getActivatedWrappers())).filter(':visible').eq(0).triggerHandler(e);
+                    break;
+                default:
+                    return;
+            }
+            var activeElement = getAnchorElement();
+            if (activeElement) {
+                $(activeElement).parents().each(function (i, v) {
+                    if (activated.has(v)) {
+                        $(v).triggerHandler(e);
+                        return !e.isDefaultPrevented();
                     }
+                });
+                return;
+            } else if (!isPageScrollable()) {
+                var elements = getActivatedWrappers().filter(function (v) {
+                    var instances = $.data(v, DATA_ID);
+                    return instances.enabled && (instances.scrollMaxX || instances.scrollMaxY);
+                });
+                // guess the main content area
+                var max = 0;
+                elements = elements.filter(function (v) {
+                    if (elements.indexOf(getParentWrapper(v)) >= 0) {
+                        return false;
+                    }
+                    var r = getRect(v);
+                    var a = r.width * r.height;
+                    return a > max ? (max = a) : 0;
+                });
+                $(elements).last().triggerHandler(e);
             }
         }
     });
