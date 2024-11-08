@@ -33,6 +33,9 @@ Below is an exhaustive list of options, with the default value shown.
     // whether scrolling by mouse wheel event is enabled
     wheel: true,
 
+    // whether vertical wheel scroll can infer horizontal scroll when appropriate
+    inferWheelX: false,
+
     // whether horizontal scrolling is allowed when the width of content is larger than that of container
     hScroll: true,
 

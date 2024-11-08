@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.14.2 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.14.3 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jQuery"));
@@ -8,15 +8,15 @@
 		exports["jq-scrollable"] = factory(require("jQuery"));
 	else
 		root["jq-scrollable"] = factory(root["jQuery"]);
-})(self, (__WEBPACK_EXTERNAL_MODULE__145__) => {
+})(self, (__WEBPACK_EXTERNAL_MODULE__786__) => {
 return /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 145:
+/***/ 786:
 /***/ ((module) => {
 
 "use strict";
-module.exports = __WEBPACK_EXTERNAL_MODULE__145__;
+module.exports = __WEBPACK_EXTERNAL_MODULE__786__;
 
 /***/ })
 
@@ -48,9 +48,7 @@ module.exports = __WEBPACK_EXTERNAL_MODULE__145__;
 /******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
-(() => {
-const $ = __webpack_require__(145);
+const $ = __webpack_require__(786);
 
 (function () {
     const zeroMomentum = {
@@ -1571,6 +1569,7 @@ const $ = __webpack_require__(145);
                 refresh();
 
                 var timestamp = e.timeStamp;
+                var shouldResume = wheelState && timestamp - wheelState.timestamp <= 100;
                 var startX = x;
                 var startY = y;
                 var handleEnd = function () {
@@ -1582,7 +1581,27 @@ const $ = __webpack_require__(145);
                     fireEvent('scrollEnd', startX, startY);
                     $wrapper.removeClass(options.scrollingClass);
                 };
-                if (!wheelState || timestamp - wheelState.timestamp > 100) {
+                if (shouldResume && wheelState.cancelled) {
+                    return;
+                }
+                var newPos = normalizePosition(x + wheelDeltaX, y + wheelDeltaY, true);
+                var newX = newPos.x;
+                var newY = newPos.y;
+                if (newX !== x || newY !== y || ($current !== $wrapper && $wrapper.css('overscroll-behavior') !== 'auto')) {
+                    $current = $wrapper;
+                }
+                if ($current === $wrapper) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    clearTimeout(wheelLock);
+                    wheelLock = setTimeout(function () {
+                        $current = null;
+                    }, 250);
+                }
+                if (newX === x && newY === y) {
+                    return;
+                }
+                if (!shouldResume) {
                     wheelState = {
                         startX: startX,
                         startY: startY
@@ -1604,33 +1623,14 @@ const $ = __webpack_require__(145);
                     startY = wheelState.startY;
                 }
                 wheelState.timestamp = timestamp;
-                if (wheelState.cancelled) {
-                    return;
-                }
-                var newPos = normalizePosition(x + wheelDeltaX, y + wheelDeltaY, true);
-                var newX = newPos.x;
-                var newY = newPos.y;
-                if (newX !== x || newY !== y) {
-                    $current = $wrapper;
-                    if (newPos.pageChanged) {
-                        scrollTo(newX, newY, options.bounceDuration, handleEnd, startX, startY);
-                    } else {
-                        clearTimeout(wheelState.timeout);
-                        wheelState.timeout = setTimeout(handleEnd, 200);
-                        setScrollMove(newX, newY, startX, startY);
-                        stopX = newX;
-                        stopY = newY;
-                    }
-                } else if ($current !== $wrapper && $wrapper.css('overscroll-behavior') !== 'auto') {
-                    $current = $wrapper;
-                }
-                if ($current === $wrapper) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    clearTimeout(wheelLock);
-                    wheelLock = setTimeout(function () {
-                        $current = null;
-                    }, 250);
+                if (newPos.pageChanged) {
+                    scrollTo(newX, newY, options.bounceDuration, handleEnd, startX, startY);
+                } else {
+                    clearTimeout(wheelState.timeout);
+                    wheelState.timeout = setTimeout(handleEnd, 200);
+                    setScrollMove(newX, newY, startX, startY);
+                    stopX = newX;
+                    stopY = newY;
                 }
             };
             handlers.transitionend = refreshNext;
@@ -1882,8 +1882,6 @@ const $ = __webpack_require__(145);
             });
         }
     } catch (e) { }
-
-})();
 
 })();
 

@@ -1,3 +1,7 @@
+## v1.14.3 / 2024-11-08
+
+- Fix: state CSS class for scrolling, specified by the `scrollingClass` option, remained if scrolling is not triggered in wheel event
+
 ## v1.14.2 / 2024-08-22
 
 - Fix: stick to closest matched parent when the same element is set to be sticky in multiple nested instances
