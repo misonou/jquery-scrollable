@@ -451,6 +451,8 @@ const $ = require('jquery');
             var cancelScroll;
             var cancelAnim;
             var updateContentOnRefresh;
+            var eventState;
+            var wheelState;
 
             if (activated.has(this)) {
                 throw new Error('Scrollable already activated');
@@ -536,6 +538,10 @@ const $ = require('jquery');
                 };
             }
 
+            function getResolvePromise() {
+                return $.extend(Promise.resolve(), getScrollState(x, y));
+            }
+
             function fireEvent(type, startX, startY, newX, newY, deltaX, deltaY) {
                 var args = getScrollState(startX, startY, newX, newY, deltaX, deltaY);
                 args.type = type;
@@ -549,12 +555,21 @@ const $ = require('jquery');
                 });
                 switch (type) {
                     case 'scrollStart':
+                        eventState = {
+                            startX: startX,
+                            startY: startY,
+                            flag: 1
+                        };
                         updateStickyPositions(true);
                         break;
                     case 'scrollMove':
                         fireEvent('scrollProgressChange', startX, startY, newX, newY, deltaX, deltaY);
                         break;
+                    case 'scrollStop':
+                        eventState.flag |= 2;
+                        break;
                     case 'scrollEnd':
+                        eventState = null;
                         stickyRect = null;
                         updateStickyPositions();
                         break;
@@ -833,18 +848,44 @@ const $ = require('jquery');
                 $wrapper.toggleClass(options.scrollableYClass + '-d', y > minY);
             }
 
-            function getResolvePromise() {
-                return $.extend(Promise.resolve(), getScrollState(x, y));
-            }
-
-            function setScrollMove(newX, newY, startX, startY) {
+            function setScrollMove(newX, newY) {
                 var prevX = x;
                 var prevY = y;
                 setPosition(newX, newY);
-                fireEvent('scrollMove', startX, startY, newX, newY, x - prevX, y - prevY);
+                if (eventState) {
+                    fireEvent('scrollMove', eventState.startX, eventState.startY, newX, newY, x - prevX, y - prevY);
+                }
             }
 
-            function scrollTo(newX, newY, duration, callback, eventStartX, eventStartY) {
+            function setScrollStart(onCancel) {
+                if (cancelAnim) {
+                    cancelAnim();
+                }
+                $wrapper.addClass(options.scrollingClass);
+                fireEvent('scrollStart', x, y);
+                cancelScroll = function () {
+                    cancelScroll = null;
+                    if (cancelAnim) {
+                        cancelAnim();
+                    }
+                    if (onCancel) {
+                        onCancel();
+                    }
+                };
+            }
+
+            function setScrollEnd() {
+                cancelScroll = null;
+                if (eventState) {
+                    if (!(eventState.flag & 2)) {
+                        fireEvent('scrollStop', eventState.startX, eventState.startY);
+                    }
+                    fireEvent('scrollEnd', eventState.startX, eventState.startY);
+                }
+                $wrapper.removeClass(options.scrollingClass);
+            }
+
+            function scrollTo(newX, newY, duration, callback) {
                 // stop any running animation
                 if (cancelAnim) {
                     cancelAnim();
@@ -856,15 +897,10 @@ const $ = require('jquery');
                     if (typeof callback === 'function') {
                         callback();
                     }
-                    return getResolvePromise();
+                    return;
                 }
 
-                var fireStart = eventStartX === undefined;
-                if (fireStart) {
-                    eventStartX = x;
-                    eventStartY = y;
-                }
-
+                var fireStart = !eventState;
                 var startTime = +new Date();
                 var startX = x;
                 var startY = y;
@@ -878,7 +914,7 @@ const $ = require('jquery');
                     cancelAnim = null;
                     cancelFrame(frameId);
                     if (fireStart) {
-                        fireEvent('scrollEnd', eventStartX, eventStartY, x, y);
+                        setScrollEnd();
                     }
                     if (typeof callback === 'function') {
                         callback();
@@ -888,7 +924,7 @@ const $ = require('jquery');
                 var animate = function () {
                     var elapsed = (+new Date()) - startTime;
                     if (elapsed >= duration) {
-                        setScrollMove(newX, newY, eventStartX, eventStartY);
+                        setScrollMove(newX, newY);
                         finish();
                         return;
                     }
@@ -898,12 +934,13 @@ const $ = require('jquery');
                     var stepX = (newX - startX) * easeOut + startX;
                     var stepY = (newY - startY) * easeOut + startY;
 
-                    setScrollMove(stepX, stepY, eventStartX, eventStartY);
+                    setScrollMove(stepX, stepY);
                     frameId = nextFrame(animate);
                 };
-                cancelAnim = finish;
                 if (fireStart) {
-                    fireEvent('scrollStart', eventStartX, eventStartY);
+                    setScrollStart(finish);
+                } else {
+                    cancelAnim = finish;
                 }
                 animate();
                 return $.extend(promise, getScrollState(startX, startY, newX, newY, newX - startX, newY - startY));
@@ -911,12 +948,12 @@ const $ = require('jquery');
 
             function scrollToPreNormalized(x, y, duration, callback, forcePageChange) {
                 refresh();
-                var p = normalizePosition(-x || 0, -y || 0, forcePageChange);
+                var p = normalizePosition(x, y, forcePageChange);
                 return scrollTo(p.x, p.y, +duration || 0, callback);
             }
 
             function scrollByPage(dx, dy, duration, callback) {
-                return scrollToPreNormalized((dx * wrapperSize.width || 0) - x, (dy * wrapperSize.height || 0) - y, duration, callback, true);
+                return scrollToPreNormalized(x - (dx * wrapperSize.width || 0), y - (dy * wrapperSize.height || 0), duration, callback, true);
             }
 
             function scrollToElement(target, targetOrigin, wrapperOrigin, duration, callback) {
@@ -936,9 +973,7 @@ const $ = require('jquery');
                     );
                     var newX = posE.left * (1 - oriE.percentX) + posE.right * oriE.percentX + oriE.offsetX - posW.left - posW.width * oriW.percentX - oriW.offsetX - x;
                     var newY = posE.top * (1 - oriE.percentY) + posE.bottom * oriE.percentY + oriE.offsetY - posW.top - posW.height * oriW.percentY - oriW.offsetY - y;
-                    return scrollToPreNormalized(m.round(newX), m.round(newY), duration || wrapperOrigin, callback || duration);
-                } else {
-                    return getResolvePromise();
+                    return scrollToPreNormalized(-m.round(newX), -m.round(newY), duration || wrapperOrigin, callback || duration);
                 }
             }
 
@@ -949,7 +984,7 @@ const $ = require('jquery');
                     if (enabled && !pendingX && !pendingY) {
                         nextFrame(function () {
                             if (pendingX || pendingY) {
-                                scrollToPreNormalized(pendingX - x, pendingY - y, 0);
+                                scrollToPreNormalized(x - pendingX, y - pendingY, 0);
                             }
                         });
                     }
@@ -1071,7 +1106,7 @@ const $ = require('jquery');
                         fireEvent('scrollStart', startX, startY);
                         stopX = x;
                         stopY = y;
-                        setScrollMove(newPos.x, newPos.y, startX, startY);
+                        setScrollMove(newPos.x, newPos.y);
                         fireEvent('scrollEnd', startX, startY);
                     } else if (oMinX !== minX || oMinY !== minY) {
                         setPosition(x, y);
@@ -1089,7 +1124,7 @@ const $ = require('jquery');
                 refreshTimeout = refreshTimeout || nextFrame(refresh);
             }
 
-            function startScroll(e) {
+            function startScrollByPointer(e) {
                 var touches = e.originalEvent.touches;
                 var hasTouch = touches && (touches[0].touchType || true);
                 var handle = options.handle;
@@ -1181,12 +1216,12 @@ const $ = require('jquery');
 
                 function bounceBack(callback) {
                     var newPos = normalizePosition(x, y);
-                    scrollTo(newPos.x, newPos.y, options.bounceDuration, callback, startX, startY);
+                    scrollTo(newPos.x, newPos.y, options.bounceDuration, callback);
                 }
 
                 function handleEnd() {
                     if (contentScrolled) {
-                        fireEvent('scrollEnd', startX, startY);
+                        setScrollEnd();
                     }
                     $wrapper.removeClass(options.scrollingClass);
                 }
@@ -1296,7 +1331,7 @@ const $ = require('jquery');
                         newX = p.x;
                         newY = p.y;
                         if (p.pageChanged) {
-                            scrollTo(newX, newY, options.bounceDuration, handleEnd, startX, startY);
+                            scrollTo(newX, newY, options.bounceDuration, handleEnd);
                             snappedToPage = true;
                             return;
                         }
@@ -1304,7 +1339,7 @@ const $ = require('jquery');
 
                     fireEvent('touchMove', startX, startY, newX, newY, touchDeltaX, touchDeltaY);
                     if (newX !== x || newY !== y) {
-                        setScrollMove(newX, newY, startX, startY);
+                        setScrollMove(newX, newY);
                     }
                     setGlow(pressureX, pressureY);
                 }
@@ -1361,7 +1396,7 @@ const $ = require('jquery');
                         }
                         scrollTo(newX, newY, m.max(momentumX.time, momentumY.time), function () {
                             bounceBack(handleEnd);
-                        }, startX, startY);
+                        });
                     } else {
                         handleEnd();
                     }
@@ -1393,20 +1428,13 @@ const $ = require('jquery');
                 $wrapper.addClass(options.scrollingClass);
             }
 
-            var wheelState;
-            var handlers = {};
-            handlers.scroll = fixNativeScrollHandler;
-            handlers.touchstart = startScroll;
-            handlers.mousedown = startScroll;
-            handlers.auxclick = function (e) {
+            function startScrollByAuxClick(e) {
                 var ev = e.originalEvent;
                 var canScrollX = options.hScroll && minX;
                 var canScrollY = options.vScroll && minY;
                 var defaultCursor = 'all-scroll';
                 var contentScrolled;
                 var timeout;
-                var startX;
-                var startY;
 
                 if ((!canScrollX && !canScrollY) || e.which !== 2) {
                     return;
@@ -1415,13 +1443,10 @@ const $ = require('jquery');
                 function handleStop() {
                     clearInterval(timeout);
                     if (contentScrolled) {
-                        fireEvent('scrollStop', startX, startY);
-                        fireEvent('scrollEnd', startX, startY);
-                        $wrapper.removeClass(options.scrollingClass);
+                        setScrollEnd();
                     }
                     $(document).off(bindedHandler);
                     $blockLayer.detach().css('cursor', 'default');
-                    cancelScroll = null;
                 }
 
                 function handleScroll(e) {
@@ -1439,10 +1464,9 @@ const $ = require('jquery');
                                 startX = x;
                                 startY = y;
                                 contentScrolled = true;
-                                $wrapper.addClass(options.scrollingClass);
-                                fireEvent('scrollStart', startX, startY);
+                                setScrollStart(handleStop);
                             }
-                            setScrollMove(newX, newY, startX, startY);
+                            setScrollMove(newX, newY);
                         }
                     }
 
@@ -1467,16 +1491,11 @@ const $ = require('jquery');
                     mousedown: handleStop
                 };
                 $(document).on(bindedHandler);
-                cancelScroll = function () {
-                    cancelScroll = null;
-                    if (cancelAnim) {
-                        cancelAnim();
-                    }
-                    handleStop();
-                };
                 $blockLayer.appendTo(document.body).css('cursor', defaultCursor);
-            };
-            handlers[EV_WHEEL] = function (e) {
+                cancelScroll = handleStop;
+            }
+
+            function startScrollByWheel(e) {
                 var ev = e.originalEvent;
                 var wheelDeltaX = 0;
                 var wheelDeltaY = 0;
@@ -1520,16 +1539,11 @@ const $ = require('jquery');
 
                 var timestamp = e.timeStamp;
                 var shouldResume = wheelState && timestamp - wheelState.timestamp <= 100;
-                var startX = x;
-                var startY = y;
                 var handleEnd = function () {
-                    cancelScroll = null;
                     if (wheelState && !wheelState.cancelled) {
                         wheelState = null;
                     }
-                    fireEvent('scrollStop', startX, startY);
-                    fireEvent('scrollEnd', startX, startY);
-                    $wrapper.removeClass(options.scrollingClass);
+                    setScrollEnd();
                 };
                 if (shouldResume && wheelState.cancelled) {
                     return;
@@ -1552,40 +1566,28 @@ const $ = require('jquery');
                     return;
                 }
                 if (!shouldResume) {
-                    wheelState = {
-                        startX: startX,
-                        startY: startY
-                    };
+                    wheelState = {};
                     if (!cancelScroll) {
-                        $wrapper.addClass(options.scrollingClass);
-                        fireEvent('scrollStart', startX, startY);
+                        setScrollStart(function () {
+                            clearTimeout(wheelState.timeout);
+                            wheelState.cancelled = true;
+                            handleEnd();
+                        });
                     }
-                    cancelScroll = function () {
-                        clearTimeout(wheelState.timeout);
-                        wheelState.cancelled = true;
-                        if (cancelAnim) {
-                            cancelAnim();
-                        }
-                        handleEnd();
-                    };
-                } else {
-                    startX = wheelState.startX;
-                    startY = wheelState.startY;
                 }
                 wheelState.timestamp = timestamp;
                 if (newPos.pageChanged) {
-                    scrollTo(newX, newY, options.bounceDuration, handleEnd, startX, startY);
+                    scrollTo(newX, newY, options.bounceDuration, handleEnd);
                 } else {
                     clearTimeout(wheelState.timeout);
                     wheelState.timeout = setTimeout(handleEnd, 200);
-                    setScrollMove(newX, newY, startX, startY);
+                    setScrollMove(newX, newY);
                     stopX = newX;
                     stopY = newY;
                 }
-            };
-            handlers.transitionend = refreshNext;
-            handlers.animationend = refreshNext;
-            handlers.keydown = function (e) {
+            }
+
+            function startScrollByKey(e) {
                 var key = e.keyCode;
                 if (e.isDefaultPrevented() || ($(document.activeElement).is('select,button,input,textarea') && key !== 33 && key !== 34)) {
                     return;
@@ -1605,7 +1607,19 @@ const $ = require('jquery');
                         e.preventDefault();
                         break;
                 }
+            }
+
+            // setup event handlers
+            var handlers = {
+                scroll: fixNativeScrollHandler,
+                transitionend: refreshNext,
+                animationend: refreshNext,
+                touchstart: startScrollByPointer,
+                mousedown: startScrollByPointer,
+                auxclick: startScrollByAuxClick,
+                keydown: startScrollByKey
             };
+            handlers[EV_WHEEL] = startScrollByWheel;
             $wrapper.on(handlers);
 
             // setup initial style
@@ -1770,19 +1784,19 @@ const $ = require('jquery');
                     return -stopY;
                 },
                 scrollBy: function (dx, dy, duration, callback) {
-                    return scrollToPreNormalized((dx || 0) - x, (dy || 0) - y, duration, callback);
+                    return scrollToPreNormalized(x - (dx || 0), y - (dy || 0), duration, callback) || getResolvePromise();
                 },
                 scrollTo: function (x, y, duration, callback) {
-                    return scrollToPreNormalized(x, y, duration, callback);
+                    return scrollToPreNormalized(-x, -y, duration, callback) || getResolvePromise();
                 },
                 scrollByPage: function (dx, dy, duration, callback) {
-                    return scrollByPage(dx, dy, duration, callback);
+                    return scrollByPage(dx, dy, duration, callback) || getResolvePromise();
                 },
                 scrollToPage: function (x, y, duration, callback) {
-                    return scrollToPreNormalized(x * wrapperSize.width || 0, y * wrapperSize.height, duration, callback);
+                    return scrollToPreNormalized(-x * wrapperSize.width || 0, -y * wrapperSize.height, duration, callback) || getResolvePromise();
                 },
                 scrollToElement: function (target, targetOrigin, wrapperOrigin, duration, callback) {
-                    return scrollToElement(target, targetOrigin, wrapperOrigin, duration, callback);
+                    return scrollToElement(target, targetOrigin, wrapperOrigin, duration, callback) || getResolvePromise();
                 }
             });
 
