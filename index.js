@@ -475,6 +475,7 @@ const $ = require('jquery');
             var updateContentOnRefresh;
             var eventState;
             var wheelState;
+            var keyState;
 
             if (activated.has(this)) {
                 throw new Error('Scrollable already activated');
@@ -1146,6 +1147,55 @@ const $ = require('jquery');
                 refreshTimeout = refreshTimeout || nextFrame(refresh);
             }
 
+            function startScrollPerFrame(callback) {
+                var lastTime = Date.now();
+                var timeout = nextFrame(step);
+
+                function next(curTime) {
+                    lastTime = curTime || Date.now();
+                    timeout = timeout && nextFrame(step);
+                }
+
+                function step() {
+                    var curTime = Date.now();
+                    callback(function (dx, dy, overshoot) {
+                        if (!minX) {
+                            dx = 0;
+                        } else if (x > 0 || x < minX) {
+                            dx = dx / m.sqrt(x > 0 ? x : minX - x);
+                        }
+                        if (!minY) {
+                            dy = 0;
+                        } else if (y > 0 || y < minY) {
+                            dy = dy / m.sqrt(y > 0 ? y : minY - y);
+                        }
+                        var factor = (curTime - lastTime) * 2;
+                        var newX = x - dx * factor;
+                        var newY = y - dy * factor;
+                        if (!overshoot || (options.snapToPage && options.pageItem)) {
+                            var newPos = normalizePosition(newX, newY, true);
+                            newX = newPos.x;
+                            newY = newPos.y;
+                            if (newPos.pageChanged) {
+                                timeout = 0;
+                                scrollTo(newX, newY, options.bounceDuration, next);
+                                return true;
+                            }
+                        }
+                        if (m.abs(newX - x) >= 0.5 || m.abs(newY - y) >= 0.5) {
+                            setScrollMove(newX, newY);
+                            return true;
+                        }
+                    }, curTime);
+                    next(curTime);
+                }
+
+                return function () {
+                    cancelFrame(timeout);
+                    timeout = 0;
+                };
+            }
+
             function startScrollByPointer(e) {
                 var touches = e.originalEvent.touches;
                 var hasTouch = touches && (touches[0].touchType || true);
@@ -1455,16 +1505,17 @@ const $ = require('jquery');
                 var canScrollX = options.hScroll && minX;
                 var canScrollY = options.vScroll && minY;
                 var defaultCursor = 'all-scroll';
-                var contentScrolled;
-                var timeout;
+                var stopScroll;
+                var speedX;
+                var speedY;
 
                 if ((!canScrollX && !canScrollY) || e.which !== 2) {
                     return;
                 }
 
                 function handleStop() {
-                    clearInterval(timeout);
-                    if (contentScrolled) {
+                    if (stopScroll) {
+                        stopScroll();
                         setScrollEnd();
                     }
                     $(document).off(bindedHandler);
@@ -1474,29 +1525,16 @@ const $ = require('jquery');
                 function handleScroll(e) {
                     var deltaX = e.clientX - ev.clientX;
                     var deltaY = e.clientY - ev.clientY;
-                    var shouldScrollX = canScrollX && m.abs(deltaX) >= 20;
-                    var shouldScrollY = canScrollY && m.abs(deltaY) >= 20;
-
-                    function scroll() {
-                        var newPos = normalizePosition(x - deltaX * 0.1, y - deltaY * 0.1, true);
-                        var newX = newPos.x;
-                        var newY = newPos.y;
-                        if (newX !== x || newY !== y) {
-                            if (!contentScrolled) {
-                                startX = x;
-                                startY = y;
-                                contentScrolled = true;
-                                setScrollStart(handleStop);
-                            }
-                            setScrollMove(newX, newY);
+                    speedX = canScrollX && m.abs(deltaX) >= 20 ? deltaX / 200 : 0;
+                    speedY = canScrollY && m.abs(deltaY) >= 20 ? deltaY / 200 : 0;
+                    if (speedX || speedY) {
+                        if (!stopScroll) {
+                            stopScroll = startScrollPerFrame(function (scrollBy) {
+                                scrollBy(speedX, speedY);
+                            });
+                            setScrollStart(handleStop);
                         }
-                    }
-
-                    clearInterval(timeout);
-                    if (shouldScrollX || shouldScrollY) {
-                        scroll();
-                        timeout = setInterval(scroll, 20);
-                        $blockLayer.css('cursor', (!shouldScrollY ? '' : deltaY < 0 ? 'n' : 's') + (!shouldScrollX ? '' : deltaX < 0 ? 'w' : 'e') + '-resize');
+                        $blockLayer.css('cursor', (!speedY ? '' : speedY < 0 ? 'n' : 's') + (!speedX ? '' : speedX < 0 ? 'w' : 'e') + '-resize');
                     } else {
                         $blockLayer.css('cursor', defaultCursor);
                     }
@@ -1521,22 +1559,22 @@ const $ = require('jquery');
                 var ev = e.originalEvent;
                 var wheelDeltaX = 0;
                 var wheelDeltaY = 0;
-                var canScrollX = options.hScroll && minX;
-                var canScrollY = options.vScroll && minY;
+                var canScrollX = options.hScroll && minX < 0;
+                var canScrollY = options.vScroll && minY < 0;
 
                 if (!options.wheel || e.ctrlKey || e.altKey || e.shiftKey || e.metaKey || e.isDefaultPrevented() || (!canScrollX && !canScrollY)) {
                     return;
                 }
                 if (ev.deltaX !== undefined) {
-                    wheelDeltaX = -ev.deltaX;
-                    wheelDeltaY = -ev.deltaY;
+                    wheelDeltaX = ev.deltaX;
+                    wheelDeltaY = ev.deltaY;
                 } else if (ev.wheelDeltaX !== undefined) {
-                    wheelDeltaX = ev.wheelDeltaX;
-                    wheelDeltaY = ev.wheelDeltaY;
+                    wheelDeltaX = -ev.wheelDeltaX;
+                    wheelDeltaY = -ev.wheelDeltaY;
                 } else if (ev.wheelDelta !== undefined) {
-                    wheelDeltaY = ev.wheelDelta;
+                    wheelDeltaY = -ev.wheelDelta;
                 } else if (ev.detail !== undefined) {
-                    wheelDeltaY = -ev.detail;
+                    wheelDeltaY = ev.detail;
                 }
                 if (!wheelDeltaX && !wheelDeltaY) {
                     return;
@@ -1555,22 +1593,11 @@ const $ = require('jquery');
                 if ((!canScrollX && !isDirY) || (!canScrollY && isDirY)) {
                     return;
                 }
-                wheelDeltaX *= options.hScroll;
-                wheelDeltaY *= options.vScroll;
+                wheelDeltaX *= canScrollX;
+                wheelDeltaY *= canScrollY;
                 refresh();
 
-                var timestamp = e.timeStamp;
-                var shouldResume = wheelState && timestamp - wheelState.timestamp <= 100;
-                var handleEnd = function () {
-                    if (wheelState && !wheelState.cancelled) {
-                        wheelState = null;
-                    }
-                    setScrollEnd();
-                };
-                if (shouldResume && wheelState.cancelled) {
-                    return;
-                }
-                var newPos = normalizePosition(x + wheelDeltaX, y + wheelDeltaY, true);
+                var newPos = normalizePosition(x - wheelDeltaX, y - wheelDeltaY, true);
                 var newX = newPos.x;
                 var newY = newPos.y;
                 if (newX !== x || newY !== y || ($current !== $wrapper && $wrapper.css('overscroll-behavior') !== 'auto')) {
@@ -1587,32 +1614,34 @@ const $ = require('jquery');
                 if (newX === x && newY === y) {
                     return;
                 }
-                if (!shouldResume) {
-                    wheelState = {};
-                    if (!cancelScroll) {
-                        setScrollStart(function () {
-                            clearTimeout(wheelState.timeout);
-                            wheelState.cancelled = true;
+                if (!wheelState) {
+                    var handleEnd = function () {
+                        wheelState = null;
+                        stopScroll();
+                        setScrollEnd();
+                    };
+                    var stopScroll = startScrollPerFrame(function (scrollBy, timestamp) {
+                        if (timestamp - wheelState.timestamp > 100) {
                             handleEnd();
-                        });
-                    }
+                        } else {
+                            scrollBy(wheelState.dx, wheelState.dy, options.bounce);
+                        }
+                    });
+                    setScrollStart(handleEnd);
+                    wheelState = {
+                        startTime: Date.now()
+                    };
                 }
-                wheelState.timestamp = timestamp;
-                if (newPos.pageChanged) {
-                    scrollTo(newX, newY, options.bounceDuration, handleEnd);
-                } else {
-                    clearTimeout(wheelState.timeout);
-                    wheelState.timeout = setTimeout(handleEnd, 200);
-                    setScrollMove(newX, newY);
-                    stopX = newX;
-                    stopY = newY;
-                }
+                wheelState.timestamp = Date.now();
+                wheelState.dx = wheelDeltaX / 100;
+                wheelState.dy = wheelDeltaY / 100;
             }
 
             function startScrollByKey(e) {
                 if (e.isDefaultPrevented()) {
                     return;
                 }
+                var ev = e.originalEvent;
                 var key = e.keyCode;
                 var dx = 0;
                 var dy = 0;
@@ -1645,7 +1674,28 @@ const $ = require('jquery');
                     return;
                 }
                 e.preventDefault();
-                scrollTo(newPos.x, newPos.y, 50);
+
+                if (!ev || !ev.repeat) {
+                    scrollTo(newPos.x, newPos.y, 50);
+                    return;
+                }
+                if (!keyState) {
+                    var handleEnd = function () {
+                        keyState = null;
+                        stopScroll();
+                        setScrollEnd();
+                    };
+                    var stopScroll = startScrollPerFrame(function (scrollBy, timestamp) {
+                        if (timestamp - keyState.timestamp > 100) {
+                            handleEnd();
+                        } else {
+                            scrollBy(dx / 200, dy / 200);
+                        }
+                    });
+                    setScrollStart(handleEnd);
+                    keyState = {};
+                }
+                keyState.timestamp = Date.now();
             }
 
             // setup event handlers
