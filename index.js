@@ -462,7 +462,7 @@ const $ = require('jquery');
             var contentSize = zeroSize;
             var wrapperSize = zeroSize;
             var scrollbarSize;
-            var lastPoint;
+            var lastTouch;
             var stickyConfig = new Map();
             var stickyElements = new Map();
             var stickyRect;
@@ -1227,54 +1227,37 @@ const $ = require('jquery');
                 var startY = y;
                 var pressureX = 0;
                 var pressureY = 0;
-                var lastPointX = point.x;
-                var lastPointY = point.y;
-                var firstPointX = lastPointX;
-                var firstPointY = lastPointY;
+                var lastPoint = point;
+                var firstPoint = point;
                 var eventTarget = e.target;
                 var bindedHandler = {};
-                var contentScrolled = false;
                 var snappedToPage = false;
                 var scrollbarMode;
+                var modeX;
+                var modeY;
                 var factor = 1;
                 var isDirY;
+                var stopScroll;
 
                 if (handle === 'auto') {
                     handle = hasTouch ? 'content' : 'scrollbar';
                 }
                 if (hasTouch && touches.length === 1) {
-                    lastPoint = point;
-                } else if (!hasTouch && lastPoint && point.x === lastPoint.x && point.y === lastPointY) {
+                    lastTouch = point;
+                } else if (!hasTouch && lastTouch && point.x === lastTouch.x && point.y === lastTouch.y) {
                     return;
                 }
                 if (handle === 'scrollbar' || handle === 'both') {
-                    var hit = $hScrollbar && minX < 0 && getHit($hScrollbar, 5, point, false);
-                    switch (hit) {
-                        case 1:
-                        case -1:
-                            e.preventDefault();
-                            scrollByPage(hit, 0, 100);
-                            return;
-                        case 2:
-                            scrollbarMode = true;
-                            isDirY = false;
-                            factor = -100 / scrollbarSize.x * (1 - leadingX / wrapperSize.width);
-                            break;
-                        default:
-                            hit = $vScrollbar && minY < 0 && getHit($vScrollbar, 5, point, true);
-                            switch (hit) {
-                                case 1:
-                                case -1:
-                                    e.preventDefault();
-                                    scrollByPage(0, hit, 100);
-                                    return;
-                                case 2:
-                                    scrollbarMode = true;
-                                    isDirY = true;
-                                    factor = -100 / scrollbarSize.y * (1 - leadingY / wrapperSize.height);
-                                    break;
-                            }
+                    modeX = !modeY && $hScrollbar && minX < 0 && getHit($hScrollbar, 5, point, false);
+                    modeY = !modeX && $vScrollbar && minY < 0 && getHit($vScrollbar, 5, point, true);
+                    if (modeX === 2) {
+                        isDirY = false;
+                        factor = -100 / scrollbarSize.x * (1 - leadingX / wrapperSize.width);
+                    } else if (modeY == 2) {
+                        isDirY = true;
+                        factor = -100 / scrollbarSize.y * (1 - leadingY / wrapperSize.height);
                     }
+                    scrollbarMode = modeX || modeY;
                 }
                 if (!hasTouch && handle === 'scrollbar' && !scrollbarMode) {
                     return;
@@ -1291,38 +1274,50 @@ const $ = require('jquery');
                     scrollTo(newPos.x, newPos.y, options.bounceDuration, callback);
                 }
 
+                function handleStart() {
+                    if (!hasTouch) {
+                        $blockLayer.appendTo(document.body);
+                    }
+                    setScrollStart(handleStop);
+                }
+
                 function handleEnd() {
-                    if (contentScrolled) {
+                    if (stopScroll) {
+                        stopScroll();
+                    }
+                    if (eventState) {
                         setScrollEnd();
                     }
                     $wrapper.removeClass(options.scrollingClass);
                 }
 
                 function handleMove(e) {
-                    lastPoint = null;
+                    lastTouch = null;
                     if ($current && $current !== $wrapper || snappedToPage) {
                         return;
                     }
                     var point = getEventPosition(e);
-                    var deltaX = point.x - lastPointX;
-                    var deltaY = point.y - lastPointY;
+                    var deltaX = point.x - lastPoint.x;
+                    var deltaY = point.y - lastPoint.y;
                     var touchDeltaX = deltaX;
                     var touchDeltaY = deltaY;
-                    var newX = startX + (point.x - firstPointX) * factor;
-                    var newY = startY + (point.y - firstPointY) * factor;
-                    var distX = m.abs(point.x - firstPointX);
-                    var distY = m.abs(point.y - firstPointY);
+                    var newX = startX + (point.x - firstPoint.x) * factor;
+                    var newY = startY + (point.y - firstPoint.y) * factor;
+                    var distX = m.abs(point.x - firstPoint.x);
+                    var distY = m.abs(point.y - firstPoint.y);
                     var thisDirY = distX / distY < 1;
                     var hBounce = options.hBounce && !scrollbarMode;
                     var vBounce = options.vBounce && !scrollbarMode;
 
-                    if ((!deltaX && !deltaY) || (!contentScrolled && hasTouch === 'stylus' && distX < 10 && distY < 10)) {
+                    if ((!deltaX && !deltaY) || (!eventState && hasTouch === 'stylus' && distX < 10 && distY < 10)) {
                         return;
                     }
                     e.preventDefault();
-                    lastPointX = point.x;
-                    lastPointY = point.y;
+                    lastPoint = point;
 
+                    if (scrollbarMode % 2) {
+                        return;
+                    }
                     if (isDirY === undefined) {
                         if (!scrollbarMode) {
                             // exit if the gesture does not suggest a scroll
@@ -1351,13 +1346,8 @@ const $ = require('jquery');
                         }
                     }
                     $current = $current || $wrapper;
-
-                    if (!contentScrolled) {
-                        contentScrolled = true;
-                        if (!hasTouch) {
-                            $blockLayer.appendTo(document.body);
-                        }
-                        fireEvent('scrollStart', startX, startY);
+                    if (!eventState) {
+                        handleStart();
                     }
 
                     // lock direction
@@ -1426,11 +1416,11 @@ const $ = require('jquery');
                         eventTarget.releaseCapture();
                     }
 
-                    if (contentScrolled) {
+                    if (eventState) {
                         if (!hasTouch) {
                             // Firefox will fire mouseup and click event on the mousedown target
                             // whenever the mousedown default behavior is canceled
-                            if (e.target === eventTarget && window.addEventListener) {
+                            if (e && e.target === eventTarget && window.addEventListener) {
                                 window.addEventListener('click', function cancelClick(e) {
                                     e.stopImmediatePropagation();
                                     e.preventDefault();
@@ -1446,7 +1436,7 @@ const $ = require('jquery');
                         if ($vGlow) {
                             $vGlow.fadeOut();
                         }
-                        if (snappedToPage) {
+                        if (snappedToPage || scrollbarMode) {
                             handleEnd();
                             return;
                         }
@@ -1483,13 +1473,7 @@ const $ = require('jquery');
                 bindedHandler[EV_END] = handleStop;
                 bindedHandler[EV_CANCEL] = handleStop;
                 $(document).on(bindedHandler);
-                cancelScroll = function () {
-                    cancelScroll = null;
-                    if (cancelAnim) {
-                        cancelAnim();
-                    }
-                    handleStop({});
-                };
+                cancelScroll = handleStop;
 
                 // trick to let IE fire mousemove event when pointer moves outside the window
                 // and to prevent IE from selecting or dragging elements (e.preventDefault() does not work!)
@@ -1498,6 +1482,16 @@ const $ = require('jquery');
                 }
 
                 $wrapper.addClass(options.scrollingClass);
+
+                if (scrollbarMode % 2) {
+                    stopScroll = startScrollPerFrame(function (scrollBy) {
+                        var hit = getHit(modeX ? $hScrollbar : $vScrollbar, 5, lastPoint, modeY);
+                        if (hit === scrollbarMode) {
+                            scrollBy(modeX, modeY);
+                        }
+                    });
+                    handleStart();
+                }
             }
 
             function startScrollByAuxClick(e) {
