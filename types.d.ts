@@ -271,7 +271,14 @@ interface JQueryScrollableState {
 }
 
 interface JQueryScrollableEventProps extends JQueryScrollableState {
+    /**
+     * Gets the event type.
+     */
     readonly type: string;
+    /**
+     * Gets the trigger the started the scrolling.
+     */
+    readonly trigger: 'script' | 'scrollbar' | 'gesture' | 'wheel' | 'keydown' | 'auxclick';
 }
 
 interface JQueryScrollableOptions extends JQueryScrollableScrollbarOptions, JQueryScrollableEventHooks {

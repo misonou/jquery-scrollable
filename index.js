@@ -473,6 +473,7 @@ const $ = require('jquery');
             var cancelScroll;
             var cancelAnim;
             var updateContentOnRefresh;
+            var eventTrigger;
             var eventState;
             var wheelState;
             var keyState;
@@ -548,6 +549,7 @@ const $ = require('jquery');
                 var curX = newX === undefined ? x : newX;
                 var curY = newY === undefined ? y : newY;
                 return {
+                    trigger: eventTrigger || 'script',
                     startX: -startX,
                     startY: -startY,
                     offsetX: -curX,
@@ -880,10 +882,11 @@ const $ = require('jquery');
                 }
             }
 
-            function setScrollStart(onCancel) {
+            function setScrollStart(trigger, onCancel) {
                 if (cancelAnim) {
                     cancelAnim();
                 }
+                eventTrigger = trigger;
                 $wrapper.addClass(options.scrollingClass);
                 fireEvent('scrollStart', x, y);
                 cancelScroll = function () {
@@ -1291,7 +1294,7 @@ const $ = require('jquery');
                     if (!hasTouch) {
                         $blockLayer.appendTo(document.body);
                     }
-                    setScrollStart(handleStop);
+                    setScrollStart(scrollbarMode ? 'scrollbar' : 'gesture', handleStop);
                 }
 
                 function handleEnd() {
@@ -1524,7 +1527,7 @@ const $ = require('jquery');
                             stopScroll = startScrollPerFrame(function (scrollBy) {
                                 scrollBy(speedX, speedY);
                             });
-                            setScrollStart(handleStop);
+                            setScrollStart('auxclick', handleStop);
                         }
                         $blockLayer.css('cursor', (!speedY ? '' : speedY < 0 ? 'n' : 's') + (!speedX ? '' : speedX < 0 ? 'w' : 'e') + '-resize');
                     } else {
@@ -1625,7 +1628,7 @@ const $ = require('jquery');
                             }
                         }
                     });
-                    setScrollStart(handleEnd);
+                    setScrollStart('wheel', handleEnd);
                     wheelState = {
                         startTime: Date.now()
                     };
@@ -1693,7 +1696,7 @@ const $ = require('jquery');
                             scrollBy(dx / 200, dy / 200);
                         }
                     });
-                    setScrollStart(handleEnd);
+                    setScrollStart('keydown', handleEnd);
                     keyState = {};
                 }
                 keyState.timestamp = Date.now();
