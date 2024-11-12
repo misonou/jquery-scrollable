@@ -1261,7 +1261,7 @@ const $ = require('jquery');
                 var stopScroll;
 
                 if (handle === 'auto') {
-                    handle = hasTouch ? 'content' : 'scrollbar';
+                    handle = hasTouch || !$vScrollbar ? 'content' : 'scrollbar';
                 }
                 if (hasTouch && touches.length === 1) {
                     lastTouch = point;
