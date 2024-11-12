@@ -1119,7 +1119,7 @@ const $ = require('jquery');
                             $wrapper.append(v);
                         }
                     });
-                    if (($current && $current !== $wrapper) || x < minX || y < minY) {
+                    if (!eventState && (x < minX || y < minY)) {
                         if (cancelScroll) {
                             cancelScroll();
                         }
