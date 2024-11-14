@@ -1248,6 +1248,8 @@ const $ = require('jquery');
                 var eventTarget = e.target;
                 var bindedHandler = {};
                 var snappedToPage = false;
+                var canScrollX = options.hScroll && minX < 0;
+                var canScrollY = options.vScroll && minY < 0;
                 var scrollbarMode;
                 var modeX;
                 var modeY;
@@ -1332,7 +1334,7 @@ const $ = require('jquery');
                     if (isDirY === undefined) {
                         if (!scrollbarMode) {
                             // exit if the gesture does not suggest a scroll
-                            if ((!hasTouch && distX < 6 && distY < 6) || (!options.vScroll && thisDirY) || (!options.hScroll && !thisDirY)) {
+                            if ((!hasTouch && distX < 6 && distY < 6) || (!canScrollY && thisDirY) || (!canScrollX && !thisDirY)) {
                                 return;
                             }
                             // check if user is scrolling inner content
@@ -1362,17 +1364,17 @@ const $ = require('jquery');
                     }
 
                     // lock direction
-                    if (!options.vScroll || (isDirY !== 0 && !isDirY)) {
+                    if (!canScrollY || (isDirY !== 0 && !isDirY)) {
                         newY = y;
                         deltaY = 0;
-                        if (options.vScroll) {
+                        if (canScrollY) {
                             touchDeltaY = 0;
                         }
                     }
-                    if (!options.hScroll || (isDirY !== 0 && isDirY)) {
+                    if (!canScrollX || (isDirY !== 0 && isDirY)) {
                         newX = x;
                         deltaX = 0;
-                        if (options.hScroll) {
+                        if (canScrollX) {
                             touchDeltaX = 0;
                         }
                     }
