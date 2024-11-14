@@ -1,3 +1,15 @@
+## v1.15.0 / 2024-11-14
+
+- Subpixel handling
+- Add `trigger` to event properties
+- Specifying `handle` as `auto` will result in `content` mode is scrollbar is off
+- Continuous scrolling by holding mouse button on scroll track
+- Improved scrolling by `keydown`, `auxclick` and `wheel`
+- Improved handling of wheel event series emulated by touch pads in Mac devices
+- Improved handling of global keyboard event
+- Fix: overshoot in incorrect direction on drag
+- Fix: momentum and bouncing effect is disrupted
+
 ## v1.14.3 / 2024-11-08
 
 - Fix: state CSS class for scrolling, specified by the `scrollingClass` option, remained if scrolling is not triggered in wheel event

@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.14.3 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.15.0 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jQuery"));
@@ -100,7 +100,10 @@ const $ = __webpack_require__(786);
         'scrollPaddingBottom',
         'scrollPaddingLeft'
     ];
-    const mround = function (r) {
+    const hasSubpixel = (window.devicePixelRatio || 1) !== 1;
+    const mround = hasSubpixel ? function (r) {
+        return ((r * 2) | 0) / 2;
+    } : function (r) {
         return r >> 0;
     };
     const array = Array.prototype;
@@ -296,9 +299,12 @@ const $ = __webpack_require__(786);
         }
     }
 
-    function calculateMomentum(dist, time, maxDist, overshoot) {
+    function calculateMomentum(signSpeed, maxDist, overshoot) {
+        if (!signSpeed) {
+            return zeroMomentum;
+        }
         var deceleration = 0.0006;
-        var speed = m.abs(dist) / time;
+        var speed = m.abs(signSpeed);
         var newDist = (speed * speed) / (2 * deceleration);
 
         // Proportinally reduce speed if we are outside of the boundaries
@@ -307,13 +313,32 @@ const $ = __webpack_require__(786);
             speed = speed * maxDist / newDist;
             newDist = maxDist;
         }
-        if (newDist <= 0) {
-            return zeroMomentum;
-        }
         return {
-            dist: newDist * (dist < 0 ? -1 : 1),
+            dist: newDist * (signSpeed < 0 ? -1 : 1),
             time: m.max(10, mround(speed / deceleration))
         };
+    }
+
+    function isPageScrollable() {
+        if (getComputedStyle(root).overflow === 'hidden') {
+            return false;
+        }
+        if (window.scrollX || window.scrollY) {
+            return true;
+        }
+        window.scrollTo(1, 1);
+        var result = mround(window.scrollX) || mround(window.scrollY);
+        window.scrollTo(0, 0);
+        return result;
+    }
+
+    function getAnchorElement() {
+        if (document.activeElement !== document.body) {
+            return document.activeElement;
+        }
+        var selection = window.getSelection();
+        var range = selection && selection.type === 'Range' && selection.getRangeAt(0);
+        return range && range.commonAncestorContainer;
     }
 
     function canScrollInnerElement(cur, parent) {
@@ -490,7 +515,7 @@ const $ = __webpack_require__(786);
             var contentSize = zeroSize;
             var wrapperSize = zeroSize;
             var scrollbarSize;
-            var lastPoint;
+            var lastTouch;
             var stickyConfig = new Map();
             var stickyElements = new Map();
             var stickyRect;
@@ -501,6 +526,10 @@ const $ = __webpack_require__(786);
             var cancelScroll;
             var cancelAnim;
             var updateContentOnRefresh;
+            var eventTrigger;
+            var eventState;
+            var wheelState;
+            var keyState;
 
             if (activated.has(this)) {
                 throw new Error('Scrollable already activated');
@@ -573,6 +602,7 @@ const $ = __webpack_require__(786);
                 var curX = newX === undefined ? x : newX;
                 var curY = newY === undefined ? y : newY;
                 return {
+                    trigger: eventTrigger || 'script',
                     startX: -startX,
                     startY: -startY,
                     offsetX: -curX,
@@ -584,6 +614,10 @@ const $ = __webpack_require__(786);
                     pageIndex: pageIndex,
                     pageItem: $pageItems[pageIndex] || null
                 };
+            }
+
+            function getResolvePromise() {
+                return $.extend(Promise.resolve(), getScrollState(x, y));
             }
 
             function fireEvent(type, startX, startY, newX, newY, deltaX, deltaY) {
@@ -599,12 +633,21 @@ const $ = __webpack_require__(786);
                 });
                 switch (type) {
                     case 'scrollStart':
+                        eventState = {
+                            startX: startX,
+                            startY: startY,
+                            flag: 1
+                        };
                         updateStickyPositions(true);
                         break;
                     case 'scrollMove':
                         fireEvent('scrollProgressChange', startX, startY, newX, newY, deltaX, deltaY);
                         break;
+                    case 'scrollStop':
+                        eventState.flag |= 2;
+                        break;
                     case 'scrollEnd':
+                        eventState = null;
                         stickyRect = null;
                         updateStickyPositions();
                         break;
@@ -788,14 +831,13 @@ const $ = __webpack_require__(786);
                             rect: r3
                         });
                     }
-                    var offsetX = dirX && m[signX < 0 ? 'max' : 'min'](state.offsetX - (x - r0.startX) - state.deltaX, state.maxX) | 0;
-                    var offsetY = dirY && m[signY < 0 ? 'max' : 'min'](state.offsetY - (y - r0.startY) - state.deltaY, state.maxY) | 0;
+                    var offsetX = dirX && mround(m[signX < 0 ? 'max' : 'min'](state.offsetX - (x - r0.startX) - state.deltaX, state.maxX));
+                    var offsetY = dirY && mround(m[signY < 0 ? 'max' : 'min'](state.offsetY - (y - r0.startY) - state.deltaY, state.maxY));
                     if (state.fixed || state.within) {
                         offsetX = offsetX * signX < 0 ? 0 : offsetX;
                         offsetY = offsetY * signY < 0 ? 0 : offsetY;
                     }
-                    var sticky = !!offsetX || !!offsetY;
-                    $(element).toggleClass(options.stickyClass, sticky).css('transform', sticky ? translate(px(offsetX), px(offsetY)) : '');
+                    $(element).toggleClass(options.stickyClass, !!offsetX || !!offsetY).css('transform', translate(px(offsetX), px(offsetY)));
                 });
                 if (beforeScrollStart) {
                     stickyRect = r0;
@@ -883,18 +925,45 @@ const $ = __webpack_require__(786);
                 $wrapper.toggleClass(options.scrollableYClass + '-d', y > minY);
             }
 
-            function getResolvePromise() {
-                return $.extend(Promise.resolve(), getScrollState(x, y));
-            }
-
-            function setScrollMove(newX, newY, startX, startY) {
+            function setScrollMove(newX, newY) {
                 var prevX = x;
                 var prevY = y;
                 setPosition(newX, newY);
-                fireEvent('scrollMove', startX, startY, newX, newY, x - prevX, y - prevY);
+                if (eventState) {
+                    fireEvent('scrollMove', eventState.startX, eventState.startY, newX, newY, x - prevX, y - prevY);
+                }
             }
 
-            function scrollTo(newX, newY, duration, callback, eventStartX, eventStartY) {
+            function setScrollStart(trigger, onCancel) {
+                if (cancelAnim) {
+                    cancelAnim();
+                }
+                eventTrigger = trigger;
+                $wrapper.addClass(options.scrollingClass);
+                fireEvent('scrollStart', x, y);
+                cancelScroll = function () {
+                    cancelScroll = null;
+                    if (cancelAnim) {
+                        cancelAnim();
+                    }
+                    if (onCancel) {
+                        onCancel();
+                    }
+                };
+            }
+
+            function setScrollEnd() {
+                cancelScroll = null;
+                if (eventState) {
+                    if (!(eventState.flag & 2)) {
+                        fireEvent('scrollStop', eventState.startX, eventState.startY);
+                    }
+                    fireEvent('scrollEnd', eventState.startX, eventState.startY);
+                }
+                $wrapper.removeClass(options.scrollingClass);
+            }
+
+            function scrollTo(newX, newY, duration, callback) {
                 // stop any running animation
                 if (cancelAnim) {
                     cancelAnim();
@@ -906,15 +975,10 @@ const $ = __webpack_require__(786);
                     if (typeof callback === 'function') {
                         callback();
                     }
-                    return getResolvePromise();
+                    return;
                 }
 
-                var fireStart = eventStartX === undefined;
-                if (fireStart) {
-                    eventStartX = x;
-                    eventStartY = y;
-                }
-
+                var fireStart = !eventState;
                 var startTime = +new Date();
                 var startX = x;
                 var startY = y;
@@ -928,7 +992,7 @@ const $ = __webpack_require__(786);
                     cancelAnim = null;
                     cancelFrame(frameId);
                     if (fireStart) {
-                        fireEvent('scrollEnd', eventStartX, eventStartY, x, y);
+                        setScrollEnd();
                     }
                     if (typeof callback === 'function') {
                         callback();
@@ -938,7 +1002,7 @@ const $ = __webpack_require__(786);
                 var animate = function () {
                     var elapsed = (+new Date()) - startTime;
                     if (elapsed >= duration) {
-                        setScrollMove(newX, newY, eventStartX, eventStartY);
+                        setScrollMove(newX, newY);
                         finish();
                         return;
                     }
@@ -948,12 +1012,13 @@ const $ = __webpack_require__(786);
                     var stepX = (newX - startX) * easeOut + startX;
                     var stepY = (newY - startY) * easeOut + startY;
 
-                    setScrollMove(stepX, stepY, eventStartX, eventStartY);
+                    setScrollMove(stepX, stepY);
                     frameId = nextFrame(animate);
                 };
-                cancelAnim = finish;
                 if (fireStart) {
-                    fireEvent('scrollStart', eventStartX, eventStartY);
+                    setScrollStart(finish);
+                } else {
+                    cancelAnim = finish;
                 }
                 animate();
                 return $.extend(promise, getScrollState(startX, startY, newX, newY, newX - startX, newY - startY));
@@ -961,12 +1026,12 @@ const $ = __webpack_require__(786);
 
             function scrollToPreNormalized(x, y, duration, callback, forcePageChange) {
                 refresh();
-                var p = normalizePosition(-x || 0, -y || 0, forcePageChange);
+                var p = normalizePosition(x, y, forcePageChange);
                 return scrollTo(p.x, p.y, +duration || 0, callback);
             }
 
             function scrollByPage(dx, dy, duration, callback) {
-                return scrollToPreNormalized((dx * wrapperSize.width || 0) - x, (dy * wrapperSize.height || 0) - y, duration, callback, true);
+                return scrollToPreNormalized(x - (dx * wrapperSize.width || 0), y - (dy * wrapperSize.height || 0), duration, callback, true);
             }
 
             function scrollToElement(target, targetOrigin, wrapperOrigin, duration, callback) {
@@ -986,9 +1051,7 @@ const $ = __webpack_require__(786);
                     );
                     var newX = posE.left * (1 - oriE.percentX) + posE.right * oriE.percentX + oriE.offsetX - posW.left - posW.width * oriW.percentX - oriW.offsetX - x;
                     var newY = posE.top * (1 - oriE.percentY) + posE.bottom * oriE.percentY + oriE.offsetY - posW.top - posW.height * oriW.percentY - oriW.offsetY - y;
-                    return scrollToPreNormalized(m.round(newX), m.round(newY), duration || wrapperOrigin, callback || duration);
-                } else {
-                    return getResolvePromise();
+                    return scrollToPreNormalized(-m.round(newX), -m.round(newY), duration || wrapperOrigin, callback || duration);
                 }
             }
 
@@ -999,7 +1062,7 @@ const $ = __webpack_require__(786);
                     if (enabled && !pendingX && !pendingY) {
                         nextFrame(function () {
                             if (pendingX || pendingY) {
-                                scrollToPreNormalized(pendingX - x, pendingY - y, 0);
+                                scrollToPreNormalized(x - pendingX, y - pendingY, 0);
                             }
                         });
                     }
@@ -1111,7 +1174,7 @@ const $ = __webpack_require__(786);
                             $wrapper.append(v);
                         }
                     });
-                    if (($current && $current !== $wrapper) || x < minX || y < minY) {
+                    if (!eventState && (x < minX || y < minY)) {
                         if (cancelScroll) {
                             cancelScroll();
                         }
@@ -1121,7 +1184,7 @@ const $ = __webpack_require__(786);
                         fireEvent('scrollStart', startX, startY);
                         stopX = x;
                         stopY = y;
-                        setScrollMove(newPos.x, newPos.y, startX, startY);
+                        setScrollMove(newPos.x, newPos.y);
                         fireEvent('scrollEnd', startX, startY);
                     } else if (oMinX !== minX || oMinY !== minY) {
                         setPosition(x, y);
@@ -1139,7 +1202,72 @@ const $ = __webpack_require__(786);
                 refreshTimeout = refreshTimeout || nextFrame(refresh);
             }
 
-            function startScroll(e) {
+            function startScrollPerFrame(callback) {
+                var lastTime = Date.now();
+                var timeout = nextFrame(step);
+
+                function next(curTime) {
+                    lastTime = curTime || Date.now();
+                    timeout = timeout && nextFrame(step);
+                }
+
+                function step() {
+                    var curTime = Date.now();
+                    callback(function (dx, dy, overshoot) {
+                        if (!minX) {
+                            dx = 0;
+                        } else if (x > 0 || x < minX) {
+                            dx = dx / m.sqrt(x > 0 ? x : minX - x);
+                        }
+                        if (!minY) {
+                            dy = 0;
+                        } else if (y > 0 || y < minY) {
+                            dy = dy / m.sqrt(y > 0 ? y : minY - y);
+                        }
+                        var factor = (curTime - lastTime) * 2;
+                        var newX = x - dx * factor;
+                        var newY = y - dy * factor;
+                        if (!overshoot || (options.snapToPage && options.pageItem)) {
+                            var newPos = normalizePosition(newX, newY, true);
+                            newX = newPos.x;
+                            newY = newPos.y;
+                            if (newPos.pageChanged) {
+                                timeout = 0;
+                                scrollTo(newX, newY, options.bounceDuration, next);
+                                return true;
+                            }
+                        }
+                        if (m.abs(newX - x) >= 0.5 || m.abs(newY - y) >= 0.5) {
+                            setScrollMove(newX, newY);
+                            return true;
+                        }
+                    }, curTime);
+                    next(curTime);
+                }
+
+                return function () {
+                    cancelFrame(timeout);
+                    timeout = 0;
+                };
+            }
+
+            function scrollWithMomentum(startX, startY, speedX, speedY, handleEnd) {
+                var momentumX = x === startX ? zeroMomentum : calculateMomentum(speedX, m.max(0, x > startX ? -x : x - minX), options.bounce && wrapperSize.width);
+                var momentumY = y === startY ? zeroMomentum : calculateMomentum(speedY, m.max(0, y > startY ? -y : y - minY), options.bounce && wrapperSize.height);
+                var newX = x - momentumX.dist;
+                var newY = y - momentumY.dist;
+                if (options.pageItem && options.snapToPage) {
+                    var p = normalizePosition(newX, newY, true);
+                    newX = p.x;
+                    newY = p.y;
+                }
+                scrollTo(newX, newY, m.max(momentumX.time, momentumY.time), function () {
+                    var newPos = normalizePosition(x, y);
+                    scrollTo(newPos.x, newPos.y, options.bounceDuration, handleEnd);
+                });
+            }
+
+            function startScrollByPointer(e) {
                 var touches = e.originalEvent.touches;
                 var hasTouch = touches && (touches[0].touchType || true);
                 var handle = options.handle;
@@ -1170,54 +1298,39 @@ const $ = __webpack_require__(786);
                 var startY = y;
                 var pressureX = 0;
                 var pressureY = 0;
-                var lastPointX = point.x;
-                var lastPointY = point.y;
-                var firstPointX = lastPointX;
-                var firstPointY = lastPointY;
+                var lastPoint = point;
+                var firstPoint = point;
                 var eventTarget = e.target;
                 var bindedHandler = {};
-                var contentScrolled = false;
                 var snappedToPage = false;
+                var canScrollX = options.hScroll && minX < 0;
+                var canScrollY = options.vScroll && minY < 0;
                 var scrollbarMode;
+                var modeX;
+                var modeY;
                 var factor = 1;
                 var isDirY;
+                var stopScroll;
 
                 if (handle === 'auto') {
-                    handle = hasTouch ? 'content' : 'scrollbar';
+                    handle = hasTouch || !$vScrollbar ? 'content' : 'scrollbar';
                 }
                 if (hasTouch && touches.length === 1) {
-                    lastPoint = point;
-                } else if (!hasTouch && lastPoint && point.x === lastPoint.x && point.y === lastPointY) {
+                    lastTouch = point;
+                } else if (!hasTouch && lastTouch && point.x === lastTouch.x && point.y === lastTouch.y) {
                     return;
                 }
                 if (handle === 'scrollbar' || handle === 'both') {
-                    var hit = $hScrollbar && minX < 0 && getHit($hScrollbar, 5, point, false);
-                    switch (hit) {
-                        case 1:
-                        case -1:
-                            e.preventDefault();
-                            scrollByPage(hit, 0, 100);
-                            return;
-                        case 2:
-                            scrollbarMode = true;
-                            isDirY = false;
-                            factor = -100 / scrollbarSize.x * (1 - leadingX / wrapperSize.width);
-                            break;
-                        default:
-                            hit = $vScrollbar && minY < 0 && getHit($vScrollbar, 5, point, true);
-                            switch (hit) {
-                                case 1:
-                                case -1:
-                                    e.preventDefault();
-                                    scrollByPage(0, hit, 100);
-                                    return;
-                                case 2:
-                                    scrollbarMode = true;
-                                    isDirY = true;
-                                    factor = -100 / scrollbarSize.y * (1 - leadingY / wrapperSize.height);
-                                    break;
-                            }
+                    modeX = !modeY && $hScrollbar && minX < 0 && getHit($hScrollbar, 5, point, false);
+                    modeY = !modeX && $vScrollbar && minY < 0 && getHit($vScrollbar, 5, point, true);
+                    if (modeX === 2) {
+                        isDirY = false;
+                        factor = -100 / scrollbarSize.x * (1 - leadingX / wrapperSize.width);
+                    } else if (modeY == 2) {
+                        isDirY = true;
+                        factor = -100 / scrollbarSize.y * (1 - leadingY / wrapperSize.height);
                     }
+                    scrollbarMode = modeX || modeY;
                 }
                 if (!hasTouch && handle === 'scrollbar' && !scrollbarMode) {
                     return;
@@ -1229,47 +1342,54 @@ const $ = __webpack_require__(786);
                     $current = $current || $wrapper;
                 }
 
-                function bounceBack(callback) {
-                    var newPos = normalizePosition(x, y);
-                    scrollTo(newPos.x, newPos.y, options.bounceDuration, callback, startX, startY);
+                function handleStart() {
+                    if (!hasTouch) {
+                        $blockLayer.appendTo(document.body);
+                    }
+                    setScrollStart(scrollbarMode ? 'scrollbar' : 'gesture', handleStop);
                 }
 
                 function handleEnd() {
-                    if (contentScrolled) {
-                        fireEvent('scrollEnd', startX, startY);
+                    if (stopScroll) {
+                        stopScroll();
+                    }
+                    if (eventState) {
+                        setScrollEnd();
                     }
                     $wrapper.removeClass(options.scrollingClass);
                 }
 
                 function handleMove(e) {
-                    lastPoint = null;
+                    lastTouch = null;
                     if ($current && $current !== $wrapper || snappedToPage) {
                         return;
                     }
                     var point = getEventPosition(e);
-                    var deltaX = point.x - lastPointX;
-                    var deltaY = point.y - lastPointY;
+                    var deltaX = point.x - lastPoint.x;
+                    var deltaY = point.y - lastPoint.y;
                     var touchDeltaX = deltaX;
                     var touchDeltaY = deltaY;
-                    var newX = startX + (point.x - firstPointX) * factor;
-                    var newY = startY + (point.y - firstPointY) * factor;
-                    var distX = m.abs(point.x - firstPointX);
-                    var distY = m.abs(point.y - firstPointY);
+                    var newX = startX + (point.x - firstPoint.x) * factor;
+                    var newY = startY + (point.y - firstPoint.y) * factor;
+                    var distX = m.abs(point.x - firstPoint.x);
+                    var distY = m.abs(point.y - firstPoint.y);
                     var thisDirY = distX / distY < 1;
                     var hBounce = options.hBounce && !scrollbarMode;
                     var vBounce = options.vBounce && !scrollbarMode;
 
-                    if ((!deltaX && !deltaY) || (!contentScrolled && hasTouch === 'stylus' && distX < 10 && distY < 10)) {
+                    if ((!deltaX && !deltaY) || (!eventState && hasTouch === 'stylus' && distX < 10 && distY < 10)) {
                         return;
                     }
                     e.preventDefault();
-                    lastPointX = point.x;
-                    lastPointY = point.y;
+                    lastPoint = point;
 
+                    if (scrollbarMode % 2) {
+                        return;
+                    }
                     if (isDirY === undefined) {
                         if (!scrollbarMode) {
                             // exit if the gesture does not suggest a scroll
-                            if ((!hasTouch && distX < 6 && distY < 6) || (!options.vScroll && thisDirY) || (!options.hScroll && !thisDirY)) {
+                            if ((!hasTouch && distX < 6 && distY < 6) || (!canScrollY && thisDirY) || (!canScrollX && !thisDirY)) {
                                 return;
                             }
                             // check if user is scrolling inner content
@@ -1294,27 +1414,22 @@ const $ = __webpack_require__(786);
                         }
                     }
                     $current = $current || $wrapper;
-
-                    if (!contentScrolled) {
-                        contentScrolled = true;
-                        if (!hasTouch) {
-                            $blockLayer.appendTo(document.body);
-                        }
-                        fireEvent('scrollStart', startX, startY);
+                    if (!eventState) {
+                        handleStart();
                     }
 
                     // lock direction
-                    if (!options.vScroll || (isDirY !== 0 && !isDirY)) {
+                    if (!canScrollY || (isDirY !== 0 && !isDirY)) {
                         newY = y;
                         deltaY = 0;
-                        if (options.vScroll) {
+                        if (canScrollY) {
                             touchDeltaY = 0;
                         }
                     }
-                    if (!options.hScroll || (isDirY !== 0 && isDirY)) {
+                    if (!canScrollX || (isDirY !== 0 && isDirY)) {
                         newX = x;
                         deltaX = 0;
-                        if (options.hScroll) {
+                        if (canScrollX) {
                             touchDeltaX = 0;
                         }
                     }
@@ -1346,7 +1461,7 @@ const $ = __webpack_require__(786);
                         newX = p.x;
                         newY = p.y;
                         if (p.pageChanged) {
-                            scrollTo(newX, newY, options.bounceDuration, handleEnd, startX, startY);
+                            scrollTo(newX, newY, options.bounceDuration, handleEnd);
                             snappedToPage = true;
                             return;
                         }
@@ -1354,7 +1469,7 @@ const $ = __webpack_require__(786);
 
                     fireEvent('touchMove', startX, startY, newX, newY, touchDeltaX, touchDeltaY);
                     if (newX !== x || newY !== y) {
-                        setScrollMove(newX, newY, startX, startY);
+                        setScrollMove(newX, newY);
                     }
                     setGlow(pressureX, pressureY);
                 }
@@ -1369,11 +1484,11 @@ const $ = __webpack_require__(786);
                         eventTarget.releaseCapture();
                     }
 
-                    if (contentScrolled) {
+                    if (eventState) {
                         if (!hasTouch) {
                             // Firefox will fire mouseup and click event on the mousedown target
                             // whenever the mousedown default behavior is canceled
-                            if (e.target === eventTarget && window.addEventListener) {
+                            if (e && e.target === eventTarget && window.addEventListener) {
                                 window.addEventListener('click', function cancelClick(e) {
                                     e.stopImmediatePropagation();
                                     e.preventDefault();
@@ -1389,29 +1504,14 @@ const $ = __webpack_require__(786);
                         if ($vGlow) {
                             $vGlow.fadeOut();
                         }
-                        if (snappedToPage) {
+                        if (snappedToPage || scrollbarMode) {
                             handleEnd();
                             return;
                         }
 
                         var duration = (+new Date()) - startTime;
-                        var momentumX = zeroMomentum;
-                        var momentumY = zeroMomentum;
-
-                        if (options.momentum && duration < 300 && !scrollbarMode) {
-                            momentumX = calculateMomentum(x - startX, duration, x > startX ? -x : x - minX, options.bounce && wrapperSize.width);
-                            momentumY = calculateMomentum(y - startY, duration, y > startY ? -y : y - minY, options.bounce && wrapperSize.height);
-                        }
-                        var newX = x + momentumX.dist;
-                        var newY = y + momentumY.dist;
-                        if (options.pageItem && options.snapToPage) {
-                            var p = normalizePosition(newX, newY, true);
-                            newX = p.x;
-                            newY = p.y;
-                        }
-                        scrollTo(newX, newY, m.max(momentumX.time, momentumY.time), function () {
-                            bounceBack(handleEnd);
-                        }, startX, startY);
+                        var factor = !!options.momentum && duration < 300;
+                        scrollWithMomentum(eventState.startX, eventState.startY, factor * (startX - x) / duration, factor * (startY - y) / duration, handleEnd);
                     } else {
                         handleEnd();
                     }
@@ -1426,13 +1526,7 @@ const $ = __webpack_require__(786);
                 bindedHandler[EV_END] = handleStop;
                 bindedHandler[EV_CANCEL] = handleStop;
                 $(document).on(bindedHandler);
-                cancelScroll = function () {
-                    cancelScroll = null;
-                    if (cancelAnim) {
-                        cancelAnim();
-                    }
-                    handleStop({});
-                };
+                cancelScroll = handleStop;
 
                 // trick to let IE fire mousemove event when pointer moves outside the window
                 // and to prevent IE from selecting or dragging elements (e.preventDefault() does not work!)
@@ -1441,66 +1535,53 @@ const $ = __webpack_require__(786);
                 }
 
                 $wrapper.addClass(options.scrollingClass);
+
+                if (scrollbarMode % 2) {
+                    stopScroll = startScrollPerFrame(function (scrollBy) {
+                        var hit = getHit(modeX ? $hScrollbar : $vScrollbar, 5, lastPoint, modeY);
+                        if (hit === scrollbarMode) {
+                            scrollBy(modeX, modeY);
+                        }
+                    });
+                    handleStart();
+                }
             }
 
-            var wheelState;
-            var handlers = {};
-            handlers.scroll = fixNativeScrollHandler;
-            handlers.touchstart = startScroll;
-            handlers.mousedown = startScroll;
-            handlers.auxclick = function (e) {
+            function startScrollByAuxClick(e) {
                 var ev = e.originalEvent;
                 var canScrollX = options.hScroll && minX;
                 var canScrollY = options.vScroll && minY;
                 var defaultCursor = 'all-scroll';
-                var contentScrolled;
-                var timeout;
-                var startX;
-                var startY;
+                var stopScroll;
+                var speedX;
+                var speedY;
 
                 if ((!canScrollX && !canScrollY) || e.which !== 2) {
                     return;
                 }
 
                 function handleStop() {
-                    clearInterval(timeout);
-                    if (contentScrolled) {
-                        fireEvent('scrollStop', startX, startY);
-                        fireEvent('scrollEnd', startX, startY);
-                        $wrapper.removeClass(options.scrollingClass);
+                    if (stopScroll) {
+                        stopScroll();
+                        setScrollEnd();
                     }
                     $(document).off(bindedHandler);
                     $blockLayer.detach().css('cursor', 'default');
-                    cancelScroll = null;
                 }
 
                 function handleScroll(e) {
                     var deltaX = e.clientX - ev.clientX;
                     var deltaY = e.clientY - ev.clientY;
-                    var shouldScrollX = canScrollX && m.abs(deltaX) >= 20;
-                    var shouldScrollY = canScrollY && m.abs(deltaY) >= 20;
-
-                    function scroll() {
-                        var newPos = normalizePosition(x - deltaX * 0.1, y - deltaY * 0.1, true);
-                        var newX = newPos.x;
-                        var newY = newPos.y;
-                        if (newX !== x || newY !== y) {
-                            if (!contentScrolled) {
-                                startX = x;
-                                startY = y;
-                                contentScrolled = true;
-                                $wrapper.addClass(options.scrollingClass);
-                                fireEvent('scrollStart', startX, startY);
-                            }
-                            setScrollMove(newX, newY, startX, startY);
+                    speedX = canScrollX && m.abs(deltaX) >= 20 ? deltaX / 200 : 0;
+                    speedY = canScrollY && m.abs(deltaY) >= 20 ? deltaY / 200 : 0;
+                    if (speedX || speedY) {
+                        if (!stopScroll) {
+                            stopScroll = startScrollPerFrame(function (scrollBy) {
+                                scrollBy(speedX, speedY);
+                            });
+                            setScrollStart('auxclick', handleStop);
                         }
-                    }
-
-                    clearInterval(timeout);
-                    if (shouldScrollX || shouldScrollY) {
-                        scroll();
-                        timeout = setInterval(scroll, 20);
-                        $blockLayer.css('cursor', (!shouldScrollY ? '' : deltaY < 0 ? 'n' : 's') + (!shouldScrollX ? '' : deltaX < 0 ? 'w' : 'e') + '-resize');
+                        $blockLayer.css('cursor', (!speedY ? '' : speedY < 0 ? 'n' : 's') + (!speedX ? '' : speedX < 0 ? 'w' : 'e') + '-resize');
                     } else {
                         $blockLayer.css('cursor', defaultCursor);
                     }
@@ -1517,35 +1598,30 @@ const $ = __webpack_require__(786);
                     mousedown: handleStop
                 };
                 $(document).on(bindedHandler);
-                cancelScroll = function () {
-                    cancelScroll = null;
-                    if (cancelAnim) {
-                        cancelAnim();
-                    }
-                    handleStop();
-                };
                 $blockLayer.appendTo(document.body).css('cursor', defaultCursor);
-            };
-            handlers[EV_WHEEL] = function (e) {
+                cancelScroll = handleStop;
+            }
+
+            function startScrollByWheel(e) {
                 var ev = e.originalEvent;
                 var wheelDeltaX = 0;
                 var wheelDeltaY = 0;
-                var canScrollX = options.hScroll && minX;
-                var canScrollY = options.vScroll && minY;
+                var canScrollX = options.hScroll && minX < 0;
+                var canScrollY = options.vScroll && minY < 0;
 
                 if (!options.wheel || e.ctrlKey || e.altKey || e.shiftKey || e.metaKey || e.isDefaultPrevented() || (!canScrollX && !canScrollY)) {
                     return;
                 }
                 if (ev.deltaX !== undefined) {
-                    wheelDeltaX = -ev.deltaX;
-                    wheelDeltaY = -ev.deltaY;
+                    wheelDeltaX = ev.deltaX;
+                    wheelDeltaY = ev.deltaY;
                 } else if (ev.wheelDeltaX !== undefined) {
-                    wheelDeltaX = ev.wheelDeltaX;
-                    wheelDeltaY = ev.wheelDeltaY;
+                    wheelDeltaX = -ev.wheelDeltaX;
+                    wheelDeltaY = -ev.wheelDeltaY;
                 } else if (ev.wheelDelta !== undefined) {
-                    wheelDeltaY = ev.wheelDelta;
+                    wheelDeltaY = -ev.wheelDelta;
                 } else if (ev.detail !== undefined) {
-                    wheelDeltaY = -ev.detail;
+                    wheelDeltaY = ev.detail;
                 }
                 if (!wheelDeltaX && !wheelDeltaY) {
                     return;
@@ -1564,27 +1640,11 @@ const $ = __webpack_require__(786);
                 if ((!canScrollX && !isDirY) || (!canScrollY && isDirY)) {
                     return;
                 }
-                wheelDeltaX *= options.hScroll;
-                wheelDeltaY *= options.vScroll;
+                wheelDeltaX *= canScrollX;
+                wheelDeltaY *= canScrollY;
                 refresh();
 
-                var timestamp = e.timeStamp;
-                var shouldResume = wheelState && timestamp - wheelState.timestamp <= 100;
-                var startX = x;
-                var startY = y;
-                var handleEnd = function () {
-                    cancelScroll = null;
-                    if (wheelState && !wheelState.cancelled) {
-                        wheelState = null;
-                    }
-                    fireEvent('scrollStop', startX, startY);
-                    fireEvent('scrollEnd', startX, startY);
-                    $wrapper.removeClass(options.scrollingClass);
-                };
-                if (shouldResume && wheelState.cancelled) {
-                    return;
-                }
-                var newPos = normalizePosition(x + wheelDeltaX, y + wheelDeltaY, true);
+                var newPos = normalizePosition(x - wheelDeltaX, y - wheelDeltaY, true);
                 var newX = newPos.x;
                 var newY = newPos.y;
                 if (newX !== x || newY !== y || ($current !== $wrapper && $wrapper.css('overscroll-behavior') !== 'auto')) {
@@ -1601,61 +1661,110 @@ const $ = __webpack_require__(786);
                 if (newX === x && newY === y) {
                     return;
                 }
-                if (!shouldResume) {
-                    wheelState = {
-                        startX: startX,
-                        startY: startY
+                if (!wheelState || (wheelState.ending && (wheelDeltaX / 0 !== wheelState.dx / 0) && (wheelDeltaY / 0 !== wheelState.dy / 0))) {
+                    var handleEnd = function () {
+                        wheelState = null;
+                        stopScroll();
+                        setScrollEnd();
                     };
-                    if (!cancelScroll) {
-                        $wrapper.addClass(options.scrollingClass);
-                        fireEvent('scrollStart', startX, startY);
-                    }
-                    cancelScroll = function () {
-                        clearTimeout(wheelState.timeout);
-                        wheelState.cancelled = true;
-                        if (cancelAnim) {
-                            cancelAnim();
+                    var stopScroll = startScrollPerFrame(function (scrollBy, timestamp) {
+                        if (timestamp - wheelState.timestamp > 100 || timestamp - wheelState.ending > 300) {
+                            var momemtum = !!(wheelState.momentum && options.momentum);
+                            scrollWithMomentum(eventState.startX, eventState.startY, wheelState.dx * momemtum, wheelState.dy * momemtum, handleEnd);
+                            stopScroll();
+                            wheelState = null;
+                        } else {
+                            var scrolled = scrollBy(wheelState.dx, wheelState.dy, wheelState.momentum && options.bounce);
+                            if (!scrolled && (x > 0 || x < minX || y > 0 || y < minY) && !wheelState.ending) {
+                                wheelState.ending = timestamp;
+                            }
                         }
-                        handleEnd();
+                    });
+                    setScrollStart('wheel', handleEnd);
+                    wheelState = {
+                        startTime: Date.now()
                     };
-                } else {
-                    startX = wheelState.startX;
-                    startY = wheelState.startY;
                 }
-                wheelState.timestamp = timestamp;
-                if (newPos.pageChanged) {
-                    scrollTo(newX, newY, options.bounceDuration, handleEnd, startX, startY);
-                } else {
-                    clearTimeout(wheelState.timeout);
-                    wheelState.timeout = setTimeout(handleEnd, 200);
-                    setScrollMove(newX, newY, startX, startY);
-                    stopX = newX;
-                    stopY = newY;
+                wheelState.timestamp = Date.now();
+                wheelState.dx = wheelDeltaX / 100;
+                wheelState.dy = wheelDeltaY / 100;
+                if ((wheelDeltaX && m.abs(wheelDeltaX) < 50) || (wheelDeltaY && m.abs(wheelDeltaY) < 50)) {
+                    wheelState.momentum = true;
                 }
-            };
-            handlers.transitionend = refreshNext;
-            handlers.animationend = refreshNext;
-            handlers.keydown = function (e) {
-                var key = e.keyCode;
-                if (e.isDefaultPrevented() || ($(document.activeElement).is('select,button,input,textarea') && key !== 33 && key !== 34)) {
+            }
+
+            function startScrollByKey(e) {
+                if (e.isDefaultPrevented()) {
                     return;
                 }
+                var ev = e.originalEvent;
+                var key = e.keyCode;
+                var dx = 0;
+                var dy = 0;
                 switch (key) {
                     case 32: // space
+                        if ($(document.activeElement).is('select,button,input,textarea')) {
+                            return;
+                        }
                     case 33: // pageUp
                     case 34: // pageDown
-                        scrollToPreNormalized(-x, (wrapperSize.height * (key === 33 ? -0.8 : 0.8)) - y, 50);
-                        e.preventDefault();
+                        dx = 0;
+                        dy = wrapperSize.height * (key === 33 ? -0.8 : 0.8);
                         break;
                     case 37: // leftArrow
                     case 38: // upArrow
                     case 39: // rightArrow
                     case 40: // downArrow
-                        scrollToPreNormalized((key === 37 ? -50 : key === 39 ? 50 : 0) - x, (key === 38 ? -50 : key === 40 ? 50 : 0) - y, 50);
-                        e.preventDefault();
+                        if ($(document.activeElement).is(':text')) {
+                            return;
+                        }
+                        dx = key === 37 ? -50 : key === 39 ? 50 : 0;
+                        dy = key === 38 ? -50 : key === 40 ? 50 : 0;
                         break;
+                    default:
+                        return;
                 }
+                refresh();
+                var newPos = normalizePosition(x - dx, y - dy, true);
+                if (newPos.x === x && newPos.y === y) {
+                    return;
+                }
+                e.preventDefault();
+
+                if (!ev || !ev.repeat) {
+                    scrollTo(newPos.x, newPos.y, 50);
+                    return;
+                }
+                if (!keyState) {
+                    var handleEnd = function () {
+                        keyState = null;
+                        stopScroll();
+                        setScrollEnd();
+                    };
+                    var stopScroll = startScrollPerFrame(function (scrollBy, timestamp) {
+                        if (timestamp - keyState.timestamp > 100) {
+                            handleEnd();
+                        } else {
+                            scrollBy(dx / 200, dy / 200);
+                        }
+                    });
+                    setScrollStart('keydown', handleEnd);
+                    keyState = {};
+                }
+                keyState.timestamp = Date.now();
+            }
+
+            // setup event handlers
+            var handlers = {
+                scroll: fixNativeScrollHandler,
+                transitionend: refreshNext,
+                animationend: refreshNext,
+                touchstart: startScrollByPointer,
+                mousedown: startScrollByPointer,
+                auxclick: startScrollByAuxClick,
+                keydown: startScrollByKey
             };
+            handlers[EV_WHEEL] = startScrollByWheel;
             $wrapper.on(handlers);
 
             // setup initial style
@@ -1734,6 +1843,9 @@ const $ = __webpack_require__(786);
                 },
                 get scrollMaxY() {
                     return -minY;
+                },
+                get enabled() {
+                    return enabled;
                 },
                 destroy: function () {
                     setPosition(0, 0);
@@ -1820,19 +1932,19 @@ const $ = __webpack_require__(786);
                     return -stopY;
                 },
                 scrollBy: function (dx, dy, duration, callback) {
-                    return scrollToPreNormalized((dx || 0) - x, (dy || 0) - y, duration, callback);
+                    return scrollToPreNormalized(x - (dx || 0), y - (dy || 0), duration, callback) || getResolvePromise();
                 },
                 scrollTo: function (x, y, duration, callback) {
-                    return scrollToPreNormalized(x, y, duration, callback);
+                    return scrollToPreNormalized(-x, -y, duration, callback) || getResolvePromise();
                 },
                 scrollByPage: function (dx, dy, duration, callback) {
-                    return scrollByPage(dx, dy, duration, callback);
+                    return scrollByPage(dx, dy, duration, callback) || getResolvePromise();
                 },
                 scrollToPage: function (x, y, duration, callback) {
-                    return scrollToPreNormalized(x * wrapperSize.width || 0, y * wrapperSize.height, duration, callback);
+                    return scrollToPreNormalized(-x * wrapperSize.width || 0, -y * wrapperSize.height, duration, callback) || getResolvePromise();
                 },
                 scrollToElement: function (target, targetOrigin, wrapperOrigin, duration, callback) {
-                    return scrollToElement(target, targetOrigin, wrapperOrigin, duration, callback);
+                    return scrollToElement(target, targetOrigin, wrapperOrigin, duration, callback) || getResolvePromise();
                 }
             });
 
@@ -1859,7 +1971,7 @@ const $ = __webpack_require__(786);
     });
 
     $(window).on('keydown', function (e) {
-        if (!e.isDefaultPrevented()) {
+        if (!e.isDefaultPrevented() && activated.size) {
             switch (e.keyCode) {
                 case 32: // space
                 case 33: // pageUp
@@ -1868,9 +1980,35 @@ const $ = __webpack_require__(786);
                 case 38: // upArrow
                 case 39: // rightArrow
                 case 40: // downArrow
-                    if (activated.size) {
-                        $($.uniqueSort(getActivatedWrappers())).filter(':visible').eq(0).triggerHandler(e);
+                    break;
+                default:
+                    return;
+            }
+            var activeElement = getAnchorElement();
+            if (activeElement) {
+                $(activeElement).parents().each(function (i, v) {
+                    if (activated.has(v)) {
+                        $(v).triggerHandler(e);
+                        return !e.isDefaultPrevented();
                     }
+                });
+                return;
+            } else if (!isPageScrollable()) {
+                var elements = getActivatedWrappers().filter(function (v) {
+                    var instances = $.data(v, DATA_ID);
+                    return instances.enabled && (instances.scrollMaxX || instances.scrollMaxY);
+                });
+                // guess the main content area
+                var max = 0;
+                elements = elements.filter(function (v) {
+                    if (elements.indexOf(getParentWrapper(v)) >= 0) {
+                        return false;
+                    }
+                    var r = getRect(v);
+                    var a = r.width * r.height;
+                    return a > max ? (max = a) : 0;
+                });
+                $(elements).last().triggerHandler(e);
             }
         }
     });
