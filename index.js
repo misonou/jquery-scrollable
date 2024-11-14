@@ -246,9 +246,12 @@ const $ = require('jquery');
         }
     }
 
-    function calculateMomentum(dist, time, maxDist, overshoot) {
+    function calculateMomentum(signSpeed, maxDist, overshoot) {
+        if (!signSpeed) {
+            return zeroMomentum;
+        }
         var deceleration = 0.0006;
-        var speed = m.abs(dist) / time;
+        var speed = m.abs(signSpeed);
         var newDist = (speed * speed) / (2 * deceleration);
 
         // Proportinally reduce speed if we are outside of the boundaries
@@ -257,11 +260,8 @@ const $ = require('jquery');
             speed = speed * maxDist / newDist;
             newDist = maxDist;
         }
-        if (newDist <= 0) {
-            return zeroMomentum;
-        }
         return {
-            dist: newDist * (dist < 0 ? -1 : 1),
+            dist: newDist * (signSpeed < 0 ? -1 : 1),
             time: m.max(10, mround(speed / deceleration))
         };
     }
@@ -1196,6 +1196,22 @@ const $ = require('jquery');
                 };
             }
 
+            function scrollWithMomentum(startX, startY, speedX, speedY, handleEnd) {
+                var momentumX = x === startX ? zeroMomentum : calculateMomentum(speedX, m.max(0, x > startX ? -x : x - minX), options.bounce && wrapperSize.width);
+                var momentumY = y === startY ? zeroMomentum : calculateMomentum(speedY, m.max(0, y > startY ? -y : y - minY), options.bounce && wrapperSize.height);
+                var newX = x - momentumX.dist;
+                var newY = y - momentumY.dist;
+                if (options.pageItem && options.snapToPage) {
+                    var p = normalizePosition(newX, newY, true);
+                    newX = p.x;
+                    newY = p.y;
+                }
+                scrollTo(newX, newY, m.max(momentumX.time, momentumY.time), function () {
+                    var newPos = normalizePosition(x, y);
+                    scrollTo(newPos.x, newPos.y, options.bounceDuration, handleEnd);
+                });
+            }
+
             function startScrollByPointer(e) {
                 var touches = e.originalEvent.touches;
                 var hasTouch = touches && (touches[0].touchType || true);
@@ -1267,11 +1283,6 @@ const $ = require('jquery');
                 }
                 if (scrollbarMode) {
                     $current = $current || $wrapper;
-                }
-
-                function bounceBack(callback) {
-                    var newPos = normalizePosition(x, y);
-                    scrollTo(newPos.x, newPos.y, options.bounceDuration, callback);
                 }
 
                 function handleStart() {
@@ -1442,23 +1453,8 @@ const $ = require('jquery');
                         }
 
                         var duration = (+new Date()) - startTime;
-                        var momentumX = zeroMomentum;
-                        var momentumY = zeroMomentum;
-
-                        if (options.momentum && duration < 300 && !scrollbarMode) {
-                            momentumX = calculateMomentum(x - startX, duration, x > startX ? -x : x - minX, options.bounce && wrapperSize.width);
-                            momentumY = calculateMomentum(y - startY, duration, y > startY ? -y : y - minY, options.bounce && wrapperSize.height);
-                        }
-                        var newX = x + momentumX.dist;
-                        var newY = y + momentumY.dist;
-                        if (options.pageItem && options.snapToPage) {
-                            var p = normalizePosition(newX, newY, true);
-                            newX = p.x;
-                            newY = p.y;
-                        }
-                        scrollTo(newX, newY, m.max(momentumX.time, momentumY.time), function () {
-                            bounceBack(handleEnd);
-                        });
+                        var factor = !!options.momentum && duration < 300;
+                        scrollWithMomentum(eventState.startX, eventState.startY, factor * (startX - x) / duration, factor * (startY - y) / duration, handleEnd);
                     } else {
                         handleEnd();
                     }
@@ -1608,17 +1604,23 @@ const $ = require('jquery');
                 if (newX === x && newY === y) {
                     return;
                 }
-                if (!wheelState) {
+                if (!wheelState || (wheelState.ending && (wheelDeltaX / 0 !== wheelState.dx / 0) && (wheelDeltaY / 0 !== wheelState.dy / 0))) {
                     var handleEnd = function () {
                         wheelState = null;
                         stopScroll();
                         setScrollEnd();
                     };
                     var stopScroll = startScrollPerFrame(function (scrollBy, timestamp) {
-                        if (timestamp - wheelState.timestamp > 100) {
-                            handleEnd();
+                        if (timestamp - wheelState.timestamp > 100 || timestamp - wheelState.ending > 300) {
+                            var momemtum = !!(wheelState.momentum && options.momentum);
+                            scrollWithMomentum(eventState.startX, eventState.startY, wheelState.dx * momemtum, wheelState.dy * momemtum, handleEnd);
+                            stopScroll();
+                            wheelState = null;
                         } else {
-                            scrollBy(wheelState.dx, wheelState.dy, options.bounce);
+                            var scrolled = scrollBy(wheelState.dx, wheelState.dy, wheelState.momentum && options.bounce);
+                            if (!scrolled && (x > 0 || x < minX || y > 0 || y < minY) && !wheelState.ending) {
+                                wheelState.ending = timestamp;
+                            }
                         }
                     });
                     setScrollStart(handleEnd);
@@ -1629,6 +1631,9 @@ const $ = require('jquery');
                 wheelState.timestamp = Date.now();
                 wheelState.dx = wheelDeltaX / 100;
                 wheelState.dy = wheelDeltaY / 100;
+                if ((wheelDeltaX && m.abs(wheelDeltaX) < 50) || (wheelDeltaY && m.abs(wheelDeltaY) < 50)) {
+                    wheelState.momentum = true;
+                }
             }
 
             function startScrollByKey(e) {
