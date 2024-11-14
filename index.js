@@ -50,7 +50,10 @@ const $ = require('jquery');
         'scrollPaddingBottom',
         'scrollPaddingLeft'
     ];
-    const mround = function (r) {
+    const hasSubpixel = (window.devicePixelRatio || 1) !== 1;
+    const mround = hasSubpixel ? function (r) {
+        return ((r * 2) | 0) / 2;
+    } : function (r) {
         return r >> 0;
     };
     const array = Array.prototype;
@@ -778,14 +781,13 @@ const $ = require('jquery');
                             rect: r3
                         });
                     }
-                    var offsetX = dirX && m[signX < 0 ? 'max' : 'min'](state.offsetX - (x - r0.startX) - state.deltaX, state.maxX) | 0;
-                    var offsetY = dirY && m[signY < 0 ? 'max' : 'min'](state.offsetY - (y - r0.startY) - state.deltaY, state.maxY) | 0;
+                    var offsetX = dirX && mround(m[signX < 0 ? 'max' : 'min'](state.offsetX - (x - r0.startX) - state.deltaX, state.maxX));
+                    var offsetY = dirY && mround(m[signY < 0 ? 'max' : 'min'](state.offsetY - (y - r0.startY) - state.deltaY, state.maxY));
                     if (state.fixed || state.within) {
                         offsetX = offsetX * signX < 0 ? 0 : offsetX;
                         offsetY = offsetY * signY < 0 ? 0 : offsetY;
                     }
-                    var sticky = !!offsetX || !!offsetY;
-                    $(element).toggleClass(options.stickyClass, sticky).css('transform', sticky ? translate(px(offsetX), px(offsetY)) : '');
+                    $(element).toggleClass(options.stickyClass, !!offsetX || !!offsetY).css('transform', translate(px(offsetX), px(offsetY)));
                 });
                 if (beforeScrollStart) {
                     stickyRect = r0;
