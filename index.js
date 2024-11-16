@@ -1182,8 +1182,7 @@ const $ = require('jquery');
                             newX = newPos.x;
                             newY = newPos.y;
                             if (newPos.pageChanged) {
-                                timeout = 0;
-                                scrollTo(newX, newY, options.bounceDuration, next);
+                                scrollTo(newX, newY, options.bounceDuration);
                                 return true;
                             }
                         }
