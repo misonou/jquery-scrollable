@@ -1411,7 +1411,7 @@ const $ = require('jquery');
                         newX = p.x;
                         newY = p.y;
                         if (p.pageChanged) {
-                            scrollTo(newX, newY, options.bounceDuration, handleEnd);
+                            scrollTo(newX, newY, options.bounceDuration, handleStop);
                             snappedToPage = true;
                             return;
                         }
