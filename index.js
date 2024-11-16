@@ -1622,7 +1622,6 @@ const $ = require('jquery');
                             var momemtum = !!(wheelState.momentum && options.momentum);
                             scrollWithMomentum(eventState.startX, eventState.startY, wheelState.dx * momemtum, wheelState.dy * momemtum, handleEnd);
                             stopScroll();
-                            wheelState = null;
                         } else {
                             var scrolled = scrollBy(wheelState.dx, wheelState.dy, wheelState.momentum && options.bounce);
                             if (!scrolled && (x > 0 || x < minX || y > 0 || y < minY) && !wheelState.ending) {
