@@ -1096,8 +1096,8 @@ const $ = require('jquery');
                             trailingX = r0.right - r2.right + parseFloat($clip.css(pPadding[1]));
                             trailingY = r0.bottom - r2.bottom + parseFloat($clip.css(pPadding[2]));
                         }
-                        trailingX += Math.min(0, parseFloat($content.css(pMargin[1]))) - parseFloat(style[pBorder[1]]);
-                        trailingY += Math.min(0, parseFloat($content.css(pMargin[2]))) - parseFloat(style[pBorder[2]]);
+                        trailingX += Math.min(0, parseFloat($content.css(pMargin[1])));
+                        trailingY += Math.min(0, parseFloat($content.css(pMargin[2])));
                     }
                     contentSize = $.extend({}, zeroSize, options.getContentDimension($content));
                     wrapperSize = $.extend({}, zeroSize, options.getWrapperDimension($wrapper));
