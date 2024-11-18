@@ -752,10 +752,14 @@ const $ = require('jquery');
                         r0 = getRect($wrapper[0]);
                         r1 = getRect($content[0]);
                         r0 = {
-                            top: r0.top + parseFloat(style[pBorder[0]]) + leadingY + (leadingY && parseFloat(style[pPadding[0]])),
-                            left: r0.left + parseFloat(style[pBorder[3]]) + leadingX + (leadingX && parseFloat(style[pPadding[3]])),
+                            top: r0.top + parseFloat(style[pBorder[0]]) + leadingY,
+                            left: r0.left + parseFloat(style[pBorder[3]]) + leadingX,
                             right: r0.right - parseFloat(style[pBorder[1]]),
                             bottom: r0.bottom - parseFloat(style[pBorder[2]]),
+                            ptop: parseFloat(style[pPadding[0]]),
+                            pleft: parseFloat(style[pPadding[3]]),
+                            pright: parseFloat(style[pPadding[1]]) * -1,
+                            pbottom: parseFloat(style[pPadding[2]]) * -1,
                             startX: x,
                             startY: y
                         };
@@ -767,26 +771,26 @@ const $ = require('jquery');
                     if (!stickyRect) {
                         var r2 = getRect(element);
                         var r3 = state.within ? state.within() : r1;
-                        var tm = state.fixed ? 0 : new DOMMatrix(element.style.transform);
+                        var tm = new DOMMatrix(element.style.transform);
                         var style = getComputedStyle(element);
+                        var r0x = r0[dirX] + (state.fixed ? r0['p' + dirX] : leadingX && signX > 0 ? r0.pleft : 0);
+                        var r0y = r0[dirY] + (state.fixed ? r0['p' + dirY] : leadingY && signY > 0 ? r0.ptop : 0);
                         $.extend(state, {
-                            offsetX: dirX && r0[dirX] - r3[dirX],
-                            offsetY: dirY && r0[dirY] - r3[dirY],
-                            deltaX: dirX && tm && (r2[dirX] - r3[dirX] - tm.e),
-                            deltaY: dirY && tm && (r2[dirY] - r3[dirY] - tm.f),
-                            maxX: (r3.width - r2.width) * signX,
-                            maxY: (r3.height - r2.height) * signY,
-                            padX: dirX && (r2[dirX] * signX - r0[dirX] * signX + r2.width + parseFloat(style[pMargin[dirX > 0 ? 3 : 1]])),
-                            padY: dirY && (r2[dirY] * signY - r0[dirY] * signY + r2.height + parseFloat(style[pMargin[dirY > 0 ? 0 : 2]])),
+                            offsetX: dirX && r0x - r3[dirX],
+                            offsetY: dirY && r0y - r3[dirY],
+                            deltaX: dirX && !state.fixed && (r2[dirX] - r3[dirX] - tm.e),
+                            deltaY: dirY && !state.fixed && (r2[dirY] - r3[dirY] - tm.f),
+                            maxX: (r3.width - r2.width) * signX - (r2[dirX] - r3[dirX] - tm.e),
+                            maxY: (r3.height - r2.height) * signY - (r2[dirY] - r3[dirY] - tm.f),
+                            padX: dirX && (r2[dirX] * signX - r0x * signX + r2.width + parseFloat(style[pMargin[dirX > 0 ? 3 : 1]])),
+                            padY: dirY && (r2[dirY] * signY - r0y * signY + r2.height + parseFloat(style[pMargin[dirY > 0 ? 0 : 2]])),
                             rect: r3
                         });
                     }
                     var offsetX = dirX && mround(m[signX < 0 ? 'max' : 'min'](state.offsetX - (x - r0.startX) - state.deltaX, state.maxX));
                     var offsetY = dirY && mround(m[signY < 0 ? 'max' : 'min'](state.offsetY - (y - r0.startY) - state.deltaY, state.maxY));
-                    if (state.fixed || state.within) {
-                        offsetX = offsetX * signX < 0 ? 0 : offsetX;
-                        offsetY = offsetY * signY < 0 ? 0 : offsetY;
-                    }
+                    offsetX = offsetX * signX < 0 ? 0 : offsetX;
+                    offsetY = offsetY * signY < 0 ? 0 : offsetY;
                     $(element).toggleClass(options.stickyClass, !!offsetX || !!offsetY).css('transform', translate(px(offsetX), px(offsetY)));
                 });
                 if (beforeScrollStart) {
@@ -1089,8 +1093,8 @@ const $ = require('jquery');
                         });
                         r0 = getRect($wrapper[0]);
                         r1 = getRect($content[0]);
-                        leadingX = r1.left - r0.left - x - parseFloat(style[pPadding[3]]) - parseFloat(style[pBorder[3]]);
-                        leadingY = r1.top - r0.top - y - parseFloat(style[pPadding[0]]) - parseFloat(style[pBorder[0]]);
+                        leadingX = mround(r1.left - r0.left - x - parseFloat(style[pPadding[3]]) - parseFloat(style[pBorder[3]]));
+                        leadingY = mround(r1.top - r0.top - y - parseFloat(style[pPadding[0]]) - parseFloat(style[pBorder[0]]));
                         if ($clip[0]) {
                             var r2 = getRect($clip[0]);
                             trailingX = r0.right - r2.right + parseFloat($clip.css(pPadding[1]));
