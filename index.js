@@ -1357,9 +1357,7 @@ const $ = require('jquery');
                                 handleStop(e);
                                 return;
                             }
-                            // check if user is scrolling outer content when content of this container is underflow
-                            if (((thisDirY && !minY) || (!thisDirY && !minX)) && (getParentWrapper($wrapper[0]) || canScrollInnerElement($wrapper[0], document.body, deltaX, deltaY))) {
-                                handleStop(e);
+                            if ((thisDirY ? newY > 0 || newY < minY : newX > 0 || newX < minX) && ($wrapper.css('overscroll-behavior') || 'auto') === 'auto') {
                                 return;
                             }
                             isDirY = 0;
