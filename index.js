@@ -1155,6 +1155,7 @@ const $ = require('jquery');
             function startScrollPerFrame(callback) {
                 var lastTime = Date.now();
                 var timeout = nextFrame(step);
+                var bouncing;
 
                 function next(curTime) {
                     lastTime = curTime || Date.now();
@@ -1163,34 +1164,39 @@ const $ = require('jquery');
 
                 function step() {
                     var curTime = Date.now();
-                    callback(function (dx, dy, overshoot) {
-                        if (!minX) {
-                            dx = 0;
-                        } else if (x > 0 || x < minX) {
-                            dx = dx / m.sqrt(x > 0 ? x : minX - x);
-                        }
-                        if (!minY) {
-                            dy = 0;
-                        } else if (y > 0 || y < minY) {
-                            dy = dy / m.sqrt(y > 0 ? y : minY - y);
-                        }
-                        var factor = (curTime - lastTime) * 2;
-                        var newX = x - dx * factor;
-                        var newY = y - dy * factor;
-                        if (!overshoot || (options.snapToPage && options.pageItem)) {
-                            var newPos = normalizePosition(newX, newY, true);
-                            newX = newPos.x;
-                            newY = newPos.y;
-                            if (newPos.pageChanged) {
-                                scrollTo(newX, newY, options.bounceDuration);
+                    if (!bouncing) {
+                        callback(function (dx, dy, overshoot) {
+                            if (!minX) {
+                                dx = 0;
+                            } else if (x > 0 || x < minX) {
+                                dx = dx / m.sqrt(x > 0 ? x : minX - x);
+                            }
+                            if (!minY) {
+                                dy = 0;
+                            } else if (y > 0 || y < minY) {
+                                dy = dy / m.sqrt(y > 0 ? y : minY - y);
+                            }
+                            var factor = (curTime - lastTime) * 2;
+                            var newX = x - dx * factor;
+                            var newY = y - dy * factor;
+                            if (!overshoot || (options.snapToPage && options.pageItem)) {
+                                var newPos = normalizePosition(newX, newY, true);
+                                newX = newPos.x;
+                                newY = newPos.y;
+                                if (newPos.pageChanged) {
+                                    bouncing = true;
+                                    scrollTo(newX, newY, options.bounceDuration, function () {
+                                        bouncing = false;
+                                    });
+                                    return true;
+                                }
+                            }
+                            if (m.abs(newX - x) >= 0.5 || m.abs(newY - y) >= 0.5) {
+                                setScrollMove(newX, newY);
                                 return true;
                             }
-                        }
-                        if (m.abs(newX - x) >= 0.5 || m.abs(newY - y) >= 0.5) {
-                            setScrollMove(newX, newY);
-                            return true;
-                        }
-                    }, curTime);
+                        }, curTime);
+                    }
                     next(curTime);
                 }
 
@@ -1410,7 +1416,7 @@ const $ = require('jquery');
                         newX = p.x;
                         newY = p.y;
                         if (p.pageChanged) {
-                            scrollTo(newX, newY, options.bounceDuration, handleStop);
+                            scrollTo(newX, newY, options.bounceDuration);
                             snappedToPage = true;
                             return;
                         }
