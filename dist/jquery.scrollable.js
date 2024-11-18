@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.15.0 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.15.1 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jQuery"));
@@ -1146,8 +1146,8 @@ const $ = __webpack_require__(786);
                             trailingX = r0.right - r2.right + parseFloat($clip.css(pPadding[1]));
                             trailingY = r0.bottom - r2.bottom + parseFloat($clip.css(pPadding[2]));
                         }
-                        trailingX += Math.min(0, parseFloat($content.css(pMargin[1]))) - parseFloat(style[pBorder[1]]);
-                        trailingY += Math.min(0, parseFloat($content.css(pMargin[2]))) - parseFloat(style[pBorder[2]]);
+                        trailingX += Math.min(0, parseFloat($content.css(pMargin[1])));
+                        trailingY += Math.min(0, parseFloat($content.css(pMargin[2])));
                     }
                     contentSize = $.extend({}, zeroSize, options.getContentDimension($content));
                     wrapperSize = $.extend({}, zeroSize, options.getWrapperDimension($wrapper));
@@ -1232,8 +1232,7 @@ const $ = __webpack_require__(786);
                             newX = newPos.x;
                             newY = newPos.y;
                             if (newPos.pageChanged) {
-                                timeout = 0;
-                                scrollTo(newX, newY, options.bounceDuration, next);
+                                scrollTo(newX, newY, options.bounceDuration);
                                 return true;
                             }
                         }
@@ -1461,7 +1460,7 @@ const $ = __webpack_require__(786);
                         newX = p.x;
                         newY = p.y;
                         if (p.pageChanged) {
-                            scrollTo(newX, newY, options.bounceDuration, handleEnd);
+                            scrollTo(newX, newY, options.bounceDuration, handleStop);
                             snappedToPage = true;
                             return;
                         }
@@ -1672,7 +1671,6 @@ const $ = __webpack_require__(786);
                             var momemtum = !!(wheelState.momentum && options.momentum);
                             scrollWithMomentum(eventState.startX, eventState.startY, wheelState.dx * momemtum, wheelState.dy * momemtum, handleEnd);
                             stopScroll();
-                            wheelState = null;
                         } else {
                             var scrolled = scrollBy(wheelState.dx, wheelState.dy, wheelState.momentum && options.bounce);
                             if (!scrolled && (x > 0 || x < minX || y > 0 || y < minY) && !wheelState.ending) {

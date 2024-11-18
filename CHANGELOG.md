@@ -1,3 +1,10 @@
+## v1.15.1 / 2024-11-18
+
+- Fix: exception after overscroll in wheel event
+- Fix: max scroll calculation with container having border
+- Fix: screen blocked after snapping to page in mouse event
+- Fix: continuous scroll with page snap
+
 ## v1.15.0 / 2024-11-14
 
 - Subpixel handling
