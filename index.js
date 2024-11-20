@@ -620,49 +620,55 @@ const $ = require('jquery');
                         x: x,
                         y: y
                     };
-                    if (newPos[dir] !== oldPos[dir]) {
+                    var offset = newPos[dir] - oldPos[dir];
+                    if (offset || forcePageChange) {
                         var itemCount = $pageItems.length;
                         var curIndex = getPageIndex();
-                        var newIndex = getPageIndex(newPos[dir] - oldPos[dir]);
+                        var newIndex = offset ? getPageIndex(offset) : curIndex;
                         var r0 = getRect($wrapper[0]);
                         var r1;
-                        if (forcePageChange && newIndex === curIndex && (newPos[dir] < oldPos[dir] ? curIndex < itemCount - 1 : curIndex > 0)) {
+                        if (forcePageChange && newIndex === curIndex && offset && (offset < 0 ? curIndex < itemCount - 1 : curIndex > 0)) {
                             r1 = getRect($pageItems[curIndex]);
-                            if (r1[props[2]] < r0[props[2]] || (newPos[dir] < oldPos[dir] ? mround(r1[props[1]]) <= r0[props[1]] : m.ceil(r1[props[0]]) >= r0[props[0]])) {
-                                newIndex += newPos[dir] < oldPos[dir] ? 1 : -1;
+                            if (r1[props[2]] < r0[props[2]] || (offset < 0 ? mround(r1[props[1]]) <= r0[props[1]] : m.ceil(r1[props[0]]) >= r0[props[0]])) {
+                                newIndex += offset < 0 ? 1 : -1;
                             }
                         }
                         r1 = getRect($pageItems[newIndex]);
 
-                        var alignProp = props[2];
-                        if (r1[props[2]] > r0[props[2]]) {
-                            alignProp = (newPos[dir] < oldPos[dir]) ^ (curIndex === newIndex) ? props[0] : props[1];
-                        } else if (align === props[0] || align === props[1]) {
-                            alignProp = align;
+                        var distStart = r1[props[0]] - r0[props[0]] + offset;
+                        var distEnd = r1[props[1]] - r0[props[1]] + offset;
+                        if (distStart <= 0 && distEnd >= 0) {
+                            return newPos;
                         }
-                        var snapPos;
-                        var snapped;
-                        switch (alignProp) {
-                            case props[0]:
-                                snapPos = r1[props[0]];
-                                break;
-                            case props[1]:
-                                snapPos = r1[props[1]] - r0[props[2]];
-                                break;
-                            default:
-                                snapPos = (r1[props[0]] + r1[props[1]] - r0[props[2]]) / 2;
-                                break;
-                        }
-                        snapPos = mround(oldPos[dir] + r0[props[0]] - snapPos);
-                        if (newIndex === curIndex) {
-                            newPos[dir] = m[newPos[dir] < oldPos[dir] ? 'max' : 'min'](snapPos, newPos[dir]);
-                            snapped = newPos[dir] === snapPos;
+                        var alignProp;
+                        if (r1[props[2]] <= r0[props[2]]) {
+                            alignProp = align === props[0] || align === props[1] ? align : props[2];
+                        } else if (offset) {
+                            alignProp = (offset < 0) ^ (curIndex === newIndex) ? props[0] : props[1];
                         } else {
-                            newPos[dir] = snapPos;
-                            snapped = true;
+                            alignProp = m.abs(distStart) <= m.abs(distEnd) ? props[0] : props[1];
+                        }
+                        if (alignProp === props[0] && newIndex === 0) {
+                            newPos[dir] = 0;
+                        } else if (alignProp === props[1] && newIndex === itemCount - 1) {
+                            newPos[dir] = dir === x ? minX : minY;
+                        } else {
+                            var snapPos;
+                            switch (alignProp) {
+                                case props[0]:
+                                    snapPos = r1[props[0]];
+                                    break;
+                                case props[1]:
+                                    snapPos = r1[props[1]] - r0[props[2]];
+                                    break;
+                                default:
+                                    snapPos = (r1[props[0]] + r1[props[1]] - r0[props[2]]) / 2;
+                                    break;
+                            }
+                            newPos[dir] = mround(oldPos[dir] + r0[props[0]] - snapPos);
                         }
                         newPos = normalizeInternal(newPos.x, newPos.y);
-                        newPos.pageChanged = snapped;
+                        newPos.pageChanged = oldPos[dir] !== snapPos;
                     }
                 }
                 return newPos;
