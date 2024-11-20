@@ -1,9 +1,16 @@
+## v1.15.2 / 2024-11-20
+
+- Fix: calculation for fixed element position
+- Fix: improve snap position calculation
+- Fix: `overscroll-behavior` not respected in touch event
+- Fix: continuous scroll with page snap
+
 ## v1.15.1 / 2024-11-18
 
 - Fix: exception after overscroll in wheel event
 - Fix: max scroll calculation with container having border
 - Fix: screen blocked after snapping to page in mouse event
-- Fix: continuous scroll with page snap
+- ~~Fix: continuous scroll with page snap~~ (further fixed in v1.15.2)
 
 ## v1.15.0 / 2024-11-14
 

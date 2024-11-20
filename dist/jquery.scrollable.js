@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.15.1 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.15.2 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jQuery"));
@@ -670,49 +670,55 @@ const $ = __webpack_require__(786);
                         x: x,
                         y: y
                     };
-                    if (newPos[dir] !== oldPos[dir]) {
+                    var offset = newPos[dir] - oldPos[dir];
+                    if (offset || forcePageChange) {
                         var itemCount = $pageItems.length;
                         var curIndex = getPageIndex();
-                        var newIndex = getPageIndex(newPos[dir] - oldPos[dir]);
+                        var newIndex = offset ? getPageIndex(offset) : curIndex;
                         var r0 = getRect($wrapper[0]);
                         var r1;
-                        if (forcePageChange && newIndex === curIndex && (newPos[dir] < oldPos[dir] ? curIndex < itemCount - 1 : curIndex > 0)) {
+                        if (forcePageChange && newIndex === curIndex && offset && (offset < 0 ? curIndex < itemCount - 1 : curIndex > 0)) {
                             r1 = getRect($pageItems[curIndex]);
-                            if (r1[props[2]] < r0[props[2]] || (newPos[dir] < oldPos[dir] ? mround(r1[props[1]]) <= r0[props[1]] : m.ceil(r1[props[0]]) >= r0[props[0]])) {
-                                newIndex += newPos[dir] < oldPos[dir] ? 1 : -1;
+                            if (r1[props[2]] < r0[props[2]] || (offset < 0 ? mround(r1[props[1]]) <= r0[props[1]] : m.ceil(r1[props[0]]) >= r0[props[0]])) {
+                                newIndex += offset < 0 ? 1 : -1;
                             }
                         }
                         r1 = getRect($pageItems[newIndex]);
 
-                        var alignProp = props[2];
-                        if (r1[props[2]] > r0[props[2]]) {
-                            alignProp = (newPos[dir] < oldPos[dir]) ^ (curIndex === newIndex) ? props[0] : props[1];
-                        } else if (align === props[0] || align === props[1]) {
-                            alignProp = align;
+                        var distStart = r1[props[0]] - r0[props[0]] + offset;
+                        var distEnd = r1[props[1]] - r0[props[1]] + offset;
+                        if (distStart <= 0 && distEnd >= 0) {
+                            return newPos;
                         }
-                        var snapPos;
-                        var snapped;
-                        switch (alignProp) {
-                            case props[0]:
-                                snapPos = r1[props[0]];
-                                break;
-                            case props[1]:
-                                snapPos = r1[props[1]] - r0[props[2]];
-                                break;
-                            default:
-                                snapPos = (r1[props[0]] + r1[props[1]] - r0[props[2]]) / 2;
-                                break;
-                        }
-                        snapPos = mround(oldPos[dir] + r0[props[0]] - snapPos);
-                        if (newIndex === curIndex) {
-                            newPos[dir] = m[newPos[dir] < oldPos[dir] ? 'max' : 'min'](snapPos, newPos[dir]);
-                            snapped = newPos[dir] === snapPos;
+                        var alignProp;
+                        if (r1[props[2]] <= r0[props[2]]) {
+                            alignProp = align === props[0] || align === props[1] ? align : props[2];
+                        } else if (offset) {
+                            alignProp = (offset < 0) ^ (curIndex === newIndex) ? props[0] : props[1];
                         } else {
-                            newPos[dir] = snapPos;
-                            snapped = true;
+                            alignProp = m.abs(distStart) <= m.abs(distEnd) ? props[0] : props[1];
+                        }
+                        if (alignProp === props[0] && newIndex === 0) {
+                            newPos[dir] = 0;
+                        } else if (alignProp === props[1] && newIndex === itemCount - 1) {
+                            newPos[dir] = dir === x ? minX : minY;
+                        } else {
+                            var snapPos;
+                            switch (alignProp) {
+                                case props[0]:
+                                    snapPos = r1[props[0]];
+                                    break;
+                                case props[1]:
+                                    snapPos = r1[props[1]] - r0[props[2]];
+                                    break;
+                                default:
+                                    snapPos = (r1[props[0]] + r1[props[1]] - r0[props[2]]) / 2;
+                                    break;
+                            }
+                            newPos[dir] = mround(oldPos[dir] + r0[props[0]] - snapPos);
                         }
                         newPos = normalizeInternal(newPos.x, newPos.y);
-                        newPos.pageChanged = snapped;
+                        newPos.pageChanged = oldPos[dir] !== snapPos;
                     }
                 }
                 return newPos;
@@ -802,10 +808,14 @@ const $ = __webpack_require__(786);
                         r0 = getRect($wrapper[0]);
                         r1 = getRect($content[0]);
                         r0 = {
-                            top: r0.top + parseFloat(style[pBorder[0]]) + leadingY + (leadingY && parseFloat(style[pPadding[0]])),
-                            left: r0.left + parseFloat(style[pBorder[3]]) + leadingX + (leadingX && parseFloat(style[pPadding[3]])),
+                            top: r0.top + parseFloat(style[pBorder[0]]) + leadingY,
+                            left: r0.left + parseFloat(style[pBorder[3]]) + leadingX,
                             right: r0.right - parseFloat(style[pBorder[1]]),
                             bottom: r0.bottom - parseFloat(style[pBorder[2]]),
+                            ptop: parseFloat(style[pPadding[0]]),
+                            pleft: parseFloat(style[pPadding[3]]),
+                            pright: parseFloat(style[pPadding[1]]) * -1,
+                            pbottom: parseFloat(style[pPadding[2]]) * -1,
                             startX: x,
                             startY: y
                         };
@@ -817,26 +827,26 @@ const $ = __webpack_require__(786);
                     if (!stickyRect) {
                         var r2 = getRect(element);
                         var r3 = state.within ? state.within() : r1;
-                        var tm = state.fixed ? 0 : new DOMMatrix(element.style.transform);
+                        var tm = new DOMMatrix(element.style.transform);
                         var style = getComputedStyle(element);
+                        var r0x = r0[dirX] + (state.fixed ? r0['p' + dirX] : leadingX && signX > 0 ? r0.pleft : 0);
+                        var r0y = r0[dirY] + (state.fixed ? r0['p' + dirY] : leadingY && signY > 0 ? r0.ptop : 0);
                         $.extend(state, {
-                            offsetX: dirX && r0[dirX] - r3[dirX],
-                            offsetY: dirY && r0[dirY] - r3[dirY],
-                            deltaX: dirX && tm && (r2[dirX] - r3[dirX] - tm.e),
-                            deltaY: dirY && tm && (r2[dirY] - r3[dirY] - tm.f),
-                            maxX: (r3.width - r2.width) * signX,
-                            maxY: (r3.height - r2.height) * signY,
-                            padX: dirX && (r2[dirX] * signX - r0[dirX] * signX + r2.width + parseFloat(style[pMargin[dirX > 0 ? 3 : 1]])),
-                            padY: dirY && (r2[dirY] * signY - r0[dirY] * signY + r2.height + parseFloat(style[pMargin[dirY > 0 ? 0 : 2]])),
+                            offsetX: dirX && r0x - r3[dirX],
+                            offsetY: dirY && r0y - r3[dirY],
+                            deltaX: dirX && !state.fixed && (r2[dirX] - r3[dirX] - tm.e),
+                            deltaY: dirY && !state.fixed && (r2[dirY] - r3[dirY] - tm.f),
+                            maxX: (r3.width - r2.width) * signX - (r2[dirX] - r3[dirX] - tm.e),
+                            maxY: (r3.height - r2.height) * signY - (r2[dirY] - r3[dirY] - tm.f),
+                            padX: dirX && (r2[dirX] * signX - r0x * signX + r2.width + parseFloat(style[pMargin[dirX > 0 ? 3 : 1]])),
+                            padY: dirY && (r2[dirY] * signY - r0y * signY + r2.height + parseFloat(style[pMargin[dirY > 0 ? 0 : 2]])),
                             rect: r3
                         });
                     }
                     var offsetX = dirX && mround(m[signX < 0 ? 'max' : 'min'](state.offsetX - (x - r0.startX) - state.deltaX, state.maxX));
                     var offsetY = dirY && mround(m[signY < 0 ? 'max' : 'min'](state.offsetY - (y - r0.startY) - state.deltaY, state.maxY));
-                    if (state.fixed || state.within) {
-                        offsetX = offsetX * signX < 0 ? 0 : offsetX;
-                        offsetY = offsetY * signY < 0 ? 0 : offsetY;
-                    }
+                    offsetX = offsetX * signX < 0 ? 0 : offsetX;
+                    offsetY = offsetY * signY < 0 ? 0 : offsetY;
                     $(element).toggleClass(options.stickyClass, !!offsetX || !!offsetY).css('transform', translate(px(offsetX), px(offsetY)));
                 });
                 if (beforeScrollStart) {
@@ -1139,8 +1149,8 @@ const $ = __webpack_require__(786);
                         });
                         r0 = getRect($wrapper[0]);
                         r1 = getRect($content[0]);
-                        leadingX = r1.left - r0.left - x - parseFloat(style[pPadding[3]]) - parseFloat(style[pBorder[3]]);
-                        leadingY = r1.top - r0.top - y - parseFloat(style[pPadding[0]]) - parseFloat(style[pBorder[0]]);
+                        leadingX = mround(r1.left - r0.left - x - parseFloat(style[pPadding[3]]) - parseFloat(style[pBorder[3]]));
+                        leadingY = mround(r1.top - r0.top - y - parseFloat(style[pPadding[0]]) - parseFloat(style[pBorder[0]]));
                         if ($clip[0]) {
                             var r2 = getRect($clip[0]);
                             trailingX = r0.right - r2.right + parseFloat($clip.css(pPadding[1]));
@@ -1205,6 +1215,7 @@ const $ = __webpack_require__(786);
             function startScrollPerFrame(callback) {
                 var lastTime = Date.now();
                 var timeout = nextFrame(step);
+                var bouncing;
 
                 function next(curTime) {
                     lastTime = curTime || Date.now();
@@ -1213,34 +1224,39 @@ const $ = __webpack_require__(786);
 
                 function step() {
                     var curTime = Date.now();
-                    callback(function (dx, dy, overshoot) {
-                        if (!minX) {
-                            dx = 0;
-                        } else if (x > 0 || x < minX) {
-                            dx = dx / m.sqrt(x > 0 ? x : minX - x);
-                        }
-                        if (!minY) {
-                            dy = 0;
-                        } else if (y > 0 || y < minY) {
-                            dy = dy / m.sqrt(y > 0 ? y : minY - y);
-                        }
-                        var factor = (curTime - lastTime) * 2;
-                        var newX = x - dx * factor;
-                        var newY = y - dy * factor;
-                        if (!overshoot || (options.snapToPage && options.pageItem)) {
-                            var newPos = normalizePosition(newX, newY, true);
-                            newX = newPos.x;
-                            newY = newPos.y;
-                            if (newPos.pageChanged) {
-                                scrollTo(newX, newY, options.bounceDuration);
+                    if (!bouncing) {
+                        callback(function (dx, dy, overshoot) {
+                            if (!minX) {
+                                dx = 0;
+                            } else if (x > 0 || x < minX) {
+                                dx = dx / m.sqrt(x > 0 ? x : minX - x);
+                            }
+                            if (!minY) {
+                                dy = 0;
+                            } else if (y > 0 || y < minY) {
+                                dy = dy / m.sqrt(y > 0 ? y : minY - y);
+                            }
+                            var factor = (curTime - lastTime) * 2;
+                            var newX = x - dx * factor;
+                            var newY = y - dy * factor;
+                            if (!overshoot || (options.snapToPage && options.pageItem)) {
+                                var newPos = normalizePosition(newX, newY, true);
+                                newX = newPos.x;
+                                newY = newPos.y;
+                                if (newPos.pageChanged) {
+                                    bouncing = true;
+                                    scrollTo(newX, newY, options.bounceDuration, function () {
+                                        bouncing = false;
+                                    });
+                                    return true;
+                                }
+                            }
+                            if (m.abs(newX - x) >= 0.5 || m.abs(newY - y) >= 0.5) {
+                                setScrollMove(newX, newY);
                                 return true;
                             }
-                        }
-                        if (m.abs(newX - x) >= 0.5 || m.abs(newY - y) >= 0.5) {
-                            setScrollMove(newX, newY);
-                            return true;
-                        }
-                    }, curTime);
+                        }, curTime);
+                    }
                     next(curTime);
                 }
 
@@ -1397,9 +1413,7 @@ const $ = __webpack_require__(786);
                                 handleStop(e);
                                 return;
                             }
-                            // check if user is scrolling outer content when content of this container is underflow
-                            if (((thisDirY && !minY) || (!thisDirY && !minX)) && (getParentWrapper($wrapper[0]) || canScrollInnerElement($wrapper[0], document.body, deltaX, deltaY))) {
-                                handleStop(e);
+                            if ((thisDirY ? newY > 0 || newY < minY : newX > 0 || newX < minX) && ($wrapper.css('overscroll-behavior') || 'auto') === 'auto') {
                                 return;
                             }
                             isDirY = 0;
@@ -1460,7 +1474,7 @@ const $ = __webpack_require__(786);
                         newX = p.x;
                         newY = p.y;
                         if (p.pageChanged) {
-                            scrollTo(newX, newY, options.bounceDuration, handleStop);
+                            scrollTo(newX, newY, options.bounceDuration);
                             snappedToPage = true;
                             return;
                         }
