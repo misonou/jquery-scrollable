@@ -1624,7 +1624,8 @@ const $ = require('jquery');
                 if (newX === x && newY === y) {
                     return;
                 }
-                if (!wheelState || (wheelState.ending && (wheelDeltaX / 0 !== wheelState.dx / 0) && (wheelDeltaY / 0 !== wheelState.dy / 0))) {
+                var timestamp = Date.now();
+                if (!wheelState || timestamp - wheelState.timestamp > 250 || (wheelState.ending && (wheelDeltaX / 0 !== wheelState.dx / 0) && (wheelDeltaY / 0 !== wheelState.dy / 0))) {
                     var handleEnd = function () {
                         wheelState = null;
                         stopScroll();
@@ -1644,10 +1645,10 @@ const $ = require('jquery');
                     });
                     setScrollStart('wheel', handleEnd);
                     wheelState = {
-                        startTime: Date.now()
+                        startTime: timestamp
                     };
                 }
-                wheelState.timestamp = Date.now();
+                wheelState.timestamp = timestamp;
                 wheelState.dx = wheelDeltaX / 100;
                 wheelState.dy = wheelDeltaY / 100;
                 if ((wheelDeltaX && m.abs(wheelDeltaX) < 50) || (wheelDeltaY && m.abs(wheelDeltaY) < 50)) {
