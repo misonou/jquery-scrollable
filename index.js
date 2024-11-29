@@ -914,6 +914,8 @@ const $ = require('jquery');
 
             function setScrollEnd() {
                 cancelScroll = null;
+                stopX = x;
+                stopY = y;
                 if (eventState) {
                     if (!(eventState.flag & 2)) {
                         fireEvent('scrollStop', eventState.startX, eventState.startY);
