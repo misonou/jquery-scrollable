@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.15.2 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.15.3 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jQuery"));
@@ -964,6 +964,8 @@ const $ = __webpack_require__(786);
 
             function setScrollEnd() {
                 cancelScroll = null;
+                stopX = x;
+                stopY = y;
                 if (eventState) {
                     if (!(eventState.flag & 2)) {
                         fireEvent('scrollStop', eventState.startX, eventState.startY);
@@ -1674,7 +1676,8 @@ const $ = __webpack_require__(786);
                 if (newX === x && newY === y) {
                     return;
                 }
-                if (!wheelState || (wheelState.ending && (wheelDeltaX / 0 !== wheelState.dx / 0) && (wheelDeltaY / 0 !== wheelState.dy / 0))) {
+                var timestamp = Date.now();
+                if (!wheelState || timestamp - wheelState.timestamp > 250 || (wheelState.ending && (wheelDeltaX / 0 !== wheelState.dx / 0) && (wheelDeltaY / 0 !== wheelState.dy / 0))) {
                     var handleEnd = function () {
                         wheelState = null;
                         stopScroll();
@@ -1694,10 +1697,10 @@ const $ = __webpack_require__(786);
                     });
                     setScrollStart('wheel', handleEnd);
                     wheelState = {
-                        startTime: Date.now()
+                        startTime: timestamp
                     };
                 }
-                wheelState.timestamp = Date.now();
+                wheelState.timestamp = timestamp;
                 wheelState.dx = wheelDeltaX / 100;
                 wheelState.dy = wheelDeltaY / 100;
                 if ((wheelDeltaX && m.abs(wheelDeltaX) < 50) || (wheelDeltaY && m.abs(wheelDeltaY) < 50)) {

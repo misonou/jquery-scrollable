@@ -1,3 +1,8 @@
+## v1.15.3 / 2024-12-01
+
+- Fix: restart scroll by successive wheel event after a timeout
+- Fix: incorrect `scrollLeft` and `scrollTop` reported after scrolling
+
 ## v1.15.2 / 2024-11-20
 
 - Fix: calculation for fixed element position
