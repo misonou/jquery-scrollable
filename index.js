@@ -895,8 +895,8 @@ const $ = require('jquery');
             }
 
             function setScrollStart(trigger, onCancel) {
-                if (cancelAnim) {
-                    cancelAnim();
+                if (cancelScroll) {
+                    cancelScroll();
                 }
                 eventTrigger = trigger;
                 $wrapper.addClass(options.scrollingClass);
