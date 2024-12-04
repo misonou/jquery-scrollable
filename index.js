@@ -907,7 +907,7 @@ const $ = require('jquery');
                         cancelAnim();
                     }
                     if (onCancel) {
-                        onCancel();
+                        onCancel(true);
                     }
                 };
             }
@@ -1626,10 +1626,20 @@ const $ = require('jquery');
                 if (newX === x && newY === y) {
                     return;
                 }
+                if (wheelState && wheelState.cancelled) {
+                    if (m.abs(wheelDeltaX / 100) <= m.abs(wheelState.dx) && m.abs(wheelDeltaY / 100) <= m.abs(wheelState.dy)) {
+                        return;
+                    }
+                    wheelState = null;
+                }
                 var timestamp = Date.now();
-                if (!wheelState || timestamp - wheelState.timestamp > 250 || (wheelState.ending && (wheelDeltaX / 0 !== wheelState.dx / 0) && (wheelDeltaY / 0 !== wheelState.dy / 0))) {
-                    var handleEnd = function () {
-                        wheelState = null;
+                if (!wheelState || (wheelState.ending && (wheelDeltaX / 0 !== wheelState.dx / 0) && (wheelDeltaY / 0 !== wheelState.dy / 0))) {
+                    var handleEnd = function (cancelled) {
+                        if (cancelled) {
+                            wheelState.cancelled = true;
+                        } else {
+                            wheelState = null;
+                        }
                         stopScroll();
                         setScrollEnd();
                     };
