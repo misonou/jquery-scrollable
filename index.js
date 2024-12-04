@@ -978,7 +978,7 @@ const $ = require('jquery');
                     frameId = nextFrame(animate);
                 };
                 if (fireStart) {
-                    setScrollStart(finish);
+                    setScrollStart('script', finish);
                 } else {
                     cancelAnim = finish;
                 }
@@ -1697,7 +1697,8 @@ const $ = require('jquery');
                 e.preventDefault();
 
                 if (!ev || !ev.repeat) {
-                    scrollTo(newPos.x, newPos.y, 50);
+                    setScrollStart('keydown', function () { });
+                    scrollTo(newPos.x, newPos.y, 50, setScrollEnd);
                     return;
                 }
                 if (!keyState) {
