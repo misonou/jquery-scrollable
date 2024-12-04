@@ -1,3 +1,9 @@
+## v1.15.4 / 2024-12-04
+
+- Fix: incorrect `trigger` in event when scrolling is started by `scrollTo`
+- Fix: error when wheel scrolling is interrupted
+- Fix: handle interruption of wheel scrolling properly
+
 ## v1.15.3 / 2024-12-01
 
 - Fix: restart scroll by successive wheel event after a timeout

@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.15.3 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.15.4 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jQuery"));
@@ -945,8 +945,8 @@ const $ = __webpack_require__(786);
             }
 
             function setScrollStart(trigger, onCancel) {
-                if (cancelAnim) {
-                    cancelAnim();
+                if (cancelScroll) {
+                    cancelScroll();
                 }
                 eventTrigger = trigger;
                 $wrapper.addClass(options.scrollingClass);
@@ -957,7 +957,7 @@ const $ = __webpack_require__(786);
                         cancelAnim();
                     }
                     if (onCancel) {
-                        onCancel();
+                        onCancel(true);
                     }
                 };
             }
@@ -1028,7 +1028,7 @@ const $ = __webpack_require__(786);
                     frameId = nextFrame(animate);
                 };
                 if (fireStart) {
-                    setScrollStart(finish);
+                    setScrollStart('script', finish);
                 } else {
                     cancelAnim = finish;
                 }
@@ -1676,10 +1676,20 @@ const $ = __webpack_require__(786);
                 if (newX === x && newY === y) {
                     return;
                 }
+                if (wheelState && wheelState.cancelled) {
+                    if (m.abs(wheelDeltaX / 100) <= m.abs(wheelState.dx) && m.abs(wheelDeltaY / 100) <= m.abs(wheelState.dy)) {
+                        return;
+                    }
+                    wheelState = null;
+                }
                 var timestamp = Date.now();
-                if (!wheelState || timestamp - wheelState.timestamp > 250 || (wheelState.ending && (wheelDeltaX / 0 !== wheelState.dx / 0) && (wheelDeltaY / 0 !== wheelState.dy / 0))) {
-                    var handleEnd = function () {
-                        wheelState = null;
+                if (!wheelState || (wheelState.ending && (wheelDeltaX / 0 !== wheelState.dx / 0) && (wheelDeltaY / 0 !== wheelState.dy / 0))) {
+                    var handleEnd = function (cancelled) {
+                        if (cancelled) {
+                            wheelState.cancelled = true;
+                        } else {
+                            wheelState = null;
+                        }
                         stopScroll();
                         setScrollEnd();
                     };
@@ -1747,7 +1757,8 @@ const $ = __webpack_require__(786);
                 e.preventDefault();
 
                 if (!ev || !ev.repeat) {
-                    scrollTo(newPos.x, newPos.y, 50);
+                    setScrollStart('keydown', function () { });
+                    scrollTo(newPos.x, newPos.y, 50, setScrollEnd);
                     return;
                 }
                 if (!keyState) {
