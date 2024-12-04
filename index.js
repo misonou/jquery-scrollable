@@ -894,8 +894,8 @@ const $ = require('jquery');
                 }
             }
 
-            function setScrollStart(trigger, onCancel) {
-                if (cancelScroll) {
+            function setScrollStart(trigger, onCancel, skipCancel) {
+                if (cancelScroll && !skipCancel) {
                     cancelScroll();
                 }
                 eventTrigger = trigger;
@@ -1313,7 +1313,7 @@ const $ = require('jquery');
                     if (!hasTouch) {
                         $blockLayer.appendTo(document.body);
                     }
-                    setScrollStart(scrollbarMode ? 'scrollbar' : 'gesture', handleStop);
+                    setScrollStart(scrollbarMode ? 'scrollbar' : 'gesture', handleStop, true);
                 }
 
                 function handleEnd() {
