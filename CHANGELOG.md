@@ -1,3 +1,8 @@
+## v1.15.5 / 2024-12-05
+
+- Fix: scroll by mouse or touch interrupted (issue introduced in v1.15.4)
+- Fix: trigger update on parent instance when nested instance matches same content element
+
 ## v1.15.4 / 2024-12-04
 
 - Fix: incorrect `trigger` in event when scrolling is started by `scrollTo`

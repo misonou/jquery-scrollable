@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.15.4 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.15.5 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jQuery"));
@@ -944,8 +944,8 @@ const $ = __webpack_require__(786);
                 }
             }
 
-            function setScrollStart(trigger, onCancel) {
-                if (cancelScroll) {
+            function setScrollStart(trigger, onCancel, skipCancel) {
+                if (cancelScroll && !skipCancel) {
                     cancelScroll();
                 }
                 eventTrigger = trigger;
@@ -1120,6 +1120,9 @@ const $ = __webpack_require__(786);
                                 x = content.scrollableOffsetX || 0;
                                 y = content.scrollableOffsetY || 0;
                                 $middle = $content.parentsUntil($wrapper).not($middle).on('scroll', fixNativeScrollHandler).end();
+                                $wrapper.parents().filter(function (i, v) {
+                                    return ($.data(v, DATA_ID) || {}).scrollTarget === content;
+                                }).scrollable('refresh');
                             }
                         }
                         if (content) {
@@ -1363,7 +1366,7 @@ const $ = __webpack_require__(786);
                     if (!hasTouch) {
                         $blockLayer.appendTo(document.body);
                     }
-                    setScrollStart(scrollbarMode ? 'scrollbar' : 'gesture', handleStop);
+                    setScrollStart(scrollbarMode ? 'scrollbar' : 'gesture', handleStop, true);
                 }
 
                 function handleEnd() {
