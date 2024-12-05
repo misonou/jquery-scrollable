@@ -1070,6 +1070,9 @@ const $ = require('jquery');
                                 x = content.scrollableOffsetX || 0;
                                 y = content.scrollableOffsetY || 0;
                                 $middle = $content.parentsUntil($wrapper).not($middle).on('scroll', fixNativeScrollHandler).end();
+                                $wrapper.parents().filter(function (i, v) {
+                                    return ($.data(v, DATA_ID) || {}).scrollTarget === content;
+                                }).scrollable('refresh');
                             }
                         }
                         if (content) {
