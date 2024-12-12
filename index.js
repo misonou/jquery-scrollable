@@ -1547,7 +1547,7 @@ const $ = require('jquery');
                             stopScroll = startScrollPerFrame(function (scrollBy) {
                                 scrollBy(speedX, speedY);
                             });
-                            setScrollStart('auxclick', handleStop);
+                            setScrollStart('auxclick', handleStop, true);
                         }
                         $blockLayer.css('cursor', (!speedY ? '' : speedY < 0 ? 'n' : 's') + (!speedX ? '' : speedX < 0 ? 'w' : 'e') + '-resize');
                     } else {
