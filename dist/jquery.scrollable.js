@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.15.5 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.15.6 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jQuery"));
@@ -1597,7 +1597,7 @@ const $ = __webpack_require__(786);
                             stopScroll = startScrollPerFrame(function (scrollBy) {
                                 scrollBy(speedX, speedY);
                             });
-                            setScrollStart('auxclick', handleStop);
+                            setScrollStart('auxclick', handleStop, true);
                         }
                         $blockLayer.css('cursor', (!speedY ? '' : speedY < 0 ? 'n' : 's') + (!speedX ? '' : speedX < 0 ? 'w' : 'e') + '-resize');
                     } else {

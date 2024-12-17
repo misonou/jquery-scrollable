@@ -1,3 +1,7 @@
+## v1.15.6 / 2024-12-17
+
+- Fix: cannot scroll by clicking mouse wheel (issue introduced in v1.15.4)
+
 ## v1.15.5 / 2024-12-05
 
 - Fix: scroll by mouse or touch interrupted (issue introduced in v1.15.4)
