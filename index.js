@@ -445,11 +445,12 @@ const $ = require('jquery');
             var $content = $();
             var $pageItems = $();
             var $middle = $();
-            var $hScrollbar = !!(options.scrollbar && options.hScroll) && $(options.scrollbar($wrapper, 'x', options)).hide();
-            var $vScrollbar = !!(options.scrollbar && options.vScroll) && $(options.scrollbar($wrapper, 'y', options)).hide();
-            var $hGlow = !!(options.glow && options.hGlow) && $(options.glow($wrapper, 'x', options)).hide();
-            var $vGlow = !!(options.glow && options.vGlow) && $(options.glow($wrapper, 'y', options)).hide();
-            var $scrollbars = $wrapper.find([$hScrollbar[0], $vScrollbar[0], $hGlow[0], $vGlow[0]]).parent();
+            var $hScrollbar;
+            var $vScrollbar;
+            var $hGlow;
+            var $vGlow;
+            var $scrollbars = $();
+            var createdElm = false;
             var enabled = true;
             var x = 0;
             var y = 0;
@@ -1039,6 +1040,28 @@ const $ = require('jquery');
                 fixNativeScroll(e.currentTarget);
             }
 
+            function attachElements() {
+                if (!createdElm) {
+                    $hScrollbar = !!(options.scrollbar && options.hScroll) && $(options.scrollbar($wrapper, 'x', options)).hide();
+                    $vScrollbar = !!(options.scrollbar && options.vScroll) && $(options.scrollbar($wrapper, 'y', options)).hide();
+                    $hGlow = !!(options.glow && options.hGlow) && $(options.glow($wrapper, 'x', options)).hide();
+                    $vGlow = !!(options.glow && options.vGlow) && $(options.glow($wrapper, 'y', options)).hide();
+                    $scrollbars = $wrapper.find([$hScrollbar[0], $vScrollbar[0], $hGlow[0], $vGlow[0]]).parent();
+                    if ($hScrollbar && options.handle === 'content') {
+                        $hScrollbar.css('pointer-events', 'none');
+                    }
+                    if ($vScrollbar && options.handle === 'content') {
+                        $vScrollbar.css('pointer-events', 'none');
+                    }
+                    createdElm = true;
+                }
+                $scrollbars.each(function (i, v) {
+                    if (!v.isConnected) {
+                        $wrapper.append(v);
+                    }
+                });
+            }
+
             function refresh(updateContent) {
                 // prevent changes missed in other containers
                 flushChanges(false);
@@ -1134,11 +1157,9 @@ const $ = require('jquery');
                     }
                     $wrapper.css('touch-action', (['none', 'pan-x', 'pan-y', 'auto'])[!minY * 2 + !minX]);
 
-                    $scrollbars.each(function (i, v) {
-                        if (!v.isConnected) {
-                            $wrapper.append(v);
-                        }
-                    });
+                    if (minX || minY) {
+                        attachElements();
+                    }
                     if (!eventState && (x < minX || y < minY)) {
                         if (cancelScroll) {
                             cancelScroll();
@@ -1165,6 +1186,12 @@ const $ = require('jquery');
             function refreshNext(updateContent) {
                 updateContentOnRefresh = updateContentOnRefresh || updateContent === true;
                 refreshTimeout = refreshTimeout || nextFrame(refresh);
+            }
+
+            function ensureRefreshedWithContent() {
+                if (updateContentOnRefresh) {
+                    refresh();
+                }
             }
 
             function startScrollPerFrame(callback) {
@@ -1283,7 +1310,7 @@ const $ = require('jquery');
                 var stopScroll;
 
                 if (handle === 'auto') {
-                    handle = hasTouch || !$vScrollbar ? 'content' : 'scrollbar';
+                    handle = hasTouch || (!options.hScroll && !options.vScroll) ? 'content' : 'scrollbar';
                 }
                 if (hasTouch && touches.length === 1) {
                     lastTouch = point;
@@ -1747,12 +1774,6 @@ const $ = require('jquery');
             $wrapper.on(handlers);
 
             // setup initial style
-            if ($hScrollbar && options.handle === 'content') {
-                $hScrollbar.css('pointer-events', 'none');
-            }
-            if ($vScrollbar && options.handle === 'content') {
-                $vScrollbar.css('pointer-events', 'none');
-            }
             if ($wrapper.css('overflow') !== 'hidden' && $wrapper.css('overflow') !== 'visible') {
                 $wrapper.css('overflow', 'hidden');
             }
@@ -1812,15 +1833,19 @@ const $ = require('jquery');
                     return -y;
                 },
                 get scrollPercentX() {
+                    ensureRefreshedWithContent();
                     return minX ? (x / minX) * 100 : 100;
                 },
                 get scrollPercentY() {
+                    ensureRefreshedWithContent();
                     return minY ? (y / minY) * 100 : 100;
                 },
                 get scrollMaxX() {
+                    ensureRefreshedWithContent();
                     return -minX;
                 },
                 get scrollMaxY() {
+                    ensureRefreshedWithContent();
                     return -minY;
                 },
                 get enabled() {
@@ -1847,6 +1872,7 @@ const $ = require('jquery');
                     stickyElements.forEach(function (v, i) {
                         removeStickyElement(i);
                     });
+                    cancelFrame(refreshTimeout);
                     if (mutationObserver) {
                         mutationObserver.disconnect();
                     }
@@ -1927,7 +1953,10 @@ const $ = require('jquery');
                 }
             });
 
-            refresh(true);
+            updateContentOnRefresh = true;
+            (window.requestIdleCallback || setTimeout)(function () {
+                refresh();
+            });
         });
     };
 
