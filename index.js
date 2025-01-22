@@ -1,4 +1,6 @@
-const $ = require('jquery');
+import jquery from "jquery";
+
+const $ = jquery;
 
 (function () {
     const zeroMomentum = {
