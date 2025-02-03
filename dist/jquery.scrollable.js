@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.15.6 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.16.0 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jQuery"));
@@ -8,14 +8,14 @@
 		exports["jq-scrollable"] = factory(require("jQuery"));
 	else
 		root["jq-scrollable"] = factory(root["jQuery"]);
-})(self, (__WEBPACK_EXTERNAL_MODULE__786__) => {
-return /******/ (() => { // webpackBootstrap
+})(this, function(__WEBPACK_EXTERNAL_MODULE__786__) {
+return /******/ (function() { // webpackBootstrap
+/******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
 /***/ 786:
-/***/ ((module) => {
+/***/ (function(module) {
 
-"use strict";
 module.exports = __WEBPACK_EXTERNAL_MODULE__786__;
 
 /***/ })
@@ -47,8 +47,54 @@ module.exports = __WEBPACK_EXTERNAL_MODULE__786__;
 /******/ 	}
 /******/ 	
 /************************************************************************/
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	!function() {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = function(module) {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				function() { return module['default']; } :
+/******/ 				function() { return module; };
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	}();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	!function() {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = function(exports, definition) {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	}();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	!function() {
+/******/ 		__webpack_require__.o = function(obj, prop) { return Object.prototype.hasOwnProperty.call(obj, prop); }
+/******/ 	}();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	!function() {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = function(exports) {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	}();
+/******/ 	
+/************************************************************************/
 var __webpack_exports__ = {};
-const $ = __webpack_require__(786);
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var jquery__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(786);
+/* harmony import */ var jquery__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(jquery__WEBPACK_IMPORTED_MODULE_0__);
+
+
+const $ = (jquery__WEBPACK_IMPORTED_MODULE_0___default());
 
 (function () {
     const zeroMomentum = {
@@ -495,11 +541,12 @@ const $ = __webpack_require__(786);
             var $content = $();
             var $pageItems = $();
             var $middle = $();
-            var $hScrollbar = !!(options.scrollbar && options.hScroll) && $(options.scrollbar($wrapper, 'x', options)).hide();
-            var $vScrollbar = !!(options.scrollbar && options.vScroll) && $(options.scrollbar($wrapper, 'y', options)).hide();
-            var $hGlow = !!(options.glow && options.hGlow) && $(options.glow($wrapper, 'x', options)).hide();
-            var $vGlow = !!(options.glow && options.vGlow) && $(options.glow($wrapper, 'y', options)).hide();
-            var $scrollbars = $wrapper.find([$hScrollbar[0], $vScrollbar[0], $hGlow[0], $vGlow[0]]).parent();
+            var $hScrollbar;
+            var $vScrollbar;
+            var $hGlow;
+            var $vGlow;
+            var $scrollbars = $();
+            var createdElm = false;
             var enabled = true;
             var x = 0;
             var y = 0;
@@ -1089,6 +1136,28 @@ const $ = __webpack_require__(786);
                 fixNativeScroll(e.currentTarget);
             }
 
+            function attachElements() {
+                if (!createdElm) {
+                    $hScrollbar = !!(options.scrollbar && options.hScroll) && $(options.scrollbar($wrapper, 'x', options)).hide();
+                    $vScrollbar = !!(options.scrollbar && options.vScroll) && $(options.scrollbar($wrapper, 'y', options)).hide();
+                    $hGlow = !!(options.glow && options.hGlow) && $(options.glow($wrapper, 'x', options)).hide();
+                    $vGlow = !!(options.glow && options.vGlow) && $(options.glow($wrapper, 'y', options)).hide();
+                    $scrollbars = $wrapper.find([$hScrollbar[0], $vScrollbar[0], $hGlow[0], $vGlow[0]]).parent();
+                    if ($hScrollbar && options.handle === 'content') {
+                        $hScrollbar.css('pointer-events', 'none');
+                    }
+                    if ($vScrollbar && options.handle === 'content') {
+                        $vScrollbar.css('pointer-events', 'none');
+                    }
+                    createdElm = true;
+                }
+                $scrollbars.each(function (i, v) {
+                    if (!v.isConnected) {
+                        $wrapper.append(v);
+                    }
+                });
+            }
+
             function refresh(updateContent) {
                 // prevent changes missed in other containers
                 flushChanges(false);
@@ -1184,11 +1253,9 @@ const $ = __webpack_require__(786);
                     }
                     $wrapper.css('touch-action', (['none', 'pan-x', 'pan-y', 'auto'])[!minY * 2 + !minX]);
 
-                    $scrollbars.each(function (i, v) {
-                        if (!v.isConnected) {
-                            $wrapper.append(v);
-                        }
-                    });
+                    if (minX || minY) {
+                        attachElements();
+                    }
                     if (!eventState && (x < minX || y < minY)) {
                         if (cancelScroll) {
                             cancelScroll();
@@ -1215,6 +1282,12 @@ const $ = __webpack_require__(786);
             function refreshNext(updateContent) {
                 updateContentOnRefresh = updateContentOnRefresh || updateContent === true;
                 refreshTimeout = refreshTimeout || nextFrame(refresh);
+            }
+
+            function ensureRefreshedWithContent() {
+                if (updateContentOnRefresh) {
+                    refresh();
+                }
             }
 
             function startScrollPerFrame(callback) {
@@ -1333,7 +1406,7 @@ const $ = __webpack_require__(786);
                 var stopScroll;
 
                 if (handle === 'auto') {
-                    handle = hasTouch || !$vScrollbar ? 'content' : 'scrollbar';
+                    handle = hasTouch || (!options.hScroll && !options.vScroll) ? 'content' : 'scrollbar';
                 }
                 if (hasTouch && touches.length === 1) {
                     lastTouch = point;
@@ -1797,12 +1870,6 @@ const $ = __webpack_require__(786);
             $wrapper.on(handlers);
 
             // setup initial style
-            if ($hScrollbar && options.handle === 'content') {
-                $hScrollbar.css('pointer-events', 'none');
-            }
-            if ($vScrollbar && options.handle === 'content') {
-                $vScrollbar.css('pointer-events', 'none');
-            }
             if ($wrapper.css('overflow') !== 'hidden' && $wrapper.css('overflow') !== 'visible') {
                 $wrapper.css('overflow', 'hidden');
             }
@@ -1862,15 +1929,19 @@ const $ = __webpack_require__(786);
                     return -y;
                 },
                 get scrollPercentX() {
+                    ensureRefreshedWithContent();
                     return minX ? (x / minX) * 100 : 100;
                 },
                 get scrollPercentY() {
+                    ensureRefreshedWithContent();
                     return minY ? (y / minY) * 100 : 100;
                 },
                 get scrollMaxX() {
+                    ensureRefreshedWithContent();
                     return -minX;
                 },
                 get scrollMaxY() {
+                    ensureRefreshedWithContent();
                     return -minY;
                 },
                 get enabled() {
@@ -1897,6 +1968,7 @@ const $ = __webpack_require__(786);
                     stickyElements.forEach(function (v, i) {
                         removeStickyElement(i);
                     });
+                    cancelFrame(refreshTimeout);
                     if (mutationObserver) {
                         mutationObserver.disconnect();
                     }
@@ -1977,7 +2049,10 @@ const $ = __webpack_require__(786);
                 }
             });
 
-            refresh(true);
+            updateContentOnRefresh = true;
+            (window.requestIdleCallback || setTimeout)(function () {
+                refresh();
+            });
         });
     };
 

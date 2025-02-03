@@ -1,3 +1,8 @@
+## v1.16.0 / 2025-02-03
+
+- Update source code to ES module
+- Improve performance by deferring unnecessary init routine
+
 ## v1.15.6 / 2024-12-17
 
 - Fix: cannot scroll by clicking mouse wheel (issue introduced in v1.15.4)
