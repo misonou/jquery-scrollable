@@ -192,6 +192,11 @@ interface JQueryScrollableScrollbarOptions {
 
 interface JQueryScrollableEventHooks {
     /**
+     * Attach event listener that is invoked before scrolling is started.
+     * Note that scrolling directly through {@link JQueryScrollable} methods will not triggered this hook.
+     */
+    beforeScrollStart?: (this: Element, e: JQueryScrollableCancellableEventProps) => void;
+    /**
      * Attach event listener that is invoked when touch has been moved within scrollable area.
      */
     touchMove?: (this: Element, e: JQueryScrollableEventProps) => void;
@@ -279,6 +284,13 @@ interface JQueryScrollableEventProps extends JQueryScrollableState {
      * Gets the trigger the started the scrolling.
      */
     readonly trigger: 'script' | 'scrollbar' | 'gesture' | 'wheel' | 'keydown' | 'auxclick';
+}
+
+interface JQueryScrollableCancellableEventProps extends JQueryScrollableEventProps {
+    /**
+     * Prevents initiation of scrolling.
+     */
+    cancelScroll(): void;
 }
 
 interface JQueryScrollableOptions extends JQueryScrollableScrollbarOptions, JQueryScrollableEventHooks {
