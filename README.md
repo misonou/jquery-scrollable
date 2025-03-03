@@ -139,6 +139,9 @@ Below is an exhaustive list of options, with the default value shown.
     // specify an event listener for the touchMove event
     touchMove: null,
 
+    // specify an event listener for the beforeScrollStart event
+    beforeScrollStart: null,
+
     // specify an event listener for the scrollStart event
     scrollStart: null,
 
@@ -334,6 +337,25 @@ $.scrollable.hook({
 ### touchMove
 
 Fired when a mouse or touch move event is triggered on the content element but not necessarily starts a scrolling action.
+
+### beforeScrollStart
+
+Attach event listener that is invoked before scrolling is started.
+
+Scroll action initiated by user can be cancelled in `beforeScrollStart` event.
+
+```javascript
+$elm.scrollable({
+    // ...
+    beforeScrollStart: function (e) {
+        if (someCondition()) {
+            e.cancelScroll();
+        }
+    }
+});
+```
+
+> Note that scrolling directly through methods will not triggered this hook.
 
 ### scrollStart
 

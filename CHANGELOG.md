@@ -1,3 +1,7 @@
+## v1.17.0 / 2025-03-03
+
+- Add `beforeScrollStart` event
+
 ## v1.16.0 / 2025-02-03
 
 - Update source code to ES module

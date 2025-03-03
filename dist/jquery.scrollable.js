@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.16.0 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.17.0 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jQuery"));
@@ -667,9 +667,12 @@ const $ = (jquery__WEBPACK_IMPORTED_MODULE_0___default());
                 return $.extend(Promise.resolve(), getScrollState(x, y));
             }
 
-            function fireEvent(type, startX, startY, newX, newY, deltaX, deltaY) {
+            function fireEvent(type, startX, startY, newX, newY, deltaX, deltaY, cancelScroll) {
                 var args = getScrollState(startX, startY, newX, newY, deltaX, deltaY);
                 args.type = type;
+                if (cancelScroll) {
+                    args.cancelScroll = cancelScroll;
+                }
                 if (typeof options[type] === 'function') {
                     options[type].call($wrapper[0], args);
                 }
@@ -988,6 +991,20 @@ const $ = (jquery__WEBPACK_IMPORTED_MODULE_0___default());
                 setPosition(newX, newY);
                 if (eventState) {
                     fireEvent('scrollMove', eventState.startX, eventState.startY, newX, newY, x - prevX, y - prevY);
+                }
+            }
+
+            function beforeScrollStart(trigger) {
+                var returnValue = true;
+                var previous = eventTrigger;
+                try {
+                    eventTrigger = trigger;
+                    fireEvent('beforeScrollStart', x, y, x, y, 0, 0, function () {
+                        returnValue = false;
+                    });
+                    return returnValue;
+                } finally {
+                    eventTrigger = previous;
                 }
             }
 
@@ -1428,6 +1445,9 @@ const $ = (jquery__WEBPACK_IMPORTED_MODULE_0___default());
                 if (!hasTouch && handle === 'scrollbar' && !scrollbarMode) {
                     return;
                 }
+                if (!beforeScrollStart(scrollbarMode ? 'scrollbar' : 'gesture')) {
+                    return;
+                }
                 if (!hasTouch) {
                     e.preventDefault();
                 }
@@ -1650,6 +1670,9 @@ const $ = (jquery__WEBPACK_IMPORTED_MODULE_0___default());
                 if ((!canScrollX && !canScrollY) || e.which !== 2) {
                     return;
                 }
+                if (!beforeScrollStart('auxclick')) {
+                    return;
+                }
 
                 function handleStop() {
                     if (stopScroll) {
@@ -1752,6 +1775,9 @@ const $ = (jquery__WEBPACK_IMPORTED_MODULE_0___default());
                 if (newX === x && newY === y) {
                     return;
                 }
+                if (!beforeScrollStart('wheel')) {
+                    return;
+                }
                 if (wheelState && wheelState.cancelled) {
                     if (m.abs(wheelDeltaX / 100) <= m.abs(wheelState.dx) && m.abs(wheelDeltaY / 100) <= m.abs(wheelState.dy)) {
                         return;
@@ -1828,6 +1854,9 @@ const $ = (jquery__WEBPACK_IMPORTED_MODULE_0___default());
                 refresh();
                 var newPos = normalizePosition(x - dx, y - dy, true);
                 if (newPos.x === x && newPos.y === y) {
+                    return;
+                }
+                if (!beforeScrollStart('keydown')) {
                     return;
                 }
                 e.preventDefault();
