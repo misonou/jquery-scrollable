@@ -1,8 +1,9 @@
 {
   "name": "jq-scrollable",
   "version": "1.17.0",
-  "main": "dist/jquery.scrollable.js",
-  "module": "index.js",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
   "unpkg": "dist/jquery.scrollable.min.js",
   "dependencies": {
     "jquery": "^3.5.1 || ^4.0.0-0"
@@ -22,6 +23,15 @@
     "build": "webpack",
     "version": "npm run build && git add -A dist"
   },
+  "exports": {
+    ".": {
+      "require": "./dist/jquery.scrollable.js",
+      "import": "./index.js"
+    }
+  },
+  "sideEffects": [
+    "./index.js"
+  ],
   "browserslist": [
     "> 1%",
     "not dead",

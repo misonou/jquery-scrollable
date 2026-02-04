@@ -17,7 +17,6 @@ module.exports = {
         filename: '[name].js',
         library: 'jq-scrollable',
         libraryTarget: 'umd',
-        globalObject: 'this',
         umdNamedDefine: true
     },
     plugins: [
@@ -40,6 +39,11 @@ module.exports = {
         ]
     },
     externals: {
-        'jquery': 'jQuery'
+        'jquery': {
+            commonjs: 'jquery',
+            commonjs2: 'jquery',
+            amd: 'jquery',
+            root: 'jQuery'
+        }
     }
 };
