@@ -1855,6 +1855,7 @@ const $ = jquery;
             // plugin interface
             $wrapper.data(DATA_ID, {
                 get scrollTarget() {
+                    ensureRefreshedWithContent();
                     return $content[0] || null;
                 },
                 get scrollX() {
