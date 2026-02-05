@@ -1,6 +1,6 @@
 {
   "name": "jq-scrollable",
-  "version": "1.17.0",
+  "version": "1.17.1",
   "type": "module",
   "main": "index.js",
   "types": "index.d.ts",

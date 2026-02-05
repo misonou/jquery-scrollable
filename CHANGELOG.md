@@ -1,3 +1,9 @@
+## v1.17.1 / 2026-02-05
+
+- Fix: unable to return `scrollTarget` right after plugin creation
+- Fix: incorrect UMD header that may fail to resolve jQuery from dependency
+- Fix: update package.json to correctly identify as an ES module
+
 ## v1.17.0 / 2025-03-03
 
 - Add `beforeScrollStart` event

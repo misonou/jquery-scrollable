@@ -1,22 +1,22 @@
-/*! jq-scrollable v1.17.0 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.17.1 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory(require("jQuery"));
+		module.exports = factory(require("jquery"));
 	else if(typeof define === 'function' && define.amd)
-		define("jq-scrollable", ["jQuery"], factory);
+		define("jq-scrollable", ["jquery"], factory);
 	else if(typeof exports === 'object')
-		exports["jq-scrollable"] = factory(require("jQuery"));
+		exports["jq-scrollable"] = factory(require("jquery"));
 	else
 		root["jq-scrollable"] = factory(root["jQuery"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE__786__) {
+})(self, function(__WEBPACK_EXTERNAL_MODULE__914__) {
 return /******/ (function() { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 786:
+/***/ 914:
 /***/ (function(module) {
 
-module.exports = __WEBPACK_EXTERNAL_MODULE__786__;
+module.exports = __WEBPACK_EXTERNAL_MODULE__914__;
 
 /***/ })
 
@@ -47,35 +47,6 @@ module.exports = __WEBPACK_EXTERNAL_MODULE__786__;
 /******/ 	}
 /******/ 	
 /************************************************************************/
-/******/ 	/* webpack/runtime/compat get default export */
-/******/ 	!function() {
-/******/ 		// getDefaultExport function for compatibility with non-harmony modules
-/******/ 		__webpack_require__.n = function(module) {
-/******/ 			var getter = module && module.__esModule ?
-/******/ 				function() { return module['default']; } :
-/******/ 				function() { return module; };
-/******/ 			__webpack_require__.d(getter, { a: getter });
-/******/ 			return getter;
-/******/ 		};
-/******/ 	}();
-/******/ 	
-/******/ 	/* webpack/runtime/define property getters */
-/******/ 	!function() {
-/******/ 		// define getter functions for harmony exports
-/******/ 		__webpack_require__.d = function(exports, definition) {
-/******/ 			for(var key in definition) {
-/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-/******/ 				}
-/******/ 			}
-/******/ 		};
-/******/ 	}();
-/******/ 	
-/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
-/******/ 	!function() {
-/******/ 		__webpack_require__.o = function(obj, prop) { return Object.prototype.hasOwnProperty.call(obj, prop); }
-/******/ 	}();
-/******/ 	
 /******/ 	/* webpack/runtime/make namespace object */
 /******/ 	!function() {
 /******/ 		// define __esModule on exports
@@ -90,11 +61,10 @@ module.exports = __WEBPACK_EXTERNAL_MODULE__786__;
 /************************************************************************/
 var __webpack_exports__ = {};
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var jquery__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(786);
-/* harmony import */ var jquery__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(jquery__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var jquery__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(914);
 
 
-const $ = (jquery__WEBPACK_IMPORTED_MODULE_0___default());
+const $ = jquery__WEBPACK_IMPORTED_MODULE_0__;
 
 (function () {
     const zeroMomentum = {
@@ -1949,6 +1919,7 @@ const $ = (jquery__WEBPACK_IMPORTED_MODULE_0___default());
             // plugin interface
             $wrapper.data(DATA_ID, {
                 get scrollTarget() {
+                    ensureRefreshedWithContent();
                     return $content[0] || null;
                 },
                 get scrollX() {
