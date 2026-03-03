@@ -919,7 +919,7 @@ const $ = jquery;
                     cancelScroll();
                 }
                 eventTrigger = trigger;
-                $wrapper.addClass(options.scrollingClass);
+                $wrapper.addClass(options.scrollingClass + ' ' + options.scrollingClass + '-' + eventTrigger);
                 fireEvent('scrollStart', x, y);
                 cancelScroll = function () {
                     cancelScroll = null;
@@ -942,7 +942,7 @@ const $ = jquery;
                     }
                     fireEvent('scrollEnd', eventState.startX, eventState.startY);
                 }
-                $wrapper.removeClass(options.scrollingClass);
+                $wrapper.removeClass(options.scrollingClass + ' ' + options.scrollingClass + '-' + eventTrigger);
             }
 
             function scrollTo(newX, newY, duration, callback) {
@@ -1351,7 +1351,8 @@ const $ = jquery;
                 if (!hasTouch && handle === 'scrollbar' && !scrollbarMode) {
                     return;
                 }
-                if (!beforeScrollStart(scrollbarMode ? 'scrollbar' : 'gesture')) {
+                var trigger = scrollbarMode ? 'scrollbar' : 'gesture';
+                if (!beforeScrollStart(trigger)) {
                     return;
                 }
                 if (!hasTouch) {
@@ -1365,7 +1366,7 @@ const $ = jquery;
                     if (!hasTouch) {
                         $blockLayer.appendTo(document.body);
                     }
-                    setScrollStart(scrollbarMode ? 'scrollbar' : 'gesture', handleStop, true);
+                    setScrollStart(trigger, handleStop, true);
                 }
 
                 function handleEnd() {
@@ -1375,7 +1376,7 @@ const $ = jquery;
                     if (eventState) {
                         setScrollEnd();
                     }
-                    $wrapper.removeClass(options.scrollingClass);
+                    $wrapper.removeClass(options.scrollingClass + ' ' + options.scrollingClass + '-' + trigger);
                 }
 
                 function handleMove(e) {
@@ -1551,7 +1552,7 @@ const $ = jquery;
                     eventTarget.setCapture();
                 }
 
-                $wrapper.addClass(options.scrollingClass);
+                $wrapper.addClass(options.scrollingClass + ' ' + options.scrollingClass + '-' + trigger);
 
                 if (scrollbarMode % 2) {
                     stopScroll = startScrollPerFrame(function (scrollBy) {
