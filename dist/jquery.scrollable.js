@@ -1,4 +1,4 @@
-/*! jq-scrollable v1.17.1 | (c) misonou | https://github.com/misonou/jquery-scrollable */
+/*! jq-scrollable v1.18.0 | (c) misonou | https://github.com/misonou/jquery-scrollable */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("jquery"));
@@ -983,7 +983,7 @@ const $ = jquery__WEBPACK_IMPORTED_MODULE_0__;
                     cancelScroll();
                 }
                 eventTrigger = trigger;
-                $wrapper.addClass(options.scrollingClass);
+                $wrapper.addClass(options.scrollingClass + ' ' + options.scrollingClass + '-' + eventTrigger);
                 fireEvent('scrollStart', x, y);
                 cancelScroll = function () {
                     cancelScroll = null;
@@ -1006,7 +1006,7 @@ const $ = jquery__WEBPACK_IMPORTED_MODULE_0__;
                     }
                     fireEvent('scrollEnd', eventState.startX, eventState.startY);
                 }
-                $wrapper.removeClass(options.scrollingClass);
+                $wrapper.removeClass(options.scrollingClass + ' ' + options.scrollingClass + '-' + eventTrigger);
             }
 
             function scrollTo(newX, newY, duration, callback) {
@@ -1415,7 +1415,8 @@ const $ = jquery__WEBPACK_IMPORTED_MODULE_0__;
                 if (!hasTouch && handle === 'scrollbar' && !scrollbarMode) {
                     return;
                 }
-                if (!beforeScrollStart(scrollbarMode ? 'scrollbar' : 'gesture')) {
+                var trigger = scrollbarMode ? 'scrollbar' : 'gesture';
+                if (!beforeScrollStart(trigger)) {
                     return;
                 }
                 if (!hasTouch) {
@@ -1429,7 +1430,7 @@ const $ = jquery__WEBPACK_IMPORTED_MODULE_0__;
                     if (!hasTouch) {
                         $blockLayer.appendTo(document.body);
                     }
-                    setScrollStart(scrollbarMode ? 'scrollbar' : 'gesture', handleStop, true);
+                    setScrollStart(trigger, handleStop, true);
                 }
 
                 function handleEnd() {
@@ -1439,7 +1440,7 @@ const $ = jquery__WEBPACK_IMPORTED_MODULE_0__;
                     if (eventState) {
                         setScrollEnd();
                     }
-                    $wrapper.removeClass(options.scrollingClass);
+                    $wrapper.removeClass(options.scrollingClass + ' ' + options.scrollingClass + '-' + trigger);
                 }
 
                 function handleMove(e) {
@@ -1615,7 +1616,7 @@ const $ = jquery__WEBPACK_IMPORTED_MODULE_0__;
                     eventTarget.setCapture();
                 }
 
-                $wrapper.addClass(options.scrollingClass);
+                $wrapper.addClass(options.scrollingClass + ' ' + options.scrollingClass + '-' + trigger);
 
                 if (scrollbarMode % 2) {
                     stopScroll = startScrollPerFrame(function (scrollBy) {

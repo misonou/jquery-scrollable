@@ -1,3 +1,7 @@
+## v1.18.0 / 2026-03-03
+
+- Add scrolling indicator CSS class with trigger, e.g. `scrolling-scrollbar`, `scrolling-wheel` etc.
+
 ## v1.17.1 / 2026-02-05
 
 - Fix: unable to return `scrollTarget` right after plugin creation
